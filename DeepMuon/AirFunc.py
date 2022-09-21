@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2022-09-19 23:54:43
+LastEditTime: 2022-09-21 23:10:50
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -118,3 +118,5 @@ def load_model(path,device):
     epoch = checkpoint['epoch']
     loss_fn_dic=checkpoint['loss_fn']
     return epoch,model_dic,optimizer_dic,schedular_dic,loss_fn_dic
+
+# print(__file__)

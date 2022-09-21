@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 22:24:05
 LastEditors: airscker
-LastEditTime: 2022-09-21 10:03:24
+LastEditTime: 2022-09-21 23:18:12
 Description: Configuration of Hailing 1TeV MLP3_3D_Direct Model
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 

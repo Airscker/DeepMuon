@@ -5,8 +5,8 @@ import argparse
 import sys
 
 # import AirFunc
-from models import *
-from dataset import *
+from DeepMuon.models import *
+from DeepMuon.dataset import *
 # from config import *
 # import AirLogger
 import importlib
@@ -46,7 +46,7 @@ class Config:
         self.config=self.__import_config(self,configpath=configpath)
         self.__check_config()
         self.__para_config()
-        # print(self.paras)
+        print(self.paras)
     def __check_config(self):
         paras_config=dir(self.config)
         error=[]
@@ -86,3 +86,8 @@ class Config:
                 importpath+=f'.{importdirs[i]}'
         return importlib.import_module(importpath)
 # config=Config(configpath='../config/Hailing/MLP3_3D.py')
+# env=globals()
+# keys=list(env.keys())
+# for i in range(len(keys)):
+#     print(f'{keys[i]}: {env[keys[i]]}')
+# print(__file__)

@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-08-25 22:02:01
 LastEditors: airscker
-LastEditTime: 2022-09-21 09:32:55
+LastEditTime: 2022-09-21 23:29:03
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -16,10 +16,10 @@ from tqdm import tqdm
 import click
 import numpy as np
 
-import AirFunc
-from models import *
-from dataset import *
-import AirLogger
+import DeepMuon.AirFunc as AirFunc
+from DeepMuon.models import MLP3_3D_Direc,MLP3
+from DeepMuon.dataset import HailingDataset_Direct,PandaxDataset
+import DeepMuon.AirLogger as AirLogger
 
 import captum
 from captum.attr import IntegratedGradients, Occlusion, LayerGradCam, LayerAttribution,NeuronConductance,LayerConductance,DeepLift
@@ -180,14 +180,14 @@ def model_optim():
     experiment.run(8008)
     experiment.stop()
     return 0
-start=time.time()
+# start=time.time()
 # MLP3Test()
-model_para(MLP3_3D_Direc(),datasize=[3,10,10,40,3])
+# model_para(MLP3_3D_Direc(),datasize=[3,10,10,40,3])
 # model_para(MLP3(),datasize=[3,1,17,17])
 # model_optim()
 # model=MLP3()
 # print(model._get_name())
-print(f'Total Time used: {time.time()-start}s')
+# print(f'Total Time used: {time.time()-start}s')
 # model_para(model=MLP3v2(),datasize=[3,1,17,17])
 # logger=AirLogger.LOGT()
 # logger.log(f'yes{1e4}')

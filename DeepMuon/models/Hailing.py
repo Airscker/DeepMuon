@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 19:35:04
 LastEditors: airscker
-LastEditTime: 2022-09-20 21:04:22
+LastEditTime: 2022-09-21 23:21:50
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -103,4 +103,3 @@ class HailingDirectNorm(nn.Module):
         return F.normalize(x)
 
 # data=MLP3_3D_Fusion()
-

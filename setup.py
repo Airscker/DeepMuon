@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-21 18:43:31
 LastEditors: airscker
-LastEditTime: 2022-09-21 19:11:07
+LastEditTime: 2022-09-21 23:30:29
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -15,7 +15,7 @@ import os
 here = pathlib.Path(__file__).parent.resolve()
 
 # Get the long description from the README file
-long_description = (here / "./DeepMuon/README.md").read_text(encoding="utf-8")
+long_description = (here / "./README.md").read_text(encoding="utf-8")
 
 version = {}
 with open(os.path.join("DeepMuon", "__version__.py")) as f:
@@ -35,8 +35,8 @@ setup(
         #   4 - Beta
         #   5 - Production/Stable
         "Development Status :: 3 - Alpha",
-        "Intended Audience :: Physicists",
-        "Topic :: Deep Learning :: Dark Matter",
+        "Intended Audience :: Developers",
+        "Topic :: Software Development :: Build Tools",
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
@@ -58,7 +58,7 @@ setup(
     #
     #   py_modules=["my_module"],
     #
-    packages=find_packages(where="DeepMuon"),  # Required
+    packages=find_packages(),  # Required
     # Specify which Python versions you support. In contrast to the
     # 'Programming Language' classifiers above, 'pip install' will check this
     # and refuse to install the project if the version does not match. See

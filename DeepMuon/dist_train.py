@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-09-21 10:13:38
+LastEditTime: 2022-09-21 22:43:55
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -12,9 +12,9 @@ import os
 from tqdm import tqdm
 import click
 
-from AirConfig import Config
-import AirFunc
-import AirLogger
+from DeepMuon.AirConfig import Config
+import DeepMuon.AirFunc as AirFunc
+import DeepMuon.AirLogger as AirLogger
 
 import torch
 from torch import nn

@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-09-21 10:07:39
+LastEditTime: 2022-09-21 22:59:51
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -12,9 +12,9 @@ import os
 from tqdm import tqdm
 import click
 
-from AirConfig import Config
-import AirFunc
-import AirLogger
+from DeepMuon.AirConfig import Config
+from DeepMuon.AirFunc import load_model,save_model,format_time
+from DeepMuon.AirLogger import LOGT
 
 import torch
 from torch import nn
@@ -56,7 +56,7 @@ def main(configs):
     load=configs['checkpoint_config']['load_from']
     inter=configs['checkpoint_config']['save_inter']
     gpu=configs['gpu_config']['gpuid']
-    logger=AirLogger.LOGT(log_dir=work_dir,logfile=log)
+    logger=LOGT(log_dir=work_dir,logfile=log)
     # Create work_dir
     try:
         os.makedirs(work_dir)
@@ -98,13 +98,13 @@ def main(configs):
     if resume=='' and load=='':
         pass
     elif resume!='':
-        epoch_c,model_c,optimizer_c,schedular_c,loss_fn_c=AirFunc.load_model(path=resume,device=device)
+        epoch_c,model_c,optimizer_c,schedular_c,loss_fn_c=load_model(path=resume,device=device)
         model.load_state_dict(model_c,False)
         model.to(device)
         epoch_now=epoch_c+1
         logger.log(f'Model Resumed from {resume}, Epoch now: {epoch_now}')
     elif load!='':
-        epoch_c,model_c,optimizer_c,schedular_c,loss_fn_c=AirFunc.load_model(path=load,device=device)
+        epoch_c,model_c,optimizer_c,schedular_c,loss_fn_c=load_model(path=load,device=device)
         model.load_state_dict(model_c,False)
         model.to(device)
         epoch_now=0
@@ -153,15 +153,15 @@ def main(configs):
             bestloss=loss
             # Double save to make sure secure, directly save total model is forbidden, otherwise load issues occur
             savepath=os.path.join(work_dir,'Best_Performance.pth')
-            AirFunc.save_model(epoch=t,model=model,optimizer=optimizer,loss_fn=loss_fn,schedular=schedular,path=savepath)
-            AirFunc.save_model(epoch=t,model=model,optimizer=optimizer,loss_fn=loss_fn,schedular=schedular,path=os.path.join(work_dir,f'{model_name}_Best_Performance.pth'))
+            save_model(epoch=t,model=model,optimizer=optimizer,loss_fn=loss_fn,schedular=schedular,path=savepath)
+            save_model(epoch=t,model=model,optimizer=optimizer,loss_fn=loss_fn,schedular=schedular,path=os.path.join(work_dir,f'{model_name}_Best_Performance.pth'))
             logger.log(f'Best Model Saved as {savepath}, Best Test Loss: {bestloss}, Current Epoch: {(t+1)}',show=False)
         if (t+1)%inter==0:
             # torch.save(model,os.path.join(work_dir,f'Epoch_{t+1}.pth'))
             savepath=os.path.join(work_dir,f'Epoch_{t+1}.pth')
-            AirFunc.save_model(epoch=t,model=model,optimizer=optimizer,loss_fn=loss_fn,schedular=schedular,path=savepath)
+            save_model(epoch=t,model=model,optimizer=optimizer,loss_fn=loss_fn,schedular=schedular,path=savepath)
             logger.log(f'CheckPoint at epoch {(t+1)} saved as {savepath}',show=False)
-        logger.log(f'LR: {LRn}, Epoch: [{t+1}][{epochs}], Test Loss: {loss}, Train Loss: {tloss}, Best Test Loss: {bestloss}, Time:{time.time()-start_time}s, ETA: {AirFunc.format_time((epochs-1-t)*(time.time()-start_time))}',show=False)
+        logger.log(f'LR: {LRn}, Epoch: [{t+1}][{epochs}], Test Loss: {loss}, Train Loss: {tloss}, Best Test Loss: {bestloss}, Time:{time.time()-start_time}s, ETA: {format_time((epochs-1-t)*(time.time()-start_time))}',show=False)
     return bestloss
 
 

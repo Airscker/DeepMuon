@@ -1,8 +1,8 @@
 '''
 Author: Airscker
 Date: 2022-08-26 21:23:01
-LastEditors: Airscker
-LastEditTime: 2022-08-27 20:55:41
+LastEditors: airscker
+LastEditTime: 2022-09-21 23:10:55
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -43,3 +43,4 @@ class LOGT(object):
         with open(self.logfile,'a+')as log:
             log.write(f'{message}\n')
         return self.logfile
+# print(__file__)
