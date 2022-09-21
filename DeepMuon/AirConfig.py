@@ -46,7 +46,7 @@ class Config:
         self.config=self.__import_config(self,configpath=configpath)
         self.__check_config()
         self.__para_config()
-        print(self.paras)
+        # print(self.paras)
     def __check_config(self):
         paras_config=dir(self.config)
         error=[]
