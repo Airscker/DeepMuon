@@ -57,9 +57,6 @@ class Config:
         assert len(error)==0,f'These basic configurations are not specified in {self.configpath}:\n{error}'
     def __para_config(self):
         info=globals()
-        # keys=list(info.keys())
-        # for i in range(len(keys)):
-        #     print(f'{keys[i]}: {info[keys[i]]}')
         self.paras['model']={'backbone':info[self.config.model['backbone']]}
         self.paras['train_dataset']={'backbone':info[self.config.train_dataset['backbone']],'datapath':self.config.train_dataset['datapath']}
         self.paras['test_dataset']={'backbone':info[self.config.test_dataset['backbone']],'datapath':self.config.test_dataset['datapath']}
@@ -75,17 +72,15 @@ class Config:
     
     @staticmethod
     def __import_config(self,configpath):
-        assert '/' in configpath,f'Do not use standard windows path"\\", but {configpath} given'
-        assert configpath.endswith('.py'),f'Config file must be a python file but {configpath} given'
-        assert 'config' in configpath,f'Config file must be stored in folder "config", but {configpath} given'
+        assert '/' in configpath,f'Do not use standard windows path"\\", but {configpath} is given'
+        assert configpath.endswith('.py'),f'Config file must be a python file but {configpath} is given'
+        total_path=os.path.join(os.getcwd(),configpath.replace('./',''))
+        assert os.path.exists(total_path),f'Configuration file {total_path} does not exist. Please check the path again'
         configpath=configpath.replace('.py','')
-        importdirs=configpath.split('config/')[-1].split('/')
-        importpath='config'
-        for i in range(len(importdirs)):
-            if importdirs!='':
-                importpath+=f'.{importdirs[i]}'
-        return importlib.import_module(importpath)
-# config=Config(configpath='../config/Hailing/MLP3_3D.py')
+        importdirs=configpath.split('/')                
+        sys.path.insert(0,configpath.replace(importdirs[-1],''))
+        return importlib.import_module(importdirs[-1])
+# config=Config(configpath='./DeepMuon/config/Hailing/MLP3_3D.py')
 # env=globals()
 # keys=list(env.keys())
 # for i in range(len(keys)):
