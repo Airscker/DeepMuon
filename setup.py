@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-21 18:43:31
 LastEditors: airscker
-LastEditTime: 2022-09-21 23:51:48
+LastEditTime: 2022-09-23 18:29:02
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -76,7 +76,7 @@ setup(
                     'pandas',
                     'numba',
                     'ptflops',
-                    'torchsummary',
+                    'torchinfo',
                     'captum',
                     'nni'],
     # Similar to `install_requires` above, these must be valid existing

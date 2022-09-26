@@ -2,11 +2,12 @@
 Author: Airscker
 Date: 2022-08-25 22:02:01
 LastEditors: airscker
-LastEditTime: 2022-09-21 23:29:03
+LastEditTime: 2022-09-26 22:31:31
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
 '''
+import shutil
 import time
 import os
 from typing import Any, List
@@ -17,13 +18,15 @@ import click
 import numpy as np
 
 import DeepMuon.AirFunc as AirFunc
-from DeepMuon.models import MLP3_3D_Direc,MLP3
+from DeepMuon.models import MLP3_3D_Direc,MLP3,UNETR
 from DeepMuon.dataset import HailingDataset_Direct,PandaxDataset
 import DeepMuon.AirLogger as AirLogger
 
 import captum
 from captum.attr import IntegratedGradients, Occlusion, LayerGradCam, LayerAttribution,NeuronConductance,LayerConductance,DeepLift
 from captum.attr import visualization as viz
+from monai.networks.blocks import *
+from monai.networks.nets import *
 
 from nni.experiment import Experiment
 
@@ -34,7 +37,8 @@ from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
 import torchvision.models as models
 from ptflops import get_model_complexity_info
-from torchsummary import summary
+from torchinfo import summary
+
 torch.set_default_tensor_type(torch.FloatTensor)
 
 
@@ -64,15 +68,15 @@ def MLP3Test(test_data='../Pandax-4T-PosRec/data/IMG2D_XY_test.pkl',batch_size=1
 def model_para(model:nn.Module,datasize:List):
     device=torch.device('cuda:0')
     model=model.to(device)
+    print(f'Model Architecture: {model}')
     data=torch.randn(datasize)
     data=data.to(device)
     out=model(data)
-    # print(data,'\n',out)
-    print(f'Output size of the model: {out.shape}(First dimension is batch_size)')
+    print(f'Input Data: {data}\nOutput Data: {out}')
+    print(f'Output size of the model: {out[0].shape}(First dimension is batch_size)')
     flops, params = get_model_complexity_info(model, tuple(datasize[1:]), as_strings=True,
                                            print_per_layer_stat=False, verbose=True)
-    print(summary(model,input_size=tuple(datasize[1:]),batch_size=1))
-    # flops,params=profile(model=model,inputs=data)
+    summary(model,input_size=tuple(datasize[:]),depth=3,verbose=1)
     print(f"Overall Model GFLOPs: {flops}, Params: {params}")
     # return flops,params
 
@@ -162,6 +166,16 @@ def single_test(device,dataset,model,loss_fn):
     loss=np.array(loss)
     return np.mean(loss),loss
 
+def del_pycache(path='./'):
+    cache=[]
+    for root,dirs,files in os.walk(path):
+        # print(root,dirs,files)
+        if root.endswith('__pycache__'):
+            shutil.rmtree(root)
+            cache.append(root)
+            print(f'{root} was deleted')
+    return cache
+
 def model_optim():
     search_space = {
     'f1': {'_type': 'choice', '_value': [128, 256, 512, 1024]},
@@ -182,12 +196,18 @@ def model_optim():
     return 0
 # start=time.time()
 # MLP3Test()
+# model_para(UNETR(in_channels=3, out_channels=1,img_size=(16,16,16)),datasize=[1,3,16,16,16])
+# model_para(UNETR(in_channels=3, out_channels=3,img_size=(10,10,40)),datasize=[1,3,10,10,40])
+# model_para(SABlock(hidden_size=30,num_heads=3),datasize=[1,1,30])
+# model_para(ViT(3,[10,10,40],[2,2,10]),datasize=[1,3,10,10,40])
 # model_para(MLP3_3D_Direc(),datasize=[3,10,10,40,3])
 # model_para(MLP3(),datasize=[3,1,17,17])
 # model_optim()
 # model=MLP3()
 # print(model._get_name())
 # print(f'Total Time used: {time.time()-start}s')
+del_pycache()
+
 # model_para(model=MLP3v2(),datasize=[3,1,17,17])
 # logger=AirLogger.LOGT()
 # logger.log(f'yes{1e4}')

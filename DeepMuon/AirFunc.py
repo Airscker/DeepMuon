@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2022-09-21 23:10:50
+LastEditTime: 2022-09-23 18:28:27
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -25,7 +25,6 @@ from torch.utils.data import Dataset
 from torchvision.transforms import ToTensor
 import torchvision.models as models
 from torch.utils.data import DataLoader
-from torchsummary import summary
 # from monai.networks.blocks import 
 from torch.utils.tensorboard import SummaryWriter
 torch.set_default_tensor_type(torch.DoubleTensor)

@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-09-21 22:59:51
+LastEditTime: 2022-09-23 18:29:05
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -21,7 +21,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 import torchvision.models as models
 from ptflops import get_model_complexity_info
-from torchsummary import summary
+from torchinfo import summary
 from torch.utils.tensorboard import SummaryWriter
 torch.set_default_tensor_type(torch.DoubleTensor)
 torch.backends.cudnn.benchmark = True
