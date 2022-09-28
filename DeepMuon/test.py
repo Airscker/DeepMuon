@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-08-25 22:02:01
 LastEditors: airscker
-LastEditTime: 2022-09-26 22:31:31
+LastEditTime: 2022-09-28 13:35:19
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -38,6 +38,8 @@ from torch.utils.data import DataLoader
 import torchvision.models as models
 from ptflops import get_model_complexity_info
 from torchinfo import summary
+
+from DeepMuon.models.ViT import Vit_MLP
 
 torch.set_default_tensor_type(torch.FloatTensor)
 
@@ -128,7 +130,6 @@ def Integ_Grad(model:nn.Module,device:torch.device,index=0):
 
 
 
-
 def test(device,dataloader, model, loss_fn):
     num_batches = len(dataloader)
     model.eval()
@@ -197,9 +198,11 @@ def model_optim():
 # start=time.time()
 # MLP3Test()
 # model_para(UNETR(in_channels=3, out_channels=1,img_size=(16,16,16)),datasize=[1,3,16,16,16])
-# model_para(UNETR(in_channels=3, out_channels=3,img_size=(10,10,40)),datasize=[1,3,10,10,40])
+# model_para(UNETR(in_channels=3, out_channels=1,img_size=(10,10,40)),datasize=[1,3,10,10,40])
 # model_para(SABlock(hidden_size=30,num_heads=3),datasize=[1,1,30])
-# model_para(ViT(3,[10,10,40],[2,2,10]),datasize=[1,3,10,10,40])
+# model_para(ViT(3,[10,10,40],[5,5,10],hidden_size=32,num_layers=3,num_heads=4,mlp_dim=32),datasize=[1,3,10,10,40])
+# model_para(MLPBlock(3,32,act='LeakyRELU'))
+# model_para(Vit_MLP(),datasize=[2,3,10,10,40])
 # model_para(MLP3_3D_Direc(),datasize=[3,10,10,40,3])
 # model_para(MLP3(),datasize=[3,1,17,17])
 # model_optim()

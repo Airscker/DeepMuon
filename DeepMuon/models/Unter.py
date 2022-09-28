@@ -27,10 +27,10 @@ class UNETR(nn.Module):
 
     def __init__(
         self,
-        in_channels: int,
-        out_channels: int,
-        img_size: Tuple[int, int, int],
-        feature_size: int = 1,
+        in_channels: int=3,
+        out_channels: int=1,
+        img_size: Tuple[int, int, int]=(10,10,40),
+        feature_size: int = 3,
         hidden_size: int = 10,
         mlp_dim: int = 10,
         num_heads: int = 10,
@@ -77,7 +77,7 @@ class UNETR(nn.Module):
             raise KeyError(f"Position embedding layer of type {pos_embed} is not supported.")
 
         self.num_layers = 12
-        self.patch_size = (2,2,4)
+        self.patch_size = (2,2,5)
         # self.patch_size = (16,16,16)
         self.feat_size = (
             img_size[0] // self.patch_size[0],

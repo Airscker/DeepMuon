@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-09-21 22:43:55
+LastEditTime: 2022-09-28 13:30:47
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -123,7 +123,7 @@ def main(configs):
         writer=SummaryWriter(os.path.join(work_dir,'LOG'))
         writer.add_graph(model,torch.rand(configs['hyperpara']['inputshape']).to(device))
     # Model Parallel
-    model=torch.nn.parallel.DistributedDataParallel(model,device_ids=[local_rank],output_device=local_rank)
+    model=torch.nn.parallel.DistributedDataParallel(model,device_ids=[local_rank],output_device=local_rank,find_unused_parameters=True)
     # loss/optimizer/lr
     loss_fn=nn.MSELoss()
     optimizer = torch.optim.AdamW(model.parameters(),lr=lr,weight_decay=0.1)
