@@ -1,1 +1,1 @@
-CUDA_VISIBLE_DEVICES=0,1,2,3 torchrun --nproc_per_node=4 --master_port 22918 $(dirname "$0")/dist_train.py --config /home/dachuang2022/Yufeng/DeepMuon/config/Hailing/MLP3_3D.py
+CUDA_VISIBLE_DEVICES=0,1,2,3 torchrun --nproc_per_node=4 --master_port 22918 $(dirname "$0")/dist_train.py --config /home/dachuang2022/Yufeng/DeepMuon/config/Hailing/Vit.py
