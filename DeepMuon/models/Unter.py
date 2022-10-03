@@ -31,9 +31,9 @@ class UNETR(nn.Module):
         out_channels: int=1,
         img_size: Tuple[int, int, int]=(10,10,40),
         feature_size: int = 3,
-        hidden_size: int = 10,
-        mlp_dim: int = 10,
-        num_heads: int = 10,
+        hidden_size: int = 16,
+        mlp_dim: int = 16,
+        num_heads: int = 16,
         pos_embed: str = "perceptron",
         norm_name: Union[Tuple, str] = "instance",
         conv_block: bool = False,
@@ -112,9 +112,9 @@ class UNETR(nn.Module):
             in_channels=hidden_size,
             out_channels=feature_size * 2,
             num_layer=2,
-            kernel_size=3,
+            kernel_size=2,
             stride=1,
-            upsample_kernel_size=2,
+            upsample_kernel_size=5,
             norm_name=norm_name,
             conv_block=conv_block,
             res_block=res_block,
@@ -185,33 +185,6 @@ class UNETR(nn.Module):
         x = x.permute(0, 4, 1, 2, 3).contiguous()
         return x
 
-    def load_from(self, weights):
-        with torch.no_grad():
-            res_weight = weights
-            # copy weights from patch embedding
-            for i in weights["state_dict"]:
-                print(i)
-            self.vit.patch_embedding.position_embeddings.copy_(
-                weights["state_dict"]["module.transformer.patch_embedding.position_embeddings_3d"]
-            )
-            self.vit.patch_embedding.cls_token.copy_(
-                weights["state_dict"]["module.transformer.patch_embedding.cls_token"]
-            )
-            self.vit.patch_embedding.patch_embeddings[1].weight.copy_(
-                weights["state_dict"]["module.transformer.patch_embedding.patch_embeddings.1.weight"]
-            )
-            self.vit.patch_embedding.patch_embeddings[1].bias.copy_(
-                weights["state_dict"]["module.transformer.patch_embedding.patch_embeddings.1.bias"]
-            )
-
-            # copy weights from  encoding blocks (default: num of blocks: 12)
-            for bname, block in self.vit.blocks.named_children():
-                print(block)
-                block.loadFrom(weights, n_block=bname)
-            # last norm layer of transformer
-            self.vit.norm.weight.copy_(weights["state_dict"]["module.transformer.norm.weight"])
-            self.vit.norm.bias.copy_(weights["state_dict"]["module.transformer.norm.bias"])
-
     def forward(self, x_in):
         x, hidden_states_out = self.vit(x_in)
         enc1 = self.encoder1(x_in)
@@ -223,6 +196,7 @@ class UNETR(nn.Module):
         enc4 = self.encoder4(self.proj_feat(x4, self.hidden_size, self.feat_size))
         dec4 = self.proj_feat(x, self.hidden_size, self.feat_size)
         print(x_in.size(),x.size(),x2.size(),x3.size(),x4.size())
+        print(enc1.shape,enc2.shape,enc3.shape,enc4.shape)
         print(dec4.size(),enc4.size())
         dec3 = self.decoder5(dec4, enc4)
         print(dec3.size(),enc3.size())

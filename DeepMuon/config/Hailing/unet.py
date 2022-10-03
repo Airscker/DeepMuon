@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 22:24:05
 LastEditors: airscker
-LastEditTime: 2022-10-04 02:33:09
+LastEditTime: 2022-10-04 02:32:54
 Description: Configuration of Hailing 1TeV MLP3_3D_Direct Model
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -11,7 +11,7 @@ Copyright (c) 2022 by airscker, All Rights Reserved.
 '''
 ## Specify which model to be used, all models are stored in 'models' 
 '''
-model=dict(backbone='Vit_MLP')
+model=dict(backbone='UNET_MLP')
 '''
 ## Specify the dataset to load the data, all dataset are stored in 'dataset'
 '''
@@ -20,7 +20,7 @@ test_dataset=dict(backbone='HailingDataset_Direct',datapath='/home/dachuang2022/
 '''
 ## Specify the work_dir to save the training log and checkpoints
 '''
-work_config=dict(work_dir='/home/dachuang2022/Yufeng/Hailing-Muon/work_dir/1TeV/Vit_MLP',logfile='log.log')
+work_config=dict(work_dir='/home/dachuang2022/Yufeng/Hailing-Muon/work_dir/1TeV/UNET_MLP_1',logfile='log.log')
 '''
 ## Specify the checkpoint configuration
 '''

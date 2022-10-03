@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-28 12:20:22
 LastEditors: airscker
-LastEditTime: 2022-09-28 13:17:04
+LastEditTime: 2022-10-04 00:45:37
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -84,15 +84,17 @@ class ViT(nn.Module):
 class Vit_MLP(nn.Module):
     def __init__(self):
         super().__init__()
-        self.vit=ViT(3,[10,10,40],[5,5,10],hidden_size=32,num_layers=3,num_heads=4,mlp_dim=32)
+        self.vit=ViT(3,[10,10,40],[10,10,10],hidden_size=32,num_layers=3,num_heads=16,mlp_dim=32)
         self.flatten = nn.Flatten()
         self.mlp = nn.Sequential(
-            nn.Linear(16*32, 512),
+            nn.Linear(4*32, 512),
             nn.BatchNorm1d(512),
             nn.LeakyReLU(),
+            nn.Dropout(0.2),
             nn.Linear(512, 128),
             nn.BatchNorm1d(128),
             nn.LeakyReLU(),
+            nn.Dropout(0.2),
             nn.Linear(128, 3)
         )
     def forward(self,x):
@@ -100,4 +102,40 @@ class Vit_MLP(nn.Module):
         x=self.flatten(x)
         x=self.mlp(x)
         return x
-        
+
+class Vit_MLP2(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.vit=ViT(3,[10,10,40],[10,10,10],hidden_size=32,num_layers=3,num_heads=4,mlp_dim=32)
+        self.flatten = nn.Flatten()
+        self.mlp = nn.Sequential(
+            nn.Linear(16*32, 128),
+            nn.BatchNorm1d(128),
+            nn.LeakyReLU(),
+            # nn.Dropout(0.2),
+            nn.Linear(128, 3)
+        )
+    def forward(self,x):
+        x=self.vit(x)
+        x=self.flatten(x)
+        x=self.mlp(x)
+        return x
+
+class Vit_MLP3(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.vit=ViT(3,[10,10,40],[5,5,10],hidden_size=16,num_layers=12,num_heads=4,mlp_dim=16)
+        self.flatten = nn.Flatten()
+        self.mlp = nn.Sequential(
+            nn.Linear(16*16, 64),
+            # nn.BatchNorm1d(64),
+            nn.LayerNorm(64),
+            nn.LeakyReLU(),
+            # nn.Dropout(0.2),
+            nn.Linear(64, 3)
+        )
+    def forward(self,x):
+        x=self.vit(x)
+        x=self.flatten(x)
+        x=self.mlp(x)
+        return x

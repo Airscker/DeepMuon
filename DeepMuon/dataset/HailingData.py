@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-17 18:11:14
 LastEditors: airscker
-LastEditTime: 2022-09-21 23:10:28
+LastEditTime: 2022-10-04 01:18:37
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -101,8 +101,38 @@ class HailingDataset_Direct(Dataset):
     def __len__(self):
         return len(self.origin_data)
     def __getitem__(self, index):
-        image=torch.from_numpy(self.origin_data[index][0])
-        label=torch.from_numpy(self.origin_data[index][1][3:])
+        image=torch.from_numpy(np.array(self.origin_data[index][0]))
+        image=torch.permute(image,(3,0,1,2))
+        image[1:,:,:,:]=0.0001*image[1:,:,:,:]
+        label=100*torch.from_numpy(self.origin_data[index][1][3:])
+        return image,label
+    def __Init(self):
+        with open(self.datapath,'rb')as f:
+            self.origin_data=pkl.load(f)
+        f.close()
+
+class HailingDataset_Direct2(Dataset):
+    def __init__(self,datapath='./Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl'):
+        '''
+        ## Dataset Built for Loading the Preprocessed Hailing 1TeV/10TeV Data
+        - Args: 
+            - datapath: The datapth of the preprocessed Hailing data, default to be './Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl'
+        - Output:
+            - Pattern Image, shape: [10,10,40/50,3], dtype: nparray -> torch.tensor
+            - Position-Direction, shape: [3,], dtype: nparray -> torch.tensor, info: [px,py,pz]
+        '''
+        self.datapath=datapath
+        self.origin_data=None
+        self.pattern_imgs=[]
+        self.pos_direction=[]
+        self.__Init()
+    def __len__(self):
+        return len(self.origin_data)
+    def __getitem__(self, index):
+        image=torch.from_numpy(np.array(self.origin_data[index][0]))
+        image=torch.permute(image,(3,0,1,2))
+        image[1:,:,:,:]=0.0001*image[1:,:,:,:]
+        label=100*torch.from_numpy(self.origin_data[index][1][3:])
         return image,label
     def __Init(self):
         with open(self.datapath,'rb')as f:

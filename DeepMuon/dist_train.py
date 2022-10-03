@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-09-28 13:30:47
+LastEditTime: 2022-10-03 22:01:38
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -71,7 +71,7 @@ def main(configs):
             pass
         log=os.path.join(work_dir,log)
         # show hyperparameters
-        logger.log(f'========= Current Time: {time.ctime()} =========')
+        logger.log(f'========= Current Time: {time.ctime()} Current PID: {os.getpid()} =========')
         # logger.log(f'Batch Size: {batch_size}, Epochs: {epochs}, LR patience Step: {patience}, Initial Learn Rate: {lr}, Resume From: {resume} Load from: {load}')
         # logger.log(f'Command: --batch_size={batch_size} --epochs={epochs} --resume="{resume}" --load={load} --patience={patience} --lr={lr} --work_dir="{work_dir}" --inter="{inter}"')
         keys=list(configs.keys())
@@ -228,5 +228,5 @@ def run(config):
         print('Single GPU Training is not supported!')
 
 if __name__=='__main__':
-    print('\n---Starting Neural Network...---')
+    print(f'\n---Starting Neural Network...PID:{os.getpid()}---')
     run()
