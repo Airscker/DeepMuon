@@ -2,13 +2,14 @@
 Author: airscker
 Date: 2022-09-28 12:20:22
 LastEditors: airscker
-LastEditTime: 2022-10-04 00:45:37
+LastEditTime: 2022-10-05 11:21:35
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
 '''
 import torch
 from torch import nn
+import torch.nn.functional as F
 from monai.networks.blocks.patchembedding import PatchEmbeddingBlock
 from monai.networks.blocks.transformerblock import TransformerBlock
 from typing import Sequence, Union
@@ -95,7 +96,8 @@ class Vit_MLP(nn.Module):
             nn.BatchNorm1d(128),
             nn.LeakyReLU(),
             nn.Dropout(0.2),
-            nn.Linear(128, 3)
+            nn.Linear(128, 3),
+            HailingDirectNorm()
         )
     def forward(self,x):
         x=self.vit(x)
@@ -113,7 +115,8 @@ class Vit_MLP2(nn.Module):
             nn.BatchNorm1d(128),
             nn.LeakyReLU(),
             # nn.Dropout(0.2),
-            nn.Linear(128, 3)
+            nn.Linear(128, 3),
+            HailingDirectNorm()
         )
     def forward(self,x):
         x=self.vit(x)
@@ -132,10 +135,24 @@ class Vit_MLP3(nn.Module):
             nn.LayerNorm(64),
             nn.LeakyReLU(),
             # nn.Dropout(0.2),
-            nn.Linear(64, 3)
+            nn.Linear(64, 3),
+            HailingDirectNorm()
         )
     def forward(self,x):
         x=self.vit(x)
         x=self.flatten(x)
         x=self.mlp(x)
         return x
+
+class HailingDirectNorm(nn.Module):
+    def __init__(self) -> None:
+        '''
+        ## Customized Layer, Normalize the Direction Vector of Hailing Data Derived from _Direct Models
+        - Input: [N,3], info: [px,py,pz]
+        - Output: [N,3], info: [px,py,pz](Normalized)
+
+        N is the batch size, and the output direction vector is normalized to 1
+        '''
+        super().__init__()
+    def forward(self,x):
+        return F.normalize(x)

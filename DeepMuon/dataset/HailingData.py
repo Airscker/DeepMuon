@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-17 18:11:14
 LastEditors: airscker
-LastEditTime: 2022-10-04 01:18:37
+LastEditTime: 2022-10-05 11:27:13
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -132,7 +132,7 @@ class HailingDataset_Direct2(Dataset):
         image=torch.from_numpy(np.array(self.origin_data[index][0]))
         image=torch.permute(image,(3,0,1,2))
         image[1:,:,:,:]=0.0001*image[1:,:,:,:]
-        label=100*torch.from_numpy(self.origin_data[index][1][3:])
+        label=torch.from_numpy(self.origin_data[index][1][3:])
         return image,label
     def __Init(self):
         with open(self.datapath,'rb')as f:

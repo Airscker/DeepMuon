@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-08-25 22:02:01
 LastEditors: airscker
-LastEditTime: 2022-10-04 03:39:32
+LastEditTime: 2022-10-05 02:37:46
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -17,10 +17,11 @@ from tqdm import tqdm
 import click
 import numpy as np
 
-import DeepMuon.AirFunc as AirFunc
-from DeepMuon.models import MLP3_3D_Direc,MLP3,UNETR,Vit_MLP,UNET_MLP
-from DeepMuon.dataset import HailingDataset_Direct,PandaxDataset
-import DeepMuon.AirLogger as AirLogger
+from DeepMuon.tools import *
+import DeepMuon.tools.AirFunc as AirFunc
+from DeepMuon.models import *
+from DeepMuon.dataset import *
+import DeepMuon.tools.AirLogger as AirLogger
 
 import captum
 from captum.attr import IntegratedGradients, Occlusion, LayerGradCam, LayerAttribution,NeuronConductance,LayerConductance,DeepLift
@@ -38,6 +39,8 @@ from torch.utils.data import DataLoader
 import torchvision.models as models
 from ptflops import get_model_complexity_info
 from torchinfo import summary
+
+from DeepMuon.models.unet import UNET_MLP_D
 
 
 torch.set_default_tensor_type(torch.FloatTensor)
@@ -77,9 +80,10 @@ def model_para(model:nn.Module,datasize:List,depth=3):
     print(f'Output size of the model: {out[0].shape}(First dimension is batch_size)')
     flops, params = get_model_complexity_info(model, tuple(datasize[1:]), as_strings=True,
                                            print_per_layer_stat=False, verbose=True)
-    summary(model,input_size=tuple(datasize[:]),depth=depth,verbose=1)
+    sumres=summary(model,input_size=tuple(datasize[:]),depth=depth,verbose=1)
     print(f"Overall Model GFLOPs: {flops}, Params: {params}")
-    # return flops,params
+    print(sumres)
+    return flops,params,sumres
 
 
 def Integ_Grad(model:nn.Module,device:torch.device,index=0):
@@ -166,15 +170,6 @@ def single_test(device,dataset,model,loss_fn):
     loss=np.array(loss)
     return np.mean(loss),loss
 
-def del_pycache(path='./'):
-    cache=[]
-    for root,dirs,files in os.walk(path):
-        # print(root,dirs,files)
-        if root.endswith('__pycache__'):
-            shutil.rmtree(root)
-            cache.append(root)
-            print(f'{root} was deleted')
-    return cache
 
 def model_optim():
     search_space = {
@@ -199,11 +194,11 @@ def model_optim():
 # model_para(UNETR(in_channels=3, out_channels=1,img_size=(16,16,16)),datasize=[1,3,16,16,16])
 # model_para(UNETR(in_channels=3, out_channels=1,img_size=(10,10,40)),datasize=[1,3,10,10,40])
 # model_para(SABlock(hidden_size=30,num_heads=3),datasize=[1,1,30])
-# model_para(ViT(1,[10,10,40],[10,10,10],hidden_size=32,num_layers=3,num_heads=16,mlp_dim=32),datasize=[1,1,10,10,40])
-model_para(UNET_MLP(),datasize=[2,3,10,10,40],depth=5)
+# model_para(ViT(1,[10,10,40],[10,10,20],hidden_size=32,num_layers=3,num_heads=16,mlp_dim=32),datasize=[1,1,10,10,40])
+# model_para(UNET_MLP_D(),datasize=[2,3,10,10,40],depth=5)
 # model_para(MLPBlock(3,32,act='LeakyRELU'))
 # model_para(Vit_MLP(),datasize=[2,3,10,10,40])
-# model_para(unet.UNet(spatial_dims=3,in_channels=3,out_channels=1,channels=(6,12,24),strides=(1,1,1),num_res_units=3),datasize=[2,3,10,10,40])
+# model_para(unet.UNet(spatial_dims=3,in_channels=3,out_channels=1,channels=(6,12,24),strides=(1,1,1),num_res_units=3),datasize=[2,3,10,10,40],depth=5)
 # model_para(MLP3_3D_Direc(),datasize=[3,10,10,40,3])
 # model_para(MLP3(),datasize=[3,1,17,17])
 # model_optim()

@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-10-03 22:01:38
+LastEditTime: 2022-10-05 14:04:29
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -12,9 +12,9 @@ import os
 from tqdm import tqdm
 import click
 
-from DeepMuon.AirConfig import Config
-import DeepMuon.AirFunc as AirFunc
-import DeepMuon.AirLogger as AirLogger
+from DeepMuon.tools.AirConfig import Config
+import DeepMuon.tools.AirFunc as AirFunc
+import DeepMuon.tools.AirLogger as AirLogger
 
 import torch
 from torch import nn
@@ -125,7 +125,8 @@ def main(configs):
     # Model Parallel
     model=torch.nn.parallel.DistributedDataParallel(model,device_ids=[local_rank],output_device=local_rank,find_unused_parameters=True)
     # loss/optimizer/lr
-    loss_fn=nn.MSELoss()
+    # loss_fn=nn.MSELoss()
+    loss_fn=configs['loss_fn']['backbone']()
     optimizer = torch.optim.AdamW(model.parameters(),lr=lr,weight_decay=0.1)
     # schedular=torch.optim.lr_scheduler.StepLR(optimizer,lr_step,gamma=0.5)
     schedular=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=patience)
@@ -182,9 +183,6 @@ def main(configs):
                 logger.log(f'CheckPoint at epoch {(t+1)} saved as {savepath}',show=False)
             logger.log(f'LR: {LRn}, Epoch: [{t+1}][{epochs}], Test Loss: {res[1].item()}, Train Loss: {res[0].item()}, Best Test Loss: {bestloss}, Time:{time.time()-start_time}s, ETA: {AirFunc.format_time((epochs-1-t)*(time.time()-start_time))}',show=False)
     return bestloss
-
-
-
 
 
 def train(device,dataloader, model, loss_fn, optimizer,schedular):

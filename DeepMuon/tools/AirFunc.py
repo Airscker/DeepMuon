@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2022-09-23 18:28:27
+LastEditTime: 2022-10-05 15:29:32
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -15,18 +15,19 @@ from tqdm import tqdm
 import click
 import numpy as np
 import seaborn as sns
+import shutil
 
 
 import torch
 from torch import nn
-from torch import Tensor
-import torch.nn.functional as F
-from torch.utils.data import Dataset
-from torchvision.transforms import ToTensor
-import torchvision.models as models
-from torch.utils.data import DataLoader
+# from torch import Tensor
+# import torch.nn.functional as F
+# from torch.utils.data import Dataset
+# from torchvision.transforms import ToTensor
+# import torchvision.models as models
+# from torch.utils.data import DataLoader
 # from monai.networks.blocks import 
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 torch.set_default_tensor_type(torch.DoubleTensor)
 
 class PandaxTensorData():
@@ -71,6 +72,29 @@ def hist_plot(data,inter=20,xlabel='The number of events'):
         plt.text(bins[i], n[i]*1.02, round(n[i],6), fontsize=12, horizontalalignment="left")
     plt.show()
     return 0
+
+def plot_hist_2nd(data,title='x',bins=15,sigma=3,save='',show=False):
+    plt.figure(figsize=(20,8))
+    plt.title(f'Distribution of {title} Total Number: {len(data)}\
+        \nMIN/MAX: {np.min(data)}/{np.max(data)} MEAN/STD: {np.mean(data)}/{np.std(data)}\
+        \n{sigma}Sigma: {np.mean(data)+sigma*np.std(data)} {np.mean(data)-sigma*np.std(data)}')
+    # n,bins,patchs=plt.hist(data,bins=list(np.arange(np.min(data)-0.01,np.max(data)+0.01,0.01)),rwidth=0.9)
+    n,bins,patchs=plt.hist(data,bins=bins,rwidth=0.9)
+    for i in range(len(n)):
+        plt.text(bins[i], n[i]*1.02, round(n[i],6), fontsize=12, horizontalalignment="left")
+    sigma_rangex=np.array((np.mean(data)-sigma*np.std(data),np.mean(data)+sigma*np.std(data)))
+    axis=plt.axis()
+    plt.text(x=np.mean(sigma_rangex),y=axis[-1]/1.2,s=f'+/- {sigma} Sigma Range',ha='center')
+    plt.text(x=np.mean([np.min(data),sigma_rangex[0]]),y=axis[-1]/2,s=f'Sample Number: {np.count_nonzero(data<sigma_rangex[0])}',ha='center')
+    plt.text(x=np.mean([sigma_rangex[1],np.max(data)]),y=axis[-1]/2,s=f'Sample Number: {np.count_nonzero(data>sigma_rangex[1])}',ha='center')
+    plt.fill_betweenx(y=axis[-2:],x1=max(np.min(data),sigma_rangex[0]),x2=min(np.max(data),sigma_rangex[1]),alpha=0.2)
+    plt.fill_betweenx(y=np.array(axis[-2:])/2,x1=np.min(data),x2=sigma_rangex[0],alpha=0.2)
+    plt.fill_betweenx(y=np.array(axis[-2:])/2,x1=sigma_rangex[1],x2=np.max(data),alpha=0.2)
+    plt.axis(axis)
+    if save!='':
+        plt.savefig(save)
+    if show==True:
+        plt.show()
 
 def format_time(second):
     '''Get formatted time: H:M:S'''
@@ -117,5 +141,21 @@ def load_model(path,device):
     epoch = checkpoint['epoch']
     loss_fn_dic=checkpoint['loss_fn']
     return epoch,model_dic,optimizer_dic,schedular_dic,loss_fn_dic
+def del_pycache(path='./'):
+    """Delete all the python cache files in a directory
 
+    Args:
+        path (str, optional): the root path of workspace. Defaults to './'.
+
+    Returns:
+        cache: the list of all deleted cache folders' path
+    """
+    cache=[]
+    for root,dirs,files in os.walk(path):
+        # print(root,dirs,files)
+        if root.endswith('__pycache__'):
+            shutil.rmtree(root)
+            cache.append(root)
+            print(f'{root} was deleted')
+    return cache
 # print(__file__)

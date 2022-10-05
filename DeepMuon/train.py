@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-09-28 12:53:14
+LastEditTime: 2022-10-05 14:04:37
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -12,9 +12,9 @@ import os
 from tqdm import tqdm
 import click
 
-from DeepMuon.AirConfig import Config
-from DeepMuon.AirFunc import load_model,save_model,format_time
-from DeepMuon.AirLogger import LOGT
+from DeepMuon.tools.AirConfig import Config
+from DeepMuon.tools.AirFunc import load_model,save_model,format_time
+from DeepMuon.tools.AirLogger import LOGT
 
 import torch
 from torch import nn
@@ -112,7 +112,8 @@ def main(configs):
     epochs+=epoch_now
     model_name=model._get_name()
     # loss/optimizer/lr
-    loss_fn=nn.MSELoss()
+    # loss_fn=nn.MSELoss()
+    loss_fn=configs['loss_fn']['backbone']()
     # loss_fn=MSALoss()
     # loss_fn=nn.L1Loss()
 

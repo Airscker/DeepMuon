@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-21 18:43:31
 LastEditors: airscker
-LastEditTime: 2022-09-23 18:29:02
+LastEditTime: 2022-10-05 16:23:32
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -105,7 +105,9 @@ setup(
     # executes the function `main` from this package when invoked:
     # entry_points={  # Optional
     #     "console_scripts": [
-    #         "DeepMuon=sample:main",
+    #         "Dmuon_dist_train=DeepMuon.dist_train:run",
+    #         "Dmuon_train=DeepMuon.train:run",
+    #         "Dmuon_infer=DeepMuon.test.inference:run",
     #     ],
     # },
     # List additional URLs that are relevant to your project as a dict.
