@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-28 12:20:22
 LastEditors: airscker
-LastEditTime: 2022-10-05 11:21:35
+LastEditTime: 2022-10-06 19:42:27
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -85,10 +85,10 @@ class ViT(nn.Module):
 class Vit_MLP(nn.Module):
     def __init__(self):
         super().__init__()
-        self.vit=ViT(3,[10,10,40],[10,10,10],hidden_size=32,num_layers=3,num_heads=16,mlp_dim=32)
+        self.vit=ViT(3,[10,10,40],[10,10,20],hidden_size=16,num_layers=3,num_heads=16,mlp_dim=32)
         self.flatten = nn.Flatten()
         self.mlp = nn.Sequential(
-            nn.Linear(4*32, 512),
+            nn.Linear(2*16, 512),
             nn.BatchNorm1d(512),
             nn.LeakyReLU(),
             nn.Dropout(0.2),

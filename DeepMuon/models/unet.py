@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-04 02:10:18
 LastEditors: airscker
-LastEditTime: 2022-10-05 11:21:11
+LastEditTime: 2022-10-06 19:37:50
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -24,11 +24,13 @@ class UNET_MLP(nn.Module):
         self.mlp = nn.Sequential(
             nn.Linear(4*32, 512),
             nn.BatchNorm1d(512),
-            nn.LeakyReLU(),
+            # nn.LeakyReLU(),
+            nn.Tanh(),
             nn.Dropout(mlp_drop_rate),
             nn.Linear(512, 128),
             nn.BatchNorm1d(128),
-            nn.LeakyReLU(),
+            # nn.LeakyReLU(),
+            nn.Tanh(),
             nn.Dropout(mlp_drop_rate),
             nn.Linear(128, 3),
             HailingDirectNorm()

@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2022-10-05 15:29:32
+LastEditTime: 2022-10-06 02:17:30
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -14,7 +14,6 @@ import pickle as pkl
 from tqdm import tqdm
 import click
 import numpy as np
-import seaborn as sns
 import shutil
 
 
@@ -95,7 +94,29 @@ def plot_hist_2nd(data,title='x',bins=15,sigma=3,save='',show=False):
         plt.savefig(save)
     if show==True:
         plt.show()
-
+def plot_curve(data,title='Curve',axis_label=['Epoch','Loss'],data_label=['Curve1'],save='',show=False):
+    # data=np.array(data)
+    plt.figure(figsize=(20,10))
+    plt.title(f'{title}')
+    if isinstance(data[0],list) or isinstance(data[0],np.ndarray):
+        for i in range(len(data)):
+            data[i]=np.array(data[i])
+            label=data_label[i] if len(data_label)>=i+1 else f'Curve{i+1}'
+            plt.plot(data[i],label=f'{label} MIN: {np.min(data[i])}')
+            plt.axhline(np.min(data[i]),linestyle='-.')
+    else:
+        data=np.array(data)
+        label=data_label[0] if len(data_label)>=1 else f'Curve1'
+        plt.plot(data,label=f'{label} MIN: {np.min(data)}')
+        plt.axhline(np.min(data),linestyle='-.')
+    plt.xlabel(axis_label[0])
+    plt.ylabel(axis_label[1])
+    plt.grid()
+    plt.legend()
+    if save!='':
+        plt.savefig(save)
+    if show:
+        plt.show()
 def format_time(second):
     '''Get formatted time: H:M:S'''
     hours=int(second//3600)

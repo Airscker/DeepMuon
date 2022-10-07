@@ -13,5 +13,6 @@ import DeepMuon.dataset as dataset
 import DeepMuon.models as models
 import DeepMuon.tools as tools
 import DeepMuon.test as test
+import DeepMuon.train as train
 
-__all__=['__version__','config','dataset','models','tools','test']
+__all__=['__version__','config','dataset','models','tools','test','train']

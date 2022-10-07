@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-21 18:43:31
 LastEditors: airscker
-LastEditTime: 2022-10-05 16:23:32
+LastEditTime: 2022-10-07 23:53:47
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -103,13 +103,14 @@ setup(
     #
     # For example, the following would provide a command called `sample` which
     # executes the function `main` from this package when invoked:
-    # entry_points={  # Optional
-    #     "console_scripts": [
-    #         "Dmuon_dist_train=DeepMuon.dist_train:run",
-    #         "Dmuon_train=DeepMuon.train:run",
-    #         "Dmuon_infer=DeepMuon.test.inference:run",
-    #     ],
-    # },
+    entry_points={  # Optional
+        "console_scripts": [
+            "Dmuon_train=DeepMuon.train.run:main",
+            "Dmuon_infer=DeepMuon.test.inference:run",
+            'Dmuon_ana=DeepMuon.test.analysis:run',
+            'Dmuon_com=DeepMuon.test.compare:run',
+        ],
+    },
     # List additional URLs that are relevant to your project as a dict.
     #
     # This field corresponds to the "Project-URL" metadata fields:

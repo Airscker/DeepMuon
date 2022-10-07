@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-10-05 14:04:29
+LastEditTime: 2022-10-07 23:19:00
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -42,7 +42,7 @@ torch.backends.cudnn.benchmark = True
 # @click.option('--inter',default=1000,help='Interval of model saving')
 # def main(batch_size,epochs,train_data,test_data,lr,lr_step,resume,momentum,gpu,log):
 # def main(batch_size,epochs,train_data,test_data,lr,patience,resume,load,log,work_dir,inter):
-def main(configs):
+def main(configs,msg=''):
     # Initialize the basic training configuration
     batch_size=configs['hyperpara']['batch_size']
     epochs=configs['hyperpara']['epochs']
@@ -72,8 +72,12 @@ def main(configs):
         log=os.path.join(work_dir,log)
         # show hyperparameters
         logger.log(f'========= Current Time: {time.ctime()} Current PID: {os.getpid()} =========')
-        # logger.log(f'Batch Size: {batch_size}, Epochs: {epochs}, LR patience Step: {patience}, Initial Learn Rate: {lr}, Resume From: {resume} Load from: {load}')
-        # logger.log(f'Command: --batch_size={batch_size} --epochs={epochs} --resume="{resume}" --load={load} --patience={patience} --lr={lr} --work_dir="{work_dir}" --inter="{inter}"')
+        if not os.path.exists(msg):
+            logger.log('LICENSE MISSED! REFUSE TO START TRAINING')
+            return 0
+        with open(msg,'r')as f:
+            msg=f.read()
+        logger.log(msg)
         keys=list(configs.keys())
         info=''
         for i in range(len(keys)):
@@ -217,11 +221,12 @@ def test(device,dataloader, model, loss_fn):
 
 @click.command()
 @click.option('--config',default='/home/dachuang2022/Yufeng/DeepMuon/config/Hailing/MLP3_3D.py')
-def run(config):
+@click.option('--msg',default='')
+def run(config,msg):
     train_config=Config(configpath=config)
     if train_config.paras['gpu_config']['distributed']==True:
         train_config.paras['config']={'path':config}
-        main(train_config.paras)
+        main(train_config.paras,msg)
     else:
         print('Single GPU Training is not supported!')
 

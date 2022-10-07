@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 22:24:05
 LastEditors: airscker
-LastEditTime: 2022-10-04 02:33:09
+LastEditTime: 2022-10-07 23:31:36
 Description: Configuration of Hailing 1TeV MLP3_3D_Direct Model
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -41,4 +41,4 @@ lr_config=dict(init=0.0005,patience=50)
 '''
 ## Specify the GPU config and DDP
 '''
-gpu_config=dict(distributed=True,gpuid=0)
+gpu_config=dict(distributed=False,gpuid=0)

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 19:35:04
 LastEditors: airscker
-LastEditTime: 2022-09-21 23:21:50
+LastEditTime: 2022-10-05 21:47:09
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -82,6 +82,32 @@ class MLP3_3D_Direc(nn.Module):
             nn.BatchNorm1d(128),
             nn.LeakyReLU(),
             nn.Linear(128,3),
+            HailingDirectNorm()
+        )
+    def forward(self, x):
+        x=self.flatten(x) 
+        logits = self.linear_relu_stack(x)
+        return logits
+    
+class MLP3_3D_Direc2(nn.Module):
+    def __init__(self):
+        '''
+        ## Model Considering the Invade Direction. Built for 1TeV Hailing data
+        - Input: [N,10,10,40,3]
+        - Output: [N,3]
+            
+        N is the batch size, and the output direction vector is normalized to 1
+        '''
+        super().__init__()
+        self.flatten = nn.Flatten()
+        self.linear_relu_stack = nn.Sequential(
+            nn.Linear(10*10*40*3, 512),
+            nn.BatchNorm1d(512),
+            nn.LeakyReLU(),
+            nn.Linear(512, 3),
+            nn.BatchNorm1d(3),
+            nn.LeakyReLU(),
+            nn.Linear(3,3),
             HailingDirectNorm()
         )
     def forward(self, x):

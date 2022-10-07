@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2022-10-05 14:05:36
+LastEditTime: 2022-10-07 23:48:32
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -86,7 +86,7 @@ class Config:
         total_path=os.path.join(os.getcwd(),configpath.replace('./',''))
         assert os.path.exists(total_path),f'Configuration file {total_path} does not exist. Please check the path again'
         configpath=configpath.replace('.py','')
-        importdirs=configpath.split('/')                
+        importdirs=configpath.split('/')
         sys.path.insert(0,configpath.replace(importdirs[-1],''))
         return importlib.import_module(importdirs[-1])
 # config=Config(configpath='./DeepMuon/config/Hailing/MLP3_3D.py')
