@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-07 21:35:54
 LastEditors: airscker
-LastEditTime: 2022-10-08 17:02:31
+LastEditTime: 2022-10-08 17:15:52
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -20,7 +20,7 @@ def main():
     parser.add_argument('-c','--config',default='/home/dachuang2022/Yufeng/DeepMuon/config/Hailing/Vit.py')
     args = parser.parse_args()
     pkg_path=DeepMuon.__path__[0]
-    msg=os.path.join(pkg_path,'LICENSE.txt')
+    msg=os.path.join(pkg_path.split('DeepMuon')[0],'LICENSE.txt')
     if args.dist:
         assert len(args.gpus)>1,f'More than 1 GPUs expected, but only one GPU: {args.gpus} given'
         env=''
