@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-21 18:43:31
 LastEditors: airscker
-LastEditTime: 2022-10-07 23:53:47
+LastEditTime: 2022-10-10 17:08:25
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -95,7 +95,7 @@ setup(
     # http://docs.python.org/distutils/setupscript.html#installing-additional-files
     #
     # In this case, 'data_file' will be installed into '<sys.prefix>/my_data'
-    # data_files=[("my_data", ["data/data_file"])],  # Optional
+    # data_files=[("Tutorial", ["Tutorial/*"],'Resources',['Resources/*'])],  # Optional
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # `pip` to create the appropriate form of executable for the target
