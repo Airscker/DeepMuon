@@ -34,13 +34,20 @@ pip install -v -e ./ --user
 ## CopyRight
 
 > GNU AFFERO GENERAL PUBLIC LICENSE
-> 		Project: DeepMuon
-> 		Dark Matter Searching Deep Learning Platform
-> 		Author: Airscker/Yufeng Wang
-> 		Contributors: Yufeng Wang, Yu Zhang
-> 		University of Science of Technology and Science of China
-> 		Internal supported sensor's dataset: Pandax-4T, Hailing
-> 		If you want to publish thesis using DeepMuon, please add bibliography:
+>
+> Project: DeepMuon
+>
+> Dark Matter Searching Deep Learning Platform
+>
+> Author: Airscker/Yufeng Wang
+>
+> Contributors: Yufeng Wang, Yu Zhang
+>
+> University of Science of Technology and Science of China
+>
+> Internal supported sensor's dataset: Pandax-4T, Hailing
+>
+> If you want to publish thesis using DeepMuon, please add bibliography:
 >
 > > To be published
 >

@@ -15,7 +15,7 @@ class SPP(nn.Module):
         self.output_num=[3,2,1]
         
         self.conv=nn.Sequential(
-            nn.BatchNorm3d(3),
+            # nn.BatchNorm3d(3),
             nn.Conv3d(3,8,(4,4,5),1,1,bias=False),
             nn.BatchNorm3d(8),
             nn.LeakyReLU(),
@@ -24,7 +24,7 @@ class SPP(nn.Module):
             nn.LeakyReLU(),
             nn.Conv3d(16,32,(4,4,5),1,1,bias=False),
             nn.BatchNorm3d(32),
-            nn.LeakyReLU()       
+            nn.LeakyReLU()
         )
         self.flatten=nn.Flatten()
         self.linear_relu_stack=nn.Sequential(
