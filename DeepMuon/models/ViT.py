@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-28 12:20:22
 LastEditors: airscker
-LastEditTime: 2022-10-06 19:42:27
+LastEditTime: 2022-10-09 14:10:45
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -85,16 +85,18 @@ class ViT(nn.Module):
 class Vit_MLP(nn.Module):
     def __init__(self):
         super().__init__()
-        self.vit=ViT(3,[10,10,40],[10,10,20],hidden_size=16,num_layers=3,num_heads=16,mlp_dim=32)
+        self.vit=ViT(3,[10,10,40],[10,10,20],hidden_size=256,num_layers=3,num_heads=16,mlp_dim=1024)
         self.flatten = nn.Flatten()
         self.mlp = nn.Sequential(
-            nn.Linear(2*16, 512),
-            nn.BatchNorm1d(512),
-            nn.LeakyReLU(),
+            nn.Linear(2*256, 1024),
+            nn.BatchNorm1d(1024),
+            # nn.LeakyReLU(),
+            nn.ReLU(),
             nn.Dropout(0.2),
-            nn.Linear(512, 128),
+            nn.Linear(1024, 128),
             nn.BatchNorm1d(128),
-            nn.LeakyReLU(),
+            # nn.LeakyReLU(),
+            nn.ReLU(),
             nn.Dropout(0.2),
             nn.Linear(128, 3),
             HailingDirectNorm()
@@ -108,13 +110,17 @@ class Vit_MLP(nn.Module):
 class Vit_MLP2(nn.Module):
     def __init__(self):
         super().__init__()
-        self.vit=ViT(3,[10,10,40],[10,10,10],hidden_size=32,num_layers=3,num_heads=4,mlp_dim=32)
+        self.vit=ViT(3,[10,10,40],[10,10,20],hidden_size=128,num_layers=3,num_heads=16,mlp_dim=32)
         self.flatten = nn.Flatten()
         self.mlp = nn.Sequential(
-            nn.Linear(16*32, 128),
+            nn.Linear(2*128, 512),
+            nn.BatchNorm1d(512),
+            nn.LeakyReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(512, 128),
             nn.BatchNorm1d(128),
             nn.LeakyReLU(),
-            # nn.Dropout(0.2),
+            nn.Dropout(0.2),
             nn.Linear(128, 3),
             HailingDirectNorm()
         )

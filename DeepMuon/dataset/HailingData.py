@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-17 18:11:14
 LastEditors: airscker
-LastEditTime: 2022-10-05 11:27:13
+LastEditTime: 2022-10-10 11:39:36
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -101,11 +101,67 @@ class HailingDataset_Direct(Dataset):
     def __len__(self):
         return len(self.origin_data)
     def __getitem__(self, index):
-        image=torch.from_numpy(np.array(self.origin_data[index][0]))
+        image=np.array(self.origin_data[index][0])
+        array=np.nonzero(np.count_nonzero(image,axis=(0,1,3)))
+        image=image[:,:,array[0][0]:(array[0][-1]+1),:]
+        image=np.append(image,np.zeros((10,10,max(9-image.shape[2],0),3)),axis=2)
+        image=torch.from_numpy(image)
         image=torch.permute(image,(3,0,1,2))
         image[1:,:,:,:]=0.0001*image[1:,:,:,:]
         label=100*torch.from_numpy(self.origin_data[index][1][3:])
         return image,label
+    def __Init(self):
+        with open(self.datapath,'rb')as f:
+            self.origin_data=pkl.load(f)
+        f.close()
+
+class SSP_Dataset(Dataset):
+    def __init__(self,datapath='./Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl'):
+        '''
+        ## Dataset Built for Loading the Preprocessed Hailing 1TeV/10TeV Data
+        - Args: 
+            - datapath: The datapth of the preprocessed Hailing data, default to be './Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl'
+        - Output:
+            - Pattern Image, shape: [10,10,40/50,3], dtype: nparray -> torch.tensor
+            - Position-Direction, shape: [3,], dtype: nparray -> torch.tensor, info: [px,py,pz]
+        '''
+        self.datapath=datapath
+        self.origin_data=None
+        self.pattern_imgs=[]
+        self.pos_direction=[]
+        self.__Init()
+        self.__sort()
+    def __len__(self):
+        return len(self.origin_data)
+    def __getitem__(self, index):
+        # image=np.array(self.origin_data[index][0])
+        # array=np.nonzero(np.count_nonzero(image,axis=(0,1,3)))
+        # image=image[:,:,array[0][0]:(array[0][-1]+1),:]
+        # image=np.append(image,np.zeros((10,10,max(9-image.shape[2],0),3)),axis=2)
+        image=torch.from_numpy(self.sortedata[index][0])
+        image=torch.permute(image,(3,0,1,2))
+        image[1:,:,:,:]=0.0001*image[1:,:,:,:]
+        label=100*torch.from_numpy(self.sortedata[index][1][3:])
+        return image,label
+    def __sort(self):
+        len_map={}
+        for i in range(len(self.origin_data)):
+            image=np.array(self.origin_data[i][0])
+            array=np.nonzero(np.count_nonzero(image,axis=(0,1,3)))
+            image=image[:,:,array[0][0]:(array[0][-1]+1),:]
+            image=np.append(image,np.zeros((10,10,max(9-image.shape[2],0),3)),axis=2)
+            length=image.shape[2]
+            if length in len_map:
+                len_map[length].append([image,self.origin_data[i][1]])
+            else:
+                len_map[length]=[[image,self.origin_data[i][1]]]
+        len_keys=list(len_map.keys())
+        len_keys=sorted(len_keys)
+        self.sortedata=[]
+        for i in range(len(len_keys)):
+            items=len_map[len_keys[i]]
+            for j in range(len(items)):
+                self.sortedata.append(items[j])
     def __Init(self):
         with open(self.datapath,'rb')as f:
             self.origin_data=pkl.load(f)

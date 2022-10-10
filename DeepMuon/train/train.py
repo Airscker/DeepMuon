@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-10-07 23:20:37
+LastEditTime: 2022-10-09 15:25:21
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -25,7 +25,7 @@ from torchinfo import summary
 from torch.utils.tensorboard import SummaryWriter
 torch.set_default_tensor_type(torch.DoubleTensor)
 torch.backends.cudnn.benchmark = True
-
+torch.manual_seed(3407)
 # @click.command()
 # @click.option('--batch_size',default=400)
 # @click.option('--epochs',default=10)

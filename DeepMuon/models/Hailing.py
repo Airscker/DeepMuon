@@ -115,6 +115,26 @@ class MLP3_3D_Direc2(nn.Module):
         logits = self.linear_relu_stack(x)
         return logits
 
+
+class MLP3_3D_Direc3(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.flatten = nn.Flatten()
+        self.linear_relu_stack = nn.Sequential(
+            nn.Linear(10*10*40*3,3),
+            nn.BatchNorm1d(3),
+            nn.LeakyReLU(),
+            nn.BatchNorm1d(3),
+            nn.LeakyReLU(),
+            nn.BatchNorm1d(3),
+            nn.LeakyReLU(),
+            HailingDirectNorm()
+        )
+    def forward(self, x):
+        x=self.flatten(x) 
+        logits = self.linear_relu_stack(x)
+        return logits
+
 class HailingDirectNorm(nn.Module):
     def __init__(self) -> None:
         '''

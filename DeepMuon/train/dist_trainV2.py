@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-10-09 15:25:10
+LastEditTime: 2022-10-10 11:43:06
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -11,6 +11,7 @@ import time
 import os
 from tqdm import tqdm
 import click
+import numpy as np
 
 from DeepMuon.tools.AirConfig import Config
 import DeepMuon.tools.AirFunc as AirFunc
@@ -96,8 +97,8 @@ def main(configs,msg=''):
     # test_dataset=HailingData.HailingDataset_1T_Pos(datapath=test_data)
     train_sampler=DistributedSampler(train_dataset)
     test_sampler=DistributedSampler(test_dataset)
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False,pin_memory=True,sampler=train_sampler)
-    test_dataloader=DataLoader(test_dataset,batch_size=batch_size,shuffle=False,pin_memory=True,sampler=test_sampler)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False,collate_fn=my_collate,pin_memory=True,sampler=train_sampler)
+    test_dataloader=DataLoader(test_dataset,batch_size=batch_size,shuffle=False,collate_fn=my_collate,pin_memory=True,sampler=test_sampler)
 
     # Create Model and optimizer/loss/schedular
     # You can change the name of net as any you want just make sure the model structure is the same one
@@ -188,6 +189,21 @@ def main(configs,msg=''):
             logger.log(f'LR: {LRn}, Epoch: [{t+1}][{epochs}], Test Loss: {res[1].item()}, Train Loss: {res[0].item()}, Best Test Loss: {bestloss}, Time:{time.time()-start_time}s, ETA: {AirFunc.format_time((epochs-1-t)*(time.time()-start_time))}',show=False)
     return bestloss
 
+
+def my_collate(batch):
+    length=[]
+    for item in batch:
+        length.append(item[0].shape[-1])
+    max_len=np.max(length)
+    imgs=[]
+    target=[]
+    for i in range(len(batch)):
+        pad=torch.zeros((3,10,10,max_len-batch[i][0].shape[-1]))
+        imgs.append(torch.cat((batch[i][0],pad),-1).numpy())
+        target.append(batch[i][1].numpy())
+    imgs=torch.from_numpy(np.array(imgs))
+    target=torch.tensor(np.array(target))
+    return imgs,target
 
 def train(device,dataloader, model, loss_fn, optimizer,schedular):
     model.train()

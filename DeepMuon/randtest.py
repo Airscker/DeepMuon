@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-08-25 22:02:01
 LastEditors: airscker
-LastEditTime: 2022-10-07 23:33:25
+LastEditTime: 2022-10-09 23:55:46
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -26,7 +26,7 @@ import DeepMuon.tools.AirLogger as AirLogger
 import captum
 from captum.attr import IntegratedGradients, Occlusion, LayerGradCam, LayerAttribution,NeuronConductance,LayerConductance,DeepLift
 from captum.attr import visualization as viz
-from monai.networks.blocks import unetr_block
+from monai.networks.blocks import *
 from monai.networks.nets import *
 
 from nni.experiment import Experiment
@@ -194,9 +194,11 @@ def model_optim():
 # model_para(UNETR(in_channels=3, out_channels=1,img_size=(16,16,16)),datasize=[1,3,16,16,16])
 # model_para(UNETR(in_channels=3, out_channels=1,img_size=(10,10,40)),datasize=[1,3,10,10,40])
 # model_para(SABlock(hidden_size=30,num_heads=3),datasize=[1,1,30])
-# model_para(ViT(1,[10,10,40],[10,10,20],hidden_size=16,num_layers=1,num_heads=16,mlp_dim=32),datasize=[1,1,10,10,40])
+# model_para(ViT(1,[10,10,40],[10,10,20],hidden_size=32,num_layers=1,num_heads=16,mlp_dim=320),datasize=[1,1,10,10,40])
 # model_para(UNET_MLP(),datasize=[2,3,10,10,40],depth=5)
 # model_para(MLPBlock(3,32,act='LeakyRELU'))
+model_para(SPP(),datasize=[1,3,10,10,40])
+# model_para(SABlock(10,10),datasize=(1,10,10))
 # model_para(Vit_MLP(),datasize=[2,3,10,10,40])
 # model_para(unet.UNet(spatial_dims=3,in_channels=3,out_channels=1,channels=(6,12,24),strides=(1,1,1),num_res_units=3),datasize=[2,3,10,10,40],depth=5)
 # model_para(MLP3_3D_Direc(),datasize=[3,10,10,40,3])
