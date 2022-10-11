@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 19:32:21
 LastEditors: airscker
-LastEditTime: 2022-10-06 02:53:58
+LastEditTime: 2022-10-11 23:53:08
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -12,11 +12,12 @@ from .Hailing import MLP3_3D_Direc,MLP3_3D_Fusion,MLP3_3D_Pos,MLP3_3D_Direc2,MLP
 from .Airloss import MSALoss
 from .Unter import UNETR
 from .ViT import Vit_MLP,Vit_MLP2,Vit_MLP3
-from .unet import UNET_MLP,UNET_MLP_D
+from .unet import UNET_MLP,UNET_MLP_D,UNET_3D
 from .CNN import CNN1,CNN2
 from .DetNet import DetNet
 from .SPP import SPP
+from .LR3D import LinearRegression3D
 
 __all__=['MLP3','MLP3v2','MLP3_3D_Direc','CNN1','SPP',
         'MLP3_3D_Fusion','MLP3_3D_Pos','MSALoss',
-        'UNETR','Vit_MLP','Vit_MLP2','Vit_MLP3','UNET_MLP','UNET_MLP_D','MLP3_3D_Direc2','MLP3_3D_Direc3','DetNet']
+        'UNETR','Vit_MLP','Vit_MLP2','Vit_MLP3','UNET_MLP','UNET_MLP_D','MLP3_3D_Direc2','MLP3_3D_Direc3','DetNet','LinearRegression3D','UNET_3D']
