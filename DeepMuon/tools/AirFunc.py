@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2022-10-06 02:17:30
+LastEditTime: 2022-10-30 14:06:13
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -13,8 +13,10 @@ import matplotlib.pyplot as plt
 import pickle as pkl
 from tqdm import tqdm
 import click
+import sys
 import numpy as np
 import shutil
+import importlib
 
 
 import torch
@@ -54,6 +56,16 @@ class PandaxTensorData():
         self.IMGs=np.array(img)
         self.labels=np.array(label)
         return img,label
+
+def import_module(module_path):
+    # assert '/' in module_path,f'Do not use standard windows path"\\", but {module_path} is given'
+    assert module_path.endswith('.py'),f'Config file must be a python file but {module_path} is given'
+    total_path=os.path.join(os.getcwd(),module_path.replace('./',''))
+    assert os.path.exists(total_path),f'Configuration file {total_path} does not exist. Please check the path again'
+    module_spec = importlib.util.spec_from_file_location('',total_path)
+    module = importlib.util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(module)
+    return module
 
 def hist_plot(data,inter=20,xlabel='The number of events'):
     data=np.array(data)

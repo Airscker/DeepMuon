@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-10-16 16:57:14
+LastEditTime: 2022-10-30 14:18:21
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -47,8 +47,8 @@ def main(configs,msg=''):
     # Initialize the basic training configuration
     batch_size=configs['hyperpara']['batch_size']
     epochs=configs['hyperpara']['epochs']
-    train_data=configs['train_dataset']['datapath']
-    test_data=configs['test_dataset']['datapath']
+    train_data=configs['train_dataset']['params']
+    test_data=configs['test_dataset']['params']
     work_dir=configs['work_config']['work_dir']
     log=configs['work_config']['logfile']
     patience=configs['lr_config']['patience']
@@ -91,8 +91,8 @@ def main(configs,msg=''):
     # load datasets
     # train_dataset=DP.PandaxDataset(IMG_XY_path=train_data)
     # test_dataset=DP.PandaxDataset(IMG_XY_path=test_data)
-    train_dataset=configs['train_dataset']['backbone'](train_data)
-    test_dataset=configs['test_dataset']['backbone'](test_data)
+    train_dataset=configs['train_dataset']['backbone'](**train_data)
+    test_dataset=configs['test_dataset']['backbone'](**test_data)
     # train_dataset=HailingData.HailingDataset_1T_Pos(datapath=train_data)
     # test_dataset=HailingData.HailingDataset_1T_Pos(datapath=test_data)
     train_sampler=DistributedSampler(train_dataset)
@@ -102,7 +102,7 @@ def main(configs,msg=''):
 
     # Create Model and optimizer/loss/schedular
     # You can change the name of net as any you want just make sure the model structure is the same one
-    model = configs['model']['backbone']().to(device)
+    model = configs['model']['backbone'](**configs['model']['params']).to(device)
     # model = MLP3_3D_Pos().to(device)
     epoch_now=0
     if resume=='' and load=='':
@@ -131,7 +131,7 @@ def main(configs,msg=''):
     model=torch.nn.parallel.DistributedDataParallel(model,device_ids=[local_rank],output_device=local_rank,find_unused_parameters=False)
     # loss/optimizer/lr
     # loss_fn=nn.MSELoss()
-    loss_fn=configs['loss_fn']['backbone']()
+    loss_fn=configs['loss_fn']['backbone'](**configs['loss_fn']['params'])
     optimizer = torch.optim.AdamW(model.parameters(),lr=lr,weight_decay=0.1)
     # schedular=torch.optim.lr_scheduler.StepLR(optimizer,lr_step,gamma=0.5)
     schedular=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=patience)

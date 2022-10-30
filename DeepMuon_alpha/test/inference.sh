@@ -1,1 +1,0 @@
-python $(dirname "$0")/inference.py --config /home/dachuang2022/Yufeng/DeepMuon/config/Hailing/CSPP.py --ana True

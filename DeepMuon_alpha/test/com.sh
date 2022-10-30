@@ -1,1 +1,0 @@
-python $(dirname "$0")/compare.py --root /home/dachuang2022/Yufeng/Hailing-Muon/work_dir/1TeV --max 0.03
