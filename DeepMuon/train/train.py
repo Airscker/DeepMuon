@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-10-09 15:25:21
+LastEditTime: 2022-10-30 13:07:26
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -143,7 +143,7 @@ def main(configs,msg=''):
 
     # save model architecture
     writer=SummaryWriter(os.path.join(work_dir,'LOG'))
-    writer.add_graph(model,torch.rand(configs['hyperpara']['inputshape']).to(device))
+    writer.add_graph(model,torch.randn(configs['hyperpara']['inputshape']).to(device))
 
     # start training
     bar=tqdm(range(epoch_now,epochs),mininterval=1)
@@ -204,7 +204,7 @@ def test(device,dataloader, model, loss_fn):
     return test_loss
 
 @click.command()
-@click.option('--config',default='/home/dachuang2022/Yufeng/DeepMuon/config/Hailing/Vit.py')
+@click.option('--config',default='/home/dachuang2022/Yufeng/DeepMuon/config/Hailing/SCSPP.py')
 @click.option('--msg',default='')
 def run(config,msg):
     train_config=Config(configpath=config)

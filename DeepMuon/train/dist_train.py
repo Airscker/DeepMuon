@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-10-09 15:25:10
+LastEditTime: 2022-10-30 13:07:03
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -125,13 +125,15 @@ def main(configs,msg=''):
     # save model architecture before model parallel
     if local_rank==0:
         writer=SummaryWriter(os.path.join(work_dir,'LOG'))
-        writer.add_graph(model,torch.rand(configs['hyperpara']['inputshape']).to(device))
+        writer.add_graph(model,torch.randn(configs['hyperpara']['inputshape']).to(device))
     # Model Parallel
-    model=torch.nn.parallel.DistributedDataParallel(model,device_ids=[local_rank],output_device=local_rank,find_unused_parameters=True)
+    model=torch.nn.parallel.DistributedDataParallel(model,device_ids=[local_rank],output_device=local_rank,find_unused_parameters=False)
     # loss/optimizer/lr
     # loss_fn=nn.MSELoss()
     loss_fn=configs['loss_fn']['backbone']()
-    optimizer = torch.optim.AdamW(model.parameters(),lr=lr,weight_decay=0.1)
+    optimizer = torch.optim.AdamW(model.parameters(),lr=lr,weight_decay=0.2,betas=(0.9,0.999))
+    # optimizer = torch.optim.SGD(model.parameters(),lr=lr,momentum=0.9)
+    # optimizer = torch.optim.Adam(model.parameters(),lr=lr,weight_decay=0.1)
     # schedular=torch.optim.lr_scheduler.StepLR(optimizer,lr_step,gamma=0.5)
     schedular=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=patience)
 

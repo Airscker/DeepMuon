@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-21 18:43:31
 LastEditors: airscker
-LastEditTime: 2022-10-10 17:08:25
+LastEditTime: 2022-10-28 20:22:41
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -78,7 +78,7 @@ setup(
                     'ptflops',
                     'torchinfo',
                     'captum',
-                    'nni'],
+                    'nni','monai'],
     # Similar to `install_requires` above, these must be valid existing
     # projects.
     # extras_require={  # Optional
