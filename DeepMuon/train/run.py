@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-07 21:35:54
 LastEditors: airscker
-LastEditTime: 2022-10-24 13:56:12
+LastEditTime: 2022-11-14 17:30:02
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -16,8 +16,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dist',action='store_true')
     parser.add_argument("--gpus",nargs='+',default=0)
-    parser.add_argument('-p','--port',default=22918)
-    parser.add_argument('-c','--config',default='/home/dachuang2022/Yufeng/DeepMuon/config/Hailing/SCSPP.py')
+    parser.add_argument('-p','--port',default=22911)
+    parser.add_argument('-c','--config',default='/home/dachuang2022/Yufeng/DeepMuon/config/Hailing/CSPP.py')
     parser.add_argument('-t','--train',default='dist_train.py')
     args = parser.parse_args()
     pkg_path=DeepMuon.__path__[0]

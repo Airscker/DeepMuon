@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-13 07:51:47
 LastEditors: airscker
-LastEditTime: 2022-10-28 23:46:37
+LastEditTime: 2022-11-19 21:37:32
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -58,34 +58,33 @@ class UCSPP(nn.Module):
         feature3=self.encode3(x)
         x=torch.cat((feature1,feature2,feature3),1)
         return self.mlp(x)
+
 class ResMax(nn.Module):
-    
-    def __init__(self,mlp_drop_rate=0):
+    def __init__(self,mlp_drop_rate=0,res_dropout=0):
         super().__init__()
 
-        self.output_num=[4,3,2,1]
+        self.output_num=[5,4,3,2]
         self.pools=nn.ModuleList([nn.AdaptiveMaxPool3d(x) for x in self.output_num])
         self.conv=nn.Sequential(
             # nn.BatchNorm3d(3),
             # nn.Conv3d(3,8,(4,4,5),1,1,bias=False),
-            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5),
-            # nn.BatchNorm3d(6),
-            # nn.LeakyReLU(),
+            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5,dropout=res_dropout),
+            nn.BatchNorm3d(3),
+            nn.LeakyReLU(),
             nn.AdaptiveMaxPool3d((8,8,30)),
             # nn.Conv3d(8,16,(4,4,5),1,1,bias=False),
-            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5),
-            # nn.BatchNorm3d(9),
-            # nn.LeakyReLU(),
+            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5,dropout=res_dropout),
+            nn.BatchNorm3d(3),
+            nn.LeakyReLU(),
             nn.AdaptiveMaxPool3d((6,6,20)),
             # nn.Conv3d(16,32,(4,4,5),1,1,bias=False),
-            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5),
-            
-            # nn.BatchNorm3d(12),
-            # nn.LeakyReLU()
+            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5,dropout=res_dropout),
+            nn.BatchNorm3d(3),
+            nn.LeakyReLU()
         )
         self.linear_relu_stack=nn.Sequential(
             nn.Flatten(),
-            nn.Linear(300,512),
+            nn.Linear(672,512),
             nn.Dropout(mlp_drop_rate),
             nn.BatchNorm1d(512),
             nn.LeakyReLU(),
@@ -93,7 +92,56 @@ class ResMax(nn.Module):
             nn.Dropout(mlp_drop_rate),
             nn.BatchNorm1d(128),
             nn.LeakyReLU(),
-            nn.Linear(128,3),
+            nn.Linear(128,3)
+            # HailingDirectNorm()
+        )
+    def forward(self,x):
+        batch=x.shape[0]
+        # pos=torch.where(torch.count_nonzero(x,(0,1,2,3))>0)[0]
+        # x=x[:,:,:,:,pos[0]:pos[-1]+1]
+        x=self.conv(x)
+        for i in range(len(self.pools)):
+            if i==0:
+                feature=self.pools[i](x).view(batch,-1)
+            else:
+                feature=torch.cat((feature,self.pools[i](x).view(batch,-1)),1)
+        x=self.linear_relu_stack(feature)
+        return x
+
+
+class DResMax(nn.Module):
+    def __init__(self,mlp_drop_rate=0,res_dropout=0):
+        super().__init__()
+        self.output_num=[4,3,2,1]
+        self.pools=nn.ModuleList([nn.AdaptiveMaxPool3d(x) for x in self.output_num])
+        self.conv=nn.Sequential(
+            # nn.Conv3d(3,8,(4,4,5),1,1,bias=False),
+            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5,act='PRELU',norm='INSTANCE',subunits=2,dropout=res_dropout),
+            nn.BatchNorm3d(3),
+            nn.LeakyReLU(),
+            nn.AdaptiveMaxPool3d((8,8,30)),
+            # nn.Conv3d(8,16,(4,4,5),1,1,bias=False),
+            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5,act='PRELU',norm='INSTANCE',subunits=2,dropout=res_dropout),
+            nn.BatchNorm3d(3),
+            nn.LeakyReLU(),
+            nn.AdaptiveMaxPool3d((6,6,20)),
+            # nn.Conv3d(16,32,(4,4,5),1,1,bias=False),
+            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5,act='PRELU',norm='INSTANCE',subunits=2,dropout=res_dropout),
+            nn.BatchNorm3d(3),
+            nn.LeakyReLU(),
+        )
+        self.hidden_size=[512,128]
+        self.linear_relu_stack=nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(300,self.hidden_size[0]),
+            nn.Dropout(mlp_drop_rate),
+            nn.BatchNorm1d(self.hidden_size[0]),
+            nn.LeakyReLU(),
+            nn.Linear(self.hidden_size[0],self.hidden_size[1]),
+            nn.Dropout(mlp_drop_rate),
+            nn.BatchNorm1d(self.hidden_size[1]),
+            nn.LeakyReLU(),
+            nn.Linear(self.hidden_size[1],3),
             HailingDirectNorm()
         )
     def forward(self,x):
@@ -108,6 +156,7 @@ class ResMax(nn.Module):
                 feature=torch.cat((feature,self.pools[i](x).view(batch,-1)),1)
         x=self.linear_relu_stack(feature)
         return x
+
 class CSPP(nn.Module):
     
     def __init__(self,mlp_drop_rate=0):
@@ -157,6 +206,56 @@ class CSPP(nn.Module):
                 feature=torch.cat((feature,self.pools[i](x).view(batch,-1)),1)
         x=self.linear_relu_stack(feature)
         return x
+
+class ResMax_2(nn.Module):
+    def __init__(self,mlp_drop_rate=0):
+        super().__init__()
+
+        self.output_num=[(4,4,10),(3,3,6),(2,2,4),(1,1,2)]
+        self.pools=nn.ModuleList([nn.AdaptiveMaxPool3d(x) for x in self.output_num])
+        self.conv=nn.Sequential(
+            # nn.BatchNorm3d(3),
+            # nn.Conv3d(3,8,(4,4,5),1,1,bias=False),
+            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5),
+            nn.BatchNorm3d(3),
+            nn.LeakyReLU(),
+            nn.AdaptiveMaxPool3d((8,8,30)),
+            # nn.Conv3d(8,16,(4,4,5),1,1,bias=False),
+            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5),
+            nn.BatchNorm3d(3),
+            nn.LeakyReLU(),
+            nn.AdaptiveMaxPool3d((6,6,20)),
+            # nn.Conv3d(16,32,(4,4,5),1,1,bias=False),
+            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5),
+            nn.BatchNorm3d(3),
+            nn.LeakyReLU()
+        )
+        self.linear_relu_stack=nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(696,512),
+            nn.Dropout(mlp_drop_rate),
+            nn.BatchNorm1d(512),
+            nn.LeakyReLU(),
+            nn.Linear(512,128),
+            nn.Dropout(mlp_drop_rate),
+            nn.BatchNorm1d(128),
+            nn.LeakyReLU(),
+            nn.Linear(128,3),
+            HailingDirectNorm()
+        )
+    def forward(self,x):
+        batch=x.shape[0]
+        # pos=torch.where(torch.count_nonzero(x,(0,1,2,3))>0)[0]
+        # x=x[:,:,:,:,pos[0]:pos[-1]+1]
+        x=self.conv(x)
+        for i in range(len(self.pools)):
+            if i==0:
+                feature=self.pools[i](x).view(batch,-1)
+            else:
+                feature=torch.cat((feature,self.pools[i](x).view(batch,-1)),1)
+        x=self.linear_relu_stack(feature)
+        return x
+
 
 class HailingDirectNorm(nn.Module):
     def __init__(self) -> None:

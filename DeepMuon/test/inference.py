@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-10-05 18:43:17
+LastEditTime: 2022-11-05 21:33:18
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -33,9 +33,9 @@ torch.backends.cudnn.benchmark = True
 
 def main(configs,ana,thres):
     # Initialize the basic training configuration
-    loss_fn=configs['loss_fn']['backbone']()
+    loss_fn=configs['loss_fn']['backbone'](configs['loss_fn']['params'])
     batch_size=1
-    test_data=configs['test_dataset']['datapath']
+    test_data=configs['test_dataset']['params']
     work_dir=configs['work_config']['work_dir']
     assert os.path.exists(work_dir),f'The work_dir specified in the config file can not be found: {work_dir}'
     log='inference.log'
@@ -48,7 +48,7 @@ def main(configs,ana,thres):
     ana_path=os.path.join(work_dir,'ana')
 
     # load datasets
-    test_dataset=configs['test_dataset']['backbone'](test_data)
+    test_dataset=configs['test_dataset']['backbone'](**test_data)
     test_dataloader=DataLoader(test_dataset,batch_size=batch_size,shuffle=False,pin_memory=True)
     
     # Get cpu or gpu device for training.
@@ -70,7 +70,7 @@ def main(configs,ana,thres):
     
 
     # You can change the name of net as any you want just make sure the model structure is the same one
-    model = configs['model']['backbone']().to(device)
+    model = configs['model']['backbone'](**configs['model']['params']).to(device)
     assert os.path.exists(load),f'Model inferenced can not be found: {load}'
     epoch_c,model_c,optimizer_c,schedular_c,loss_fn_c=load_model(path=load,device=device)
     model.load_state_dict(model_c,False)

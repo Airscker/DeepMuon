@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-05 15:08:10
 LastEditors: airscker
-LastEditTime: 2022-10-06 00:43:18
+LastEditTime: 2022-11-05 21:22:39
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -100,7 +100,7 @@ def data_analysis(thres,sigma,config,fold=0.8):
     
 
 @click.command()
-@click.option('--thres',default=0.005)
+@click.option('--thres',default=0.003)
 @click.option('--sigma',default=3)
 @click.option('--config',default='')
 @click.option('--fold',default=0.8)

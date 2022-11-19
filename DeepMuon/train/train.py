@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-10-30 12:54:57
+LastEditTime: 2022-11-19 21:31:44
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -11,6 +11,7 @@ import time
 import os
 from tqdm import tqdm
 import click
+import nni
 
 from DeepMuon.tools.AirConfig import Config
 from DeepMuon.tools.AirFunc import load_model,save_model,format_time
@@ -156,6 +157,7 @@ def main(configs,msg=''):
         bar.set_description(f'LR: {LRn},Test Loss: {loss},Train Loss: {tloss}')
         writer.add_scalar(f'Test Loss Curve',loss,global_step=t+1)
         writer.add_scalar(f'Train Loss Curve',tloss,global_step=t+1)
+        nni.report_intermediate_result(loss)
         if loss<=bestloss:
             bestloss=loss
             # Double save to make sure secure, directly save total model is forbidden, otherwise load issues occur
@@ -169,6 +171,7 @@ def main(configs,msg=''):
             save_model(epoch=t,model=model,optimizer=optimizer,loss_fn=loss_fn,schedular=schedular,path=savepath)
             logger.log(f'CheckPoint at epoch {(t+1)} saved as {savepath}',show=False)
         logger.log(f'LR: {LRn}, Epoch: [{t+1}][{epochs}], Test Loss: {loss}, Train Loss: {tloss}, Best Test Loss: {bestloss}, Time:{time.time()-start_time}s, ETA: {format_time((epochs-1-t)*(time.time()-start_time))}',show=False)
+    nni.report_final_result(loss)
     return bestloss
 
 
@@ -202,7 +205,9 @@ def test(device,dataloader, model, loss_fn):
             test_loss += loss_fn(pred, y).item()
     test_loss /= num_batches
     return test_loss
-
+# nniparams={'lr':0.001}
+# optimized_params=nni.get_next_parameter()
+# nniparams.update(optimized_params)
 @click.command()
 @click.option('--config',default='/home/dachuang2022/Yufeng/DeepMuon/config/Hailing/SCSPP.py')
 @click.option('--msg',default='')

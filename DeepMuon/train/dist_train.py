@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-10-30 12:57:11
+LastEditTime: 2022-11-19 21:51:04
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -58,6 +58,7 @@ def main(configs,msg=''):
     # Initialize Distributed Training
     group=torch.distributed.init_process_group(backend="nccl")
     local_rank = torch.distributed.get_rank()
+    local_world_size=os.environ['LOCAL_WORLD_SIZE']
     torch.cuda.set_device(local_rank)
     device = torch.device("cuda", local_rank)
 
@@ -72,6 +73,8 @@ def main(configs,msg=''):
         log=os.path.join(work_dir,log)
         # show hyperparameters
         logger.log(f'========= Current Time: {time.ctime()} Current PID: {os.getpid()} =========')
+        
+        logger.log(f'LOCAL WORLD SIZE: {local_world_size}')
         if not os.path.exists(msg):
             logger.log('LICENSE MISSED! REFUSE TO START TRAINING')
             return 0
@@ -131,7 +134,7 @@ def main(configs,msg=''):
     # loss/optimizer/lr
     # loss_fn=nn.MSELoss()
     loss_fn=configs['loss_fn']['backbone'](**configs['loss_fn']['params'])
-    optimizer = torch.optim.AdamW(model.parameters(),lr=lr,weight_decay=0.2,betas=(0.9,0.999))
+    optimizer = torch.optim.AdamW(model.parameters(),lr=lr,weight_decay=0.1,betas=(0.9,0.999))
     # optimizer = torch.optim.SGD(model.parameters(),lr=lr,momentum=0.9)
     # optimizer = torch.optim.Adam(model.parameters(),lr=lr,weight_decay=0.1)
     # schedular=torch.optim.lr_scheduler.StepLR(optimizer,lr_step,gamma=0.5)
@@ -151,7 +154,7 @@ def main(configs,msg=''):
     bestloss=torch.tensor([bestloss],device=device)
     dist.barrier()
     dist.all_reduce(bestloss)
-    bestloss=bestloss/float(os.environ['LOCAL_WORLD_SIZE'])
+    bestloss=bestloss/float(local_world_size)
     bestloss=bestloss.item()
     if local_rank==0:
         bar=tqdm(range(epoch_now,epochs),mininterval=1)
@@ -168,7 +171,7 @@ def main(configs,msg=''):
         dist.barrier()
         # Reduces the tensor data across all machines in such a way that all get the final result.(Add results of every gpu)
         dist.all_reduce(res)
-        res=res/float(os.environ['LOCAL_WORLD_SIZE'])
+        res=res/float(local_world_size)
         
         if local_rank==0:
             LRn=optimizer.state_dict()['param_groups'][0]['lr']

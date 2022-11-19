@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2022-10-30 14:06:13
+LastEditTime: 2022-10-31 19:02:21
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -56,6 +56,31 @@ class PandaxTensorData():
         self.IMGs=np.array(img)
         self.labels=np.array(label)
         return img,label
+def load_log(log_file):
+    """Loads the training log from the given log file .
+
+    Args:
+        log_file ([type]): The path of the log file.
+    
+    Return:
+        [epoch:[lr,tsl,trl,btsl]]
+
+    """
+    assert os.path.exists(log_file),f'Training log {log_file} can not be found'
+    with open(log_file,'r')as f:
+        info=f.readlines()
+    train_info=[]
+    for i in range(len(info)):
+        info[i]=info[i].split('\n')[0]
+        if 'LR' in info[i] and 'Test Loss' in info[i] and 'Train Loss' in info[i] and 'Best Test Loss' in info[i]:
+            data=info[i].split(',')
+            epoch=int(data[1].split('[')[1].split(']')[0])
+            train_data=[float(data[0].split(': ')[-1]),float(data[2].split(': ')[-1]),float(data[3].split(': ')[-1]),float(data[4].split(': ')[-1])]
+            if epoch>len(train_info):
+                train_info.append(train_data)
+            else:
+                train_info[epoch-1]=train_data
+    return np.array(train_info)
 
 def import_module(module_path):
     # assert '/' in module_path,f'Do not use standard windows path"\\", but {module_path} is given'
