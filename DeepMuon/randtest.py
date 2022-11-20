@@ -1,8 +1,8 @@
 '''
 Author: Airscker
 Date: 2022-08-25 22:02:01
-LastEditors: error: git config user.name & please set dead value or install git
-LastEditTime: 2022-11-20 09:57:32
+LastEditors: airscker
+LastEditTime: 2022-11-20 21:30:52
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -40,7 +40,6 @@ import torchvision.models as models
 from ptflops import get_model_complexity_info
 from torchinfo import summary
 
-from DeepMuon.models.unet import UNET_MLP_D
 
 
 torch.set_default_tensor_type(torch.FloatTensor)

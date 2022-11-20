@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-17 18:11:14
 LastEditors: airscker
-LastEditTime: 2022-11-20 20:44:55
+LastEditTime: 2022-11-20 21:22:20
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -157,7 +157,7 @@ class SSP_Dataset(Dataset):
         f.close()
 
 class HailingDataset_Direct2(Dataset):
-    def __init__(self,datapath='./Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl'):
+    def __init__(self,datapath='./Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl',augment=False):
         '''
         ## Dataset Built for Loading the Preprocessed Hailing 1TeV/10TeV Data
         - Args: 
@@ -171,6 +171,7 @@ class HailingDataset_Direct2(Dataset):
         self.pattern_imgs=[]
         self.pos_direction=[]
         self.augmentation={0:Rotate180,1:Rotate90,2:Flip}
+        self.augment=augment
         self.__Init()
     def __len__(self):
         return len(self.origin_data)
@@ -178,9 +179,10 @@ class HailingDataset_Direct2(Dataset):
         image=np.array(self.origin_data[index][0])
         label=self.origin_data[index][1][3:]
         '''Data augmentation'''
-        oper=np.random.randint(-1,3)
-        if oper>=0:
-            image,label=self.augmentation[oper](image,label)
+        if self.augment:
+            oper=np.random.randint(-1,3)
+            if oper>=0:
+                image,label=self.augmentation[oper](image,label)
         
         image=torch.from_numpy(image.copy())
         image=torch.permute(image,(3,0,1,2))

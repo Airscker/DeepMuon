@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-11-20 15:29:13
+LastEditTime: 2022-11-20 21:36:12
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -14,6 +14,7 @@ import click
 import warnings
 import numpy as np
 import pickle as pkl
+from captum.attr import IntegratedGradients
 
 from DeepMuon.tools.AirConfig import Config
 from DeepMuon.tools.AirFunc import load_model, format_time, plot_hist_2nd
@@ -171,6 +172,24 @@ def infer(device, dataloader, model, loss_fn, logger: LOGT, thres, ana=True):
             num += 1
     return test_loss, pred_value, real_value, loss_map
 
+def Integ_Grad(model: nn.Module, device: torch.device, data:torch.Tensor,target_num:int,logger:LOGT):
+    '''
+    The algorithm outputs an attribution score for each input element and a convergence delta. \
+        The lower the absolute value of the convergence delta the better is the approximation.
+
+    Positive attribution score means that the input in that particular position positively contributed to the final prediction and negative means the opposite. \
+        The magnitude of the attribution score signifies the strength of the contribution. \
+            Zero attribution score means no contribution from that particular feature.
+    '''
+    model.to(device)
+    model.eval()
+    ig = IntegratedGradients(model)
+    # ig=DeepLift(model)
+    for i in range(target_num):
+        attr, delta = ig.attribute(data.to(device), target=i, return_convergence_delta=True)
+        logger.log(f'Integrated Gradient Distribution for label_{i}')
+        logger.log('IG Attributions:', attr)
+        logger.log('Convergence Delta:', delta)
 
 def neuron_infer(device, dataloader, model: nn.Module, loss_fn, work_dir: str, index=0):
     """

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 22:24:05
 LastEditors: airscker
-LastEditTime: 2022-11-20 20:28:17
+LastEditTime: 2022-11-20 21:24:29
 Description: Configuration of Hailing 1TeV MLP3_3D_Direct Model
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -15,8 +15,8 @@ model=dict(backbone='DResMax')
 '''
 ## Specify the dataset to load the data, all dataset are stored in 'dataset'
 '''
-train_dataset=dict(backbone='HailingDataset_Direct2',datapath='/home/dachuang2022/Yufeng/Hailing-Muon/data/1TeV/1Tev_Resample_4Sigma45_train60k.pkl')
-test_dataset=dict(backbone='HailingDataset_Direct2',datapath='/home/dachuang2022/Yufeng/Hailing-Muon/data/1TeV/1Tev_Resample_4Sigma45_test20k.pkl')
+train_dataset=dict(backbone='HailingDataset_Direct2',params=dict(datapath='/home/dachuang2022/Yufeng/Hailing-Muon/data/1TeV/1Tev_Resample_4Sigma45_train60k.pkl',augment=True))
+test_dataset=dict(backbone='HailingDataset_Direct2',params=dict(datapath='/home/dachuang2022/Yufeng/Hailing-Muon/data/1TeV/1Tev_Resample_4Sigma45_test20k.pkl',augment=False))
 '''
 ## Specify the work_dir to save the training log and checkpoints
 '''
@@ -40,7 +40,7 @@ hyperpara=dict(epochs=2000,batch_size=11000,inputshape=[1,3,10,10,40])
 '''
 ## Specify the lr as well as its config, the lr will be optimized using torch.optim.lr_scheduler.ReduceLROnPlateau()
 '''
-lr_config=dict(init=0.0001,patience=200)
+lr_config=dict(init=0.0001,patience=500)
 '''
 ## Specify the GPU config and DDP
 '''
