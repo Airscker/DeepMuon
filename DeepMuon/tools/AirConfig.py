@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2022-10-30 14:12:43
+LastEditTime: 2022-11-20 00:01:13
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -129,6 +129,7 @@ class Config:
                 else:
                     loss_fn_para=loss_info['params']
                 self.paras['loss_fn']={'backbone':getattr(import_module(loss_info['filepath']),loss_info['backbone']),'params':loss_fn_para}
+        
         self.paras['work_config']=self.config.work_config
         self.paras['checkpoint_config']=self.config.checkpoint_config
         self.paras['hyperpara']=self.config.hyperpara

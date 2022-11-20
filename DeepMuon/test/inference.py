@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-11-05 21:33:18
+LastEditTime: 2022-11-20 02:12:42
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -25,6 +25,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 import torchvision.models as models
+from torchvision.models.feature_extraction import get_graph_node_names,create_feature_extractor
 from ptflops import get_model_complexity_info
 from torchinfo import summary
 from torch.utils.tensorboard import SummaryWriter
@@ -90,7 +91,7 @@ def main(configs,ana,thres):
     # writer.add_graph(model,torch.rand(configs['hyperpara']['inputshape']).to(device))
 
     # start inferencing
-    loss,pred,real,loss_map=test(device,test_dataloader, model, loss_fn,logger,thres=thres,ana=ana)
+    loss,pred,real,loss_map=infer(device,test_dataloader, model, loss_fn,logger,thres=thres,ana=ana)
     # Save results
     with open(res,'wb')as f:
         pkl.dump({'loss':loss,'pred':pred,'real':real},f)
@@ -113,7 +114,7 @@ def main(configs,ana,thres):
         logger.log(f'Threshold {thres} Loss ID-[data,pred,real,loss] hash map saved as {name}, total number: {len(loss_map)}')
 
 
-def test(device,dataloader, model, loss_fn, logger:LOGT,thres,ana=True):
+def infer(device,dataloader, model, loss_fn, logger:LOGT,thres,ana=True):
     num_batches = len(dataloader)
     model.eval()
     test_loss=[]
@@ -121,6 +122,7 @@ def test(device,dataloader, model, loss_fn, logger:LOGT,thres,ana=True):
     real_value=[]
     num=1
     loss_map={}
+    
     with torch.no_grad():
         for X, y in dataloader:
             start_time=time.time()
@@ -137,11 +139,45 @@ def test(device,dataloader, model, loss_fn, logger:LOGT,thres,ana=True):
             num+=1
     return test_loss,pred_value,real_value,loss_map
 
+def neuron(device,dataloader, model, loss_fn, work_dir:str,thres,ana=True,index=0):
+    num_batches = len(dataloader)
+    model.eval()
+    num=1
+    neuron_log=os.path.join(work_dir,'neuron')
+    logger=LOGT(log_dir=neuron_log,logfile='neuron.log',new=True)
+    with torch.no_grad():
+        for X, y in dataloader:
+            if num-1==index:
+                start_time=time.time()
+                X, y = X.to(device), y.to(device)
+                with torch.autograd.profiler.profile(enabled=True, use_cuda=True, record_shapes=True, profile_memory=True) as prof_ana:
+                    pred = model(X)
+                table=prof_ana.table()
+                logger.log(f'Model architecture: \n{model}\n\n')
+                logger.log(table,show=False)
+                prof_ana.export_chrome_trace(os.path.join(neuron_log,'model_profile.json'))
+                logger.log('\nModel Parameters:')
+                for name, param in model.named_parameters():
+                    logger.log(f"Layer: {name} | Size: {param.size()} | Values : {param} \n")
+                print(f'\nFeature map of data with index {index} in the dataset\n')
+                nodes,_=get_graph_node_names(model)
+                fx=create_feature_extractor(model,return_nodes=nodes)
+                fms=fx(X)
+                loss_value=loss_fn(pred, y).item()
+                test_loss=loss_value
+                pred_value=pred.cpu().numpy()[0]
+                real_value=y.cpu().numpy()[0]
+                now_time=time.time()
+                logger.log(f'{num}/{num_batches} Loss: {loss_value}, Predicted: {pred_value[num-1]}, Real: {real_value[num-1]}, Time: {now_time-start_time}s, ETA: {format_time((num_batches-num)*(now_time-start_time))}')
+            num+=1
+    return test_loss,pred_value,real_value
+
 @click.command()
-@click.option('--config',default='/home/dachuang2022/Yufeng/DeepMuon/config/Hailing/Vit.py')
-@click.option('--ana',default=True)
-@click.option('--thres',default=0.004)
-def run(config,ana,thres):
+@click.option('--config','-c',default='/home/dachuang2022/Yufeng/DeepMuon/config/Hailing/Vit.py')
+@click.option('--neuron','-n',default=False)
+@click.option('--ana','-a',default=True)
+@click.option('--thres','-t',default=0.004)
+def run(config,neuron,ana,thres):
     train_config=Config(configpath=config)
     if train_config.paras['gpu_config']['distributed']==True:
         warnings.warn('Distributed Training is not supported during model inference')

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-17 18:11:14
 LastEditors: airscker
-LastEditTime: 2022-11-19 21:56:45
+LastEditTime: 2022-11-19 22:47:38
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -194,9 +194,9 @@ class HailingDataset_Direct2(Dataset):
         # image=np.append(image,np.zeros((10,10,max(self.min_z-image.shape[2],0),3)),axis=2)
         image=torch.from_numpy(image)
         image=torch.permute(image,(3,0,1,2))
-        for i in range(3):
-            ch=image[i,:,:,:]
-            image[i,:,:,:]=(ch-torch.min(ch))/(torch.max(ch)-torch.min(ch))
+        # for i in range(3):
+        #     ch=image[i,:,:,:]
+        #     image[i,:,:,:]=(ch-torch.min(ch))/(torch.max(ch)-torch.min(ch))
         image[1:,:,:,:]=0.0001*image[1:,:,:,:]
         label=torch.from_numpy(self.origin_data[index][1][3:])
         return image,label

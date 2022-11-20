@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2022-10-31 19:02:21
+LastEditTime: 2022-11-20 00:33:40
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -31,31 +31,7 @@ from torch import nn
 # from torch.utils.tensorboard import SummaryWriter
 torch.set_default_tensor_type(torch.DoubleTensor)
 
-class PandaxTensorData():
-    def __init__(self,IMG_XY_path='..\\data\\IMG2D_XY.pkl'):
-        self.IMG_XY_path=IMG_XY_path
-        self.IMGs=[]
-        self.labels=[]
-        self.__Init()
-    def gettensor(self, idx):
-        image=self.IMGs[idx]
-        image=np.reshape(image,(1,image.shape[0],image.shape[1]))
-        label=self.labels[idx]/100# Key action
-        image=torch.from_numpy(image)
-        label=torch.from_numpy(label)
-        return image, label
-    def getitem(self,idx):
-        return self.IMGs[idx],self.labels[idx]/100
-    def __Init(self):
-        data=pkl.load(open(self.IMG_XY_path,'rb'))
-        img=[]
-        label=[]
-        for i in range(len(data)):
-            img.append(data[i][0])
-            label.append(data[i][1])
-        self.IMGs=np.array(img)
-        self.labels=np.array(label)
-        return img,label
+
 def load_log(log_file):
     """Loads the training log from the given log file .
 
@@ -181,7 +157,7 @@ def save_model(epoch:int,model:nn.Module,optimizer,loss_fn,schedular,path,dist_t
             'schedular':schedular.state_dict(),
             }, path)
     return 0
-def load_model(path,device):
+def load_model(path:str,device:torch.device):
     """Loads the model and optimizer parameters from a previously saved checkpoint file .
     Args:
         path: The checkpoint path

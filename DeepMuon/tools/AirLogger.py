@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-08-26 21:23:01
 LastEditors: airscker
-LastEditTime: 2022-10-05 14:07:43
+LastEditTime: 2022-11-20 01:03:08
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -20,12 +20,13 @@ class LOGT(object):
     ## Initialize the logger .
 
         Args:
-            log_dir: The path to save the log file. Defaults to './'.\n
-            logfile: The name of the log file. Defaults to be {CurrentTime}.log'.
+            log_dir: The path to save the log file. Defaults to './'.
+            logfile: The name of the log file. Defaults to be log.log'.
+            new: Whether to override the existed log file
         Return:
             The path of the log file
     """
-    def __init__(self, log_dir='./',logfile='log.log'.format(time.strftime('%m%d%Y_%H%M%S_UTC%z')),new=False):
+    def __init__(self, log_dir='./',logfile='log.log',new=False):
         if not os.path.exists(log_dir) and log_dir!='':
             print(f'{log_dir} Created')
             os.makedirs(log_dir)

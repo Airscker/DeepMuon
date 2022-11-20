@@ -1,8 +1,8 @@
 '''
 Author: airscker
 Date: 2022-09-21 18:43:31
-LastEditors: airscker
-LastEditTime: 2022-10-28 20:22:41
+LastEditors: error: git config user.name & please set dead value or install git
+LastEditTime: 2022-11-20 09:34:46
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -71,14 +71,14 @@ setup(
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/discussions/install-requires-vs-requirements/
     install_requires=['click',
-                    'tqdm',
-                    'numpy',
-                    'pandas',
-                    'numba',
-                    'ptflops',
-                    'torchinfo',
-                    'captum',
-                    'nni','monai'],
+                      'tqdm',
+                      'numpy',
+                      'pandas',
+                      'numba',
+                      'ptflops',
+                      'torchinfo',
+                      'captum',
+                      'monai'],
     # Similar to `install_requires` above, these must be valid existing
     # projects.
     # extras_require={  # Optional
