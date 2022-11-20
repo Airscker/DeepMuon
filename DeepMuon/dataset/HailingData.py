@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-17 18:11:14
 LastEditors: airscker
-LastEditTime: 2022-11-19 22:47:38
+LastEditTime: 2022-11-20 20:44:55
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -31,57 +31,43 @@ def pattern_data_1T(event,shape=(10,10,40,3)):
         pattern[int(event[i][0])][int(event[i][1])][int(event[i][2])]=event[i][3:]
     return pattern
 
-class HailingDataset_Fusion(Dataset):
-    def __init__(self,datapath='../Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl'):
-        '''
-        ## Dataset Built for Loading the Preprocessed Hailing 1TeV Data
-        - Args:
-            - datapath: The datapath of preprocessed Hailing data, default to be './Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl'
-        - Output:
-            - Pattern Image, shape: [10,10,40/50,3], dtype: nparray -> torch.tensor
-            - Position-Direction, shape: [6,], dtype: nparray -> torch.tensor, info: [x,y,z,px,py,pz]
-        '''
-        self.datapath=datapath
-        self.origin_data=None
-        self.pattern_imgs=[]
-        self.pos_direction=[]
-        self.__Init()
-    def __len__(self):
-        return len(self.origin_data)
-    def __getitem__(self, index):
-        image=torch.from_numpy(self.origin_data[index][0])
-        label=torch.from_numpy(self.origin_data[index][1])
-        return image,label
-    def __Init(self):
-        with open(self.datapath,'rb')as f:
-            self.origin_data=pkl.load(f)
-        f.close()
+def Rotate90(image,label):
+    """
+    Rotate the image 90 degrees clockwise and return the rotated image and label.
+    @param image - the image to rotate.
+    @param label - the label to rotate.
+    @returns the rotated image and label.
+    """
+    image=np.transpose(np.array(image),(1,0,2,3))
+    image=image[::-1,...]
+    label=np.array([-label[1],label[0],label[2]])
+    return image,label
 
-class HailingDataset_Pos(Dataset):
-    def __init__(self,datapath='../Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl'):
-        '''
-        ## Dataset Built for Loading the Preprocessed Hailing 1TeV/10TeV Data
-        - Args:
-            - datapath: The datapth of the preprocessed Hailing data, default to be './Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl'
-        - Output:
-            - Pattern Image, shape: [10,10,40/50,3], dtype: nparray -> torch.tensor
-            - Position-Direction, shape: [3,], dtype: nparray -> torch.tensor, info: [x,y,z]
-        '''
-        self.datapath=datapath
-        self.origin_data=None
-        self.pattern_imgs=[]
-        self.pos_direction=[]
-        self.__Init()
-    def __len__(self):
-        return len(self.origin_data)
-    def __getitem__(self, index):
-        image=torch.from_numpy(self.origin_data[index][0])
-        label=torch.from_numpy(self.origin_data[index][1][:3])
-        return image,label
-    def __Init(self):
-        with open(self.datapath,'rb')as f:
-            self.origin_data=pkl.load(f)
-        f.close()
+def Rotate180(image,label):
+    """
+    Rotate the image 180 degrees. Also rotate the label 180 degrees.
+    @param image - the image to rotate.
+    @param label - the label to rotate.
+    @returns the rotated image and label.
+    """
+    image=np.array(image)
+    image=image[::-1,::-1,:,:]
+    label=np.array([-label[0],-label[1],label[2]])
+    return image,label
+
+def Flip(image,label):
+    """
+    Flip the image and label.
+    @param image - the image to flip
+    @param label - the label to flip
+    @returns the flipped image and label
+    """
+    image=np.array(image)
+    image=image[:,:,::-1,:]
+    label=np.array([label[0],label[1],-label[2]])
+    return image,label
+
+
 
 class HailingDataset_Direct(Dataset):
     def __init__(self,datapath='./Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl',min_z=9):
@@ -184,21 +170,22 @@ class HailingDataset_Direct2(Dataset):
         self.origin_data=None
         self.pattern_imgs=[]
         self.pos_direction=[]
+        self.augmentation={0:Rotate180,1:Rotate90,2:Flip}
         self.__Init()
     def __len__(self):
         return len(self.origin_data)
     def __getitem__(self, index):
         image=np.array(self.origin_data[index][0])
-        # pos=min(np.nonzero(np.count_nonzero(image,axis=(0,1,3)))[0][0],30)
-        # image=image[:,:,pos:pos+10,:]
-        # image=np.append(image,np.zeros((10,10,max(self.min_z-image.shape[2],0),3)),axis=2)
-        image=torch.from_numpy(image)
+        label=self.origin_data[index][1][3:]
+        '''Data augmentation'''
+        oper=np.random.randint(-1,3)
+        if oper>=0:
+            image,label=self.augmentation[oper](image,label)
+        
+        image=torch.from_numpy(image.copy())
         image=torch.permute(image,(3,0,1,2))
-        # for i in range(3):
-        #     ch=image[i,:,:,:]
-        #     image[i,:,:,:]=(ch-torch.min(ch))/(torch.max(ch)-torch.min(ch))
         image[1:,:,:,:]=0.0001*image[1:,:,:,:]
-        label=torch.from_numpy(self.origin_data[index][1][3:])
+        label=torch.from_numpy(label)
         return image,label
     def __Init(self):
         with open(self.datapath,'rb')as f:
