@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-05 21:51:59
 LastEditors: airscker
-LastEditTime: 2022-11-14 12:33:32
+LastEditTime: 2022-11-20 22:00:43
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -54,7 +54,7 @@ def loss_com(work_dirs,output='',max=0.2,num=0):
 def run(root,max,num):
     # work_dirs=os.listdir(root)
     # work_dirs=['CSPP_4','CSPP_5','DResMax_1','ResMax_4']
-    work_dirs=['CSPP_5','ResMax_5','DResMax_1','DResMax_2']
+    work_dirs=['CSPP_5','ResMax_5','DResMax_1','DResMax_3','DResMax_5']
     
     # work_dirs=['MLP3_3D','MLP3_3D2','MLP3_3D3','MLP3_3D4','UNET_MLP','UNET_MLP_2','UNET_MLP_D','CNN1','CNN2','CNN3','CNN4']
     for i in range(len(work_dirs)):

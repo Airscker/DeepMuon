@@ -3,8 +3,8 @@ Project: DeepMuon
 Dark Matter Searching Deep Learning Platform
 Author: Airscker/Yufeng Wang
 Contributors: Yufeng Wang, Yu Zhang
-University of Science of Technology and Science of China
-Internal supported sensor's dataset: Pandax-4T, Hailing
+University of Science of Technology of China
+Internal supported sensor's dataset: Pandax-4T III, TRIDENT
 If you want to publish thesis using DeepMuon, please add bibliography:
 
 Copyright (C) 2022 by Airscker, All Rights Reserved.

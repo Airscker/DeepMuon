@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-17 18:11:14
 LastEditors: airscker
-LastEditTime: 2022-11-20 21:22:20
+LastEditTime: 2022-11-23 16:30:09
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -67,8 +67,6 @@ def Flip(image,label):
     label=np.array([label[0],label[1],-label[2]])
     return image,label
 
-
-
 class HailingDataset_Direct(Dataset):
     def __init__(self,datapath='./Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl',min_z=9):
         '''
@@ -119,7 +117,7 @@ class SSP_Dataset(Dataset):
         self.__Init()
         self.__sort()
     def __len__(self):
-        return len(self.origin_data)
+        return len(self.origin_data)*8
     def __getitem__(self, index):
         # image=np.array(self.origin_data[index][0])
         # array=np.nonzero(np.count_nonzero(image,axis=(0,1,3)))
@@ -174,16 +172,16 @@ class HailingDataset_Direct2(Dataset):
         self.augment=augment
         self.__Init()
     def __len__(self):
-        return len(self.origin_data)
+        return len(self.origin_data)*8
     def __getitem__(self, index):
         image=np.array(self.origin_data[index][0])
         label=self.origin_data[index][1][3:]
         '''Data augmentation'''
         if self.augment:
-            oper=np.random.randint(-1,3)
-            if oper>=0:
-                image,label=self.augmentation[oper](image,label)
-        
+            oper=np.unique(np.random.randint(-1,3,np.random.randint(0,4)))#[-1,3]range,[0,3]random length
+            for oper_i in range(len(oper)):
+                if oper[oper_i]>=0:
+                    image,label=self.augmentation[oper[oper_i]](image,label)
         image=torch.from_numpy(image.copy())
         image=torch.permute(image,(3,0,1,2))
         image[1:,:,:,:]=0.0001*image[1:,:,:,:]
