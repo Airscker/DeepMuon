@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-17 18:11:14
 LastEditors: airscker
-LastEditTime: 2022-11-23 16:30:09
+LastEditTime: 2022-11-25 17:58:15
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -172,25 +172,26 @@ class HailingDataset_Direct2(Dataset):
         self.augment=augment
         self.__Init()
     def __len__(self):
-        return len(self.origin_data)*8
+        return len(self.origin_data)
     def __getitem__(self, index):
         image=np.array(self.origin_data[index][0])
         label=self.origin_data[index][1][3:]
         '''Data augmentation'''
         if self.augment:
-            oper=np.unique(np.random.randint(-1,3,np.random.randint(0,4)))#[-1,3]range,[0,3]random length
+            oper=np.unique(np.random.randint(0,3,np.random.randint(0,4)))#[-1,3]range,[0,3]random length
             for oper_i in range(len(oper)):
-                if oper[oper_i]>=0:
-                    image,label=self.augmentation[oper[oper_i]](image,label)
+                image,label=self.augmentation[oper[oper_i]](image,label)
         image=torch.from_numpy(image.copy())
         image=torch.permute(image,(3,0,1,2))
         image[1:,:,:,:]=0.0001*image[1:,:,:,:]
         label=torch.from_numpy(label)
         return image,label
     def __Init(self):
+        print(f'Loading dataset {self.datapath}')
         with open(self.datapath,'rb')as f:
             self.origin_data=pkl.load(f)
         f.close()
+        print(f'Dataset {self.datapath} loaded')
 
 class HailingData_Init:
     def __init__(self,datapath='./Hailing-Muon/data/1TeV/validate_norm.pkl',output='Hailing_1TeV_val_data.pkl',shape=(10,10,40,3)):

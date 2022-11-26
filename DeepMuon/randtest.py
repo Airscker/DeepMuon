@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-08-25 22:02:01
 LastEditors: airscker
-LastEditTime: 2022-11-20 21:30:52
+LastEditTime: 2022-11-25 16:01:03
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -216,7 +216,6 @@ def model_optim():
 # conv=spconv.SubMConv3d(3,3,3)
 # print(conv(a))
 # model_para(SABlock(10,10),datasize=(1,10,10))
-# model_para(Vit_MLP(),datasize=[2,3,10,10,40])
 # model_para(unet.UNet(spatial_dims=3,in_channels=3,out_channels=1,channels=(6,12,24),strides=(1,1,1),num_res_units=3),datasize=[2,3,10,10,40],depth=5)
 # model_para(MLP3_3D_Direc(),datasize=[3,10,10,40,3])
 # model_para(MLP3(),datasize=[3,1,17,17])

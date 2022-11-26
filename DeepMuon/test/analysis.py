@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-05 15:08:10
 LastEditors: airscker
-LastEditTime: 2022-11-05 21:22:39
+LastEditTime: 2022-11-26 12:27:31
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -52,6 +52,17 @@ def load_log(log_file):
     return np.array(train_info)
 
 def data_analysis(thres,sigma,config,fold=0.8):
+    """
+    The data_analysis function is used to analyze the distribution of loss value and plot the loss/lr curve.
+    The function will also log key information of loss, including mean, std, sigma range and threshold value sigma range.
+    
+    
+    :param thres: Determine the threshold value of loss
+    :param sigma: Set the threshold of loss value
+    :param config: Specify the configuration file of the training process
+    :param fold=0.8: Set the threshold of loss value
+    :return: The result of the loss value distribution and threshold distribution, as well as the loss/lr curve
+    """
     # Load configuration
     assert os.path.exists(config),f'Config file {config} can not be found'
     train_config=Config(configpath=config)

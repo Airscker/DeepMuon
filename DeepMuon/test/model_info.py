@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-05 13:35:07
 LastEditors: airscker
-LastEditTime: 2022-10-05 13:56:17
+LastEditTime: 2022-11-26 12:27:59
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -14,16 +14,18 @@ from torchinfo import summary
 torch.set_default_tensor_type(torch.FloatTensor)
 
 def model_para(model,datasize:list,depth=3,gpu=0):
-    """Get model information
-
-    Args:
-        model ([type]): Must be a model pointer
-        datasize (list): The size of the data to be fed into the model:[batch_size,other_size]
-        depth (int, optional): The depth to analysis the model. Defaults to 3.
-        gpu (int, optional): The id of the GPU. Defaults to 0.
-
-    Returns:
-        [type]: [description]
+    """
+    The model_para function returns the number of parameters and FLOPs for a given model.
+    It takes in the following arguments:
+    model - The model to be tested. Must have no more than 3 layers, as otherwise it will not work with this function. 
+    datasize - A list containing the size of each dimension of an input image (in order height, width, channels). 
+    depth - The depth at which to run summary(). Default is 3. If you are using a custom class that has different naming conventions from ResNet-like classes, then you may need to increase depth by 1 or 2 in order for all layer
+    
+    :param model: Define the model
+    :param datasize:list: Specify the input size of the model
+    :param depth=3: Determine the number of layers in the model
+    :param gpu=0: Specify which gpu to use
+    :return: The flops, params and summary of the model
     """
     device=torch.device(gpu)
     model=model()

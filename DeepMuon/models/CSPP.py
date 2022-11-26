@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-13 07:51:47
 LastEditors: airscker
-LastEditTime: 2022-11-19 21:37:32
+LastEditTime: 2022-11-25 15:46:16
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -62,38 +62,37 @@ class UCSPP(nn.Module):
 class ResMax(nn.Module):
     def __init__(self,mlp_drop_rate=0,res_dropout=0):
         super().__init__()
-
-        self.output_num=[5,4,3,2]
+        self.output_num=[4,3,2,1]
         self.pools=nn.ModuleList([nn.AdaptiveMaxPool3d(x) for x in self.output_num])
         self.conv=nn.Sequential(
-            # nn.BatchNorm3d(3),
             # nn.Conv3d(3,8,(4,4,5),1,1,bias=False),
-            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5,dropout=res_dropout),
+            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5,act='PRELU',norm='INSTANCE',subunits=2,dropout=res_dropout),
             nn.BatchNorm3d(3),
             nn.LeakyReLU(),
             nn.AdaptiveMaxPool3d((8,8,30)),
             # nn.Conv3d(8,16,(4,4,5),1,1,bias=False),
-            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5,dropout=res_dropout),
+            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5,act='PRELU',norm='INSTANCE',subunits=2,dropout=res_dropout),
             nn.BatchNorm3d(3),
             nn.LeakyReLU(),
             nn.AdaptiveMaxPool3d((6,6,20)),
             # nn.Conv3d(16,32,(4,4,5),1,1,bias=False),
-            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5,dropout=res_dropout),
+            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5,act='PRELU',norm='INSTANCE',subunits=2,dropout=res_dropout),
             nn.BatchNorm3d(3),
-            nn.LeakyReLU()
+            nn.LeakyReLU(),
         )
+        self.hidden_size=[1024,128]
         self.linear_relu_stack=nn.Sequential(
             nn.Flatten(),
-            nn.Linear(672,512),
+            nn.Linear(300,self.hidden_size[0]),
             nn.Dropout(mlp_drop_rate),
-            nn.BatchNorm1d(512),
+            nn.BatchNorm1d(self.hidden_size[0]),
             nn.LeakyReLU(),
-            nn.Linear(512,128),
+            nn.Linear(self.hidden_size[0],self.hidden_size[1]),
             nn.Dropout(mlp_drop_rate),
-            nn.BatchNorm1d(128),
+            nn.BatchNorm1d(self.hidden_size[1]),
             nn.LeakyReLU(),
-            nn.Linear(128,3)
-            # HailingDirectNorm()
+            nn.Linear(self.hidden_size[1],3),
+            HailingDirectNorm()
         )
     def forward(self,x):
         batch=x.shape[0]

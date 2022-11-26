@@ -2,7 +2,7 @@ GNU AFFERO GENERAL PUBLIC LICENSE
 Project: DeepMuon
 Dark Matter Searching Deep Learning Platform
 Author: Airscker/Yufeng Wang
-Contributors: Yufeng Wang, Yu Zhang
+Contributors: Yufeng Wang, Yu Zhang, Shendong Su
 University of Science of Technology of China
 Internal supported sensor's dataset: Pandax-4T III, TRIDENT
 If you want to publish thesis using DeepMuon, please add bibliography:

@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2022-11-20 00:33:40
+LastEditTime: 2022-11-26 12:26:14
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -86,6 +86,23 @@ def hist_plot(data,inter=20,xlabel='The number of events'):
     return 0
 
 def plot_hist_2nd(data,title='x',bins=15,sigma=3,save='',show=False):
+    """
+    The plot_hist_2nd function plots a histogram of the data provided. 
+    It also includes lines to represent the mean and +/- 3 standard deviations.
+    The function takes in 4 parameters: 
+        1) data - The list of numbers that will be plotted as a histogram
+        2) title - The title for the plot
+        3) bins - The number of bins to use for the histogram (default is 15).
+        4) sigma - How many standard deviations away from mean should be highlighted (default is 3).
+    
+    :param data: Plot the histogram
+    :param title='x': Set the title of the plot
+    :param bins=15: Set the number of bins in the histogram
+    :param sigma=3: Set the sigma range of the distribution
+    :param save='': Save the plot as a 
+    :param show=False: Save the plot without showing it
+    :return: The n, bins, patchs from the plt
+    """
     plt.figure(figsize=(20,8))
     plt.title(f'Distribution of {title} Total Number: {len(data)}\
         \nMIN/MAX: {np.min(data)}/{np.max(data)} MEAN/STD: {np.mean(data)}/{np.std(data)}\
@@ -108,6 +125,21 @@ def plot_hist_2nd(data,title='x',bins=15,sigma=3,save='',show=False):
     if show==True:
         plt.show()
 def plot_curve(data,title='Curve',axis_label=['Epoch','Loss'],data_label=['Curve1'],save='',show=False):
+    """
+    The plot_curve function plots a single or multiple curves on the same plot.
+    The function takes in a list of data and labels for each curve to be plotted.
+    The axis labels are optional, but if provided they will be used as x-axis label and y-axis label respectively. 
+    If no axis labels are provided, then the default values &quot;Epoch&quot; and &quot;Loss&quot; will be used instead.
+    
+    :param data: Plot the data, it can be a list of numpy array or a single numpy array
+    :param title='Curve': Set the title of the plot
+    :param axis_label=['Epoch': Set the label of the x-axis
+    :param 'Loss']: Set the title of the graph
+    :param data_label=['Curve1']: Label the curve in the plot
+    :param save='': Save the plot to a file
+    :param show=False: Save the plot as an image file
+    :return: Nothing, it just plots the curve on the current figure
+    """
     # data=np.array(data)
     plt.figure(figsize=(20,10))
     plt.title(f'{title}')

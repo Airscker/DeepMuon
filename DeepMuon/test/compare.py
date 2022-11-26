@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-05 21:51:59
 LastEditors: airscker
-LastEditTime: 2022-11-20 22:00:43
+LastEditTime: 2022-11-26 12:20:17
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -16,6 +16,19 @@ from DeepMuon.tools.AirFunc import *
 from DeepMuon.test.analysis import *
 
 def loss_com(work_dirs,output='',max=0.2,num=0):
+    """
+    The loss_com function is used to compare the loss of several models.
+    It will plot two curves, one for training and another for testing.
+    The input is a list of work_dirs which contains the log file in each directory. 
+    The output will be saved as a jpg image under root path specified by output argument.
+    
+    :param work_dirs: Specify the path of a list of models
+    :param output='': Specify the root path of output, rather then a specific file
+    :param max=0.2: Set the maximum value of the loss curve, and if it is greater than 0
+    :param num=0: Specify the number of epochs to plot
+    :return: Three variables: loss_train,loss_test,loss_max
+    
+    """
     tsl=[]
     trl=[]
     name=[]
