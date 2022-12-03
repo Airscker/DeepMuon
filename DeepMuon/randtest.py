@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-08-25 22:02:01
 LastEditors: airscker
-LastEditTime: 2022-12-03 22:53:14
+LastEditTime: 2022-12-04 00:06:12
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -224,7 +224,7 @@ def model_optim():
 # print(model._get_name())
 # print(f'Total Time used: {time.time()-start}s')
 # model_para(SparseCSPP(),datasize=(2,10,10,40,3))
-model_para(STRM(),datasize=[2,3,10,10,40])
+# model_para(STRM(),datasize=[2,3,10,10,40])
 del_pycache()
 
 # model_para(model=MLP3v2(),datasize=[3,1,17,17])
