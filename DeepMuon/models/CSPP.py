@@ -2,20 +2,51 @@
 Author: airscker
 Date: 2022-10-13 07:51:47
 LastEditors: airscker
-LastEditTime: 2022-11-25 15:46:16
+LastEditTime: 2022-12-03 23:41:01
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
 '''
 import torch
 import torch.nn as nn
-from torch.nn import init
-import functools
-from torch.autograd import Variable
-import numpy as np
 import torch.nn.functional as F
-import math
 from monai.networks.blocks.convolutions import ResidualUnit
+torch.set_default_tensor_type(torch.DoubleTensor)
+
+class Plane(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.flatten = nn.Flatten()
+        self.linear_relu_stack = nn.Sequential(
+            nn.Linear(10*10, 52),
+            nn.BatchNorm1d(52),
+            nn.LeakyReLU(),
+            nn.Linear(52, 2)
+        )
+        self.linear_relu_stack2= nn.Sequential(
+            nn.Linear(3*40, 52),
+            nn.BatchNorm1d(52),
+            nn.LeakyReLU(),
+            nn.Linear(52, 3),
+            HailingDirectNorm()
+        )
+    def forward(self, x):
+        for i in range(40):
+            x_plane=x[:,:,:,:,i].to()
+            if torch.equal(x_plane,torch.zeros(x_plane.shape)):
+                x_plane=torch.zero(3)
+            else:
+                x_plane=self.flatten(x_plane) 
+                x_plane=self.linear_relu_stack(x_plane)
+                x_plane=torch.cat((x_plane,i),0)
+            if i==0:
+                logits=x_plane
+            else:
+                logits=torch.cat((logits,x_plane),dim=0)
+        track=self.flatten(logits)
+        track=self.linear_relu_stack2(logits)
+        logits=torch.cat((logits,track),dim=0)
+        return logits
 
 
 class UCSPP(nn.Module):
@@ -62,37 +93,38 @@ class UCSPP(nn.Module):
 class ResMax(nn.Module):
     def __init__(self,mlp_drop_rate=0,res_dropout=0):
         super().__init__()
-        self.output_num=[4,3,2,1]
+
+        self.output_num=[5,4,3,2]
         self.pools=nn.ModuleList([nn.AdaptiveMaxPool3d(x) for x in self.output_num])
         self.conv=nn.Sequential(
+            # nn.BatchNorm3d(3),
             # nn.Conv3d(3,8,(4,4,5),1,1,bias=False),
-            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5,act='PRELU',norm='INSTANCE',subunits=2,dropout=res_dropout),
+            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5,dropout=res_dropout),
             nn.BatchNorm3d(3),
             nn.LeakyReLU(),
             nn.AdaptiveMaxPool3d((8,8,30)),
             # nn.Conv3d(8,16,(4,4,5),1,1,bias=False),
-            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5,act='PRELU',norm='INSTANCE',subunits=2,dropout=res_dropout),
+            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5,dropout=res_dropout),
             nn.BatchNorm3d(3),
             nn.LeakyReLU(),
             nn.AdaptiveMaxPool3d((6,6,20)),
             # nn.Conv3d(16,32,(4,4,5),1,1,bias=False),
-            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5,act='PRELU',norm='INSTANCE',subunits=2,dropout=res_dropout),
+            ResidualUnit(spatial_dims=3,in_channels=3,out_channels=3,kernel_size=5,dropout=res_dropout),
             nn.BatchNorm3d(3),
-            nn.LeakyReLU(),
+            nn.LeakyReLU()
         )
-        self.hidden_size=[1024,128]
         self.linear_relu_stack=nn.Sequential(
             nn.Flatten(),
-            nn.Linear(300,self.hidden_size[0]),
+            nn.Linear(672,512),
             nn.Dropout(mlp_drop_rate),
-            nn.BatchNorm1d(self.hidden_size[0]),
+            nn.BatchNorm1d(512),
             nn.LeakyReLU(),
-            nn.Linear(self.hidden_size[0],self.hidden_size[1]),
+            nn.Linear(512,128),
             nn.Dropout(mlp_drop_rate),
-            nn.BatchNorm1d(self.hidden_size[1]),
+            nn.BatchNorm1d(128),
             nn.LeakyReLU(),
-            nn.Linear(self.hidden_size[1],3),
-            HailingDirectNorm()
+            nn.Linear(128,3)
+            # HailingDirectNorm()
         )
     def forward(self,x):
         batch=x.shape[0]

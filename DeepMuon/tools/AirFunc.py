@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2022-11-26 12:26:14
+LastEditTime: 2022-12-03 23:31:18
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -224,4 +224,3 @@ def del_pycache(path='./'):
             cache.append(root)
             print(f'{root} was deleted')
     return cache
-# print(__file__)

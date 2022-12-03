@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-11-25 22:10:31
+LastEditTime: 2022-12-03 23:33:36
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -19,7 +19,7 @@ from captum.attr import IntegratedGradients
 from DeepMuon.tools.AirConfig import Config
 from DeepMuon.tools.AirFunc import load_model, format_time, plot_hist_2nd
 from DeepMuon.tools.AirLogger import LOGT
-from DeepMuon.test.model_info import model_para
+from DeepMuon.tools.model_info import model_para
 from DeepMuon.test.analysis import loss_dist, data_analysis
 
 import torch

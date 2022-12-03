@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-17 18:11:14
 LastEditors: airscker
-LastEditTime: 2022-11-25 17:58:15
+LastEditTime: 2022-12-03 23:40:04
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -178,7 +178,7 @@ class HailingDataset_Direct2(Dataset):
         label=self.origin_data[index][1][3:]
         '''Data augmentation'''
         if self.augment:
-            oper=np.unique(np.random.randint(0,3,np.random.randint(0,4)))#[-1,3]range,[0,3]random length
+            oper=np.unique(np.random.randint(0,1,np.random.randint(0,2)))#[-1,0]range,[0,1]random length
             for oper_i in range(len(oper)):
                 image,label=self.augmentation[oper[oper_i]](image,label)
         image=torch.from_numpy(image.copy())
@@ -192,6 +192,36 @@ class HailingDataset_Direct2(Dataset):
             self.origin_data=pkl.load(f)
         f.close()
         print(f'Dataset {self.datapath} loaded')
+
+class HailingDataset_Plane_Z(Dataset):
+    def __init__(self,datapath='./Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl',min_z=9):
+        self.datapath=datapath
+        self.origin_data=None
+        self.pattern_imgs=[]
+        self.pos_direction=[]
+        self.min_z=min_z
+        self.__Init()
+    def __len__(self):
+        return len(self.origin_data)
+    def __getitem__(self, index):
+        image=np.array(self.origin_data[index][0])
+        image=torch.from_numpy(image)
+        image=torch.permute(image,(3,0,1,2))
+        image[1:,:,:,:]=0.0001*image[1:,:,:,:]
+        label=self.origin_data[index][1]
+        label1=[]
+        for i in range(40):
+            t=np.float((i-label[2])/label[5])
+            label1.append([np.array((label[3]*t+label[0]),(label[4]*t+label[1]),i)])
+        label1.append(np.array(self.origin_data[index][1][3:]))
+        label1=torch.from_numpy(label1)
+        return image,label1
+    def __Init(self):
+        with open(self.datapath,'rb')as f:
+            self.origin_data=pkl.load(f)
+        f.close()
+
+
 
 class HailingData_Init:
     def __init__(self,datapath='./Hailing-Muon/data/1TeV/validate_norm.pkl',output='Hailing_1TeV_val_data.pkl',shape=(10,10,40,3)):
