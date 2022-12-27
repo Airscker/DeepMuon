@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-11-26 23:18:08
 LastEditors: airscker
-LastEditTime: 2022-11-26 23:19:05
+LastEditTime: 2022-12-26 21:52:37
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -12,8 +12,8 @@ import GPUtil
 import numpy as np
 import psutil
 
+
 def get_gpu_info():
-    
     """Get information about all GPUs .
     Returns:
         gpu_para: [gpu.id,gpu.memoryTotal,gpu.memoryUsed,gpu.memoryUtil]
@@ -23,21 +23,24 @@ def get_gpu_info():
     pynvml.nvmlInit()
     Gpus = GPUtil.getGPUs()
     gpu_para = []
-    pids=[]
-    info=f'''<table>{html_addrow(['GPUID','PID','Memory Used(MB)','Total Memory(MB)','Free Memory(MB)','Used Proportion'])}'''
+    pids = []
+    info = f'''<table>{html_addrow(['GPUID','PID','Memory Used(MB)','Total Memory(MB)','Free Memory(MB)','Used Proportion'])}'''
     for gpu in Gpus:
-        handle=pynvml.nvmlDeviceGetHandleByIndex(gpu.id)
-        pid_list=pynvml.nvmlDeviceGetComputeRunningProcesses(handle)
-        gpu_info=pynvml.nvmlDeviceGetMemoryInfo(handle)
+        handle = pynvml.nvmlDeviceGetHandleByIndex(gpu.id)
+        pid_list = pynvml.nvmlDeviceGetComputeRunningProcesses(handle)
+        gpu_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
         for i in range(len(pid_list)):
             pids.append(pid_list[i].pid)
-            info_list=[gpu.id,pid_list[i].pid,format(pid_list[i].usedGpuMemory/1024**2,'0.2f'),format(gpu_info.total/1024**2,'0.2f'),format(gpu_info.free/1024**2,'0.2f'),format(gpu_info.used/gpu_info.total,'0.2f')]
-            info+=html_addrow(info_list)
-        gpu_para.append([gpu.id, gpu.memoryTotal, gpu.memoryUsed,gpu.memoryUtil * 100])
-    gpu_para=np.array(gpu_para)
-    info+='''</table>'''
+            info_list = [gpu.id, pid_list[i].pid, format(pid_list[i].usedGpuMemory/1024**2, '0.2f'), format(
+                gpu_info.total/1024**2, '0.2f'), format(gpu_info.free/1024**2, '0.2f'), format(gpu_info.used/gpu_info.total, '0.2f')]
+            info += html_addrow(info_list)
+        gpu_para.append(
+            [gpu.id, gpu.memoryTotal, gpu.memoryUsed, gpu.memoryUtil * 100])
+    gpu_para = np.array(gpu_para)
+    info += '''</table>'''
     pynvml.nvmlShutdown()
-    return gpu_para,info,pids
+    return gpu_para, info, pids
+
 
 def pid_info(pid):
     """
@@ -45,30 +48,31 @@ def pid_info(pid):
     - pid_info[0] = process name
     - pid_info[2] = number of threads
     - pid_info[3] = status (running, idle, etc.)
-    
+
     :param pid: Specify the process id
     :return: A list of information about the process
     """
-    
-    pid_info=[]
+
+    pid_info = []
     try:
-        process=psutil.Process(pid)
+        process = psutil.Process(pid)
     except:
         pass
 
 
-def html_addrow(msg_list:list):
+def html_addrow(msg_list: list):
     """convert a list of messages into a HTML row
     Args:
         msg_list
     Returns:
         message in HTML format
     """
-    msg_row='''<tr>'''
+    msg_row = '''<tr>'''
     for i in range(len(msg_list)):
-        msg_row+=f'''<td>{msg_list[i]}</td>'''
-    msg_row+='''</tr>'''
+        msg_row += f'''<td>{msg_list[i]}</td>'''
+    msg_row += '''</tr>'''
     return msg_row
+
 
 def get_cpu_info():
     ''' :return:

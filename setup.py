@@ -1,8 +1,8 @@
 '''
 Author: airscker
 Date: 2022-09-21 18:43:31
-LastEditors: error: git config user.name & please set dead value or install git
-LastEditTime: 2022-11-20 09:34:46
+LastEditors: airscker
+LastEditTime: 2022-12-26 12:27:46
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -81,7 +81,9 @@ setup(
                       'monai',
                       'pynvml',
                       'psutil',
-                      'GPUtil'],
+                      'GPUtil',
+                      'timm',
+                      'einops'],
     # Similar to `install_requires` above, these must be valid existing
     # projects.
     # extras_require={  # Optional

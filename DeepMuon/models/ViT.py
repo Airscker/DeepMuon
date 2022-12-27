@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-28 12:20:22
 LastEditors: airscker
-LastEditTime: 2022-10-09 14:10:45
+LastEditTime: 2022-12-23 10:58:33
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -15,6 +15,7 @@ from monai.networks.blocks.transformerblock import TransformerBlock
 from typing import Sequence, Union
 
 torch.set_default_tensor_type(torch.DoubleTensor)
+
 
 class ViT(nn.Module):
     """
@@ -49,7 +50,7 @@ class ViT(nn.Module):
             pos_embed: position embedding layer type.
             dropout_rate: faction of the input units to drop.
             spatial_dims: number of spatial dimensions.
-            
+
         """
 
         super().__init__()
@@ -71,9 +72,11 @@ class ViT(nn.Module):
             spatial_dims=spatial_dims,
         )
         self.blocks = nn.ModuleList(
-            [TransformerBlock(hidden_size, mlp_dim, num_heads, dropout_rate) for i in range(num_layers)]
+            [TransformerBlock(hidden_size, mlp_dim, num_heads, dropout_rate)
+             for i in range(num_layers)]
         )
         self.norm = nn.LayerNorm(hidden_size)
+
     def forward(self, x):
         x = self.patch_embedding(x)
         for blk in self.blocks:
@@ -85,7 +88,8 @@ class ViT(nn.Module):
 class Vit_MLP(nn.Module):
     def __init__(self):
         super().__init__()
-        self.vit=ViT(3,[10,10,40],[10,10,20],hidden_size=256,num_layers=3,num_heads=16,mlp_dim=1024)
+        self.vit = ViT(3, [10, 10, 40], [10, 10, 20], hidden_size=256,
+                       num_layers=3, num_heads=16, mlp_dim=1024)
         self.flatten = nn.Flatten()
         self.mlp = nn.Sequential(
             nn.Linear(2*256, 1024),
@@ -101,39 +105,45 @@ class Vit_MLP(nn.Module):
             nn.Linear(128, 3),
             HailingDirectNorm()
         )
-    def forward(self,x):
-        x=self.vit(x)
-        x=self.flatten(x)
-        x=self.mlp(x)
+
+    def forward(self, x):
+        x = self.vit(x)
+        x = self.flatten(x)
+        x = self.mlp(x)
         return x
 
+
 class Vit_MLP2(nn.Module):
-    def __init__(self):
+    def __init__(self, mlp_drop=0):
         super().__init__()
-        self.vit=ViT(3,[10,10,40],[10,10,20],hidden_size=128,num_layers=3,num_heads=16,mlp_dim=32)
+        self.vit = ViT(3, [10, 10, 40], [10, 10, 20],
+                       hidden_size=128, num_layers=3, num_heads=16, mlp_dim=256)
         self.flatten = nn.Flatten()
         self.mlp = nn.Sequential(
             nn.Linear(2*128, 512),
             nn.BatchNorm1d(512),
             nn.LeakyReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(mlp_drop),
             nn.Linear(512, 128),
             nn.BatchNorm1d(128),
             nn.LeakyReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(mlp_drop),
             nn.Linear(128, 3),
             HailingDirectNorm()
         )
-    def forward(self,x):
-        x=self.vit(x)
-        x=self.flatten(x)
-        x=self.mlp(x)
+
+    def forward(self, x):
+        x = self.vit(x)
+        x = self.flatten(x)
+        x = self.mlp(x)
         return x
+
 
 class Vit_MLP3(nn.Module):
     def __init__(self):
         super().__init__()
-        self.vit=ViT(3,[10,10,40],[5,5,10],hidden_size=16,num_layers=12,num_heads=4,mlp_dim=16)
+        self.vit = ViT(3, [10, 10, 40], [5, 5, 10], hidden_size=16,
+                       num_layers=12, num_heads=4, mlp_dim=16)
         self.flatten = nn.Flatten()
         self.mlp = nn.Sequential(
             nn.Linear(16*16, 64),
@@ -144,11 +154,13 @@ class Vit_MLP3(nn.Module):
             nn.Linear(64, 3),
             HailingDirectNorm()
         )
-    def forward(self,x):
-        x=self.vit(x)
-        x=self.flatten(x)
-        x=self.mlp(x)
+
+    def forward(self, x):
+        x = self.vit(x)
+        x = self.flatten(x)
+        x = self.mlp(x)
         return x
+
 
 class HailingDirectNorm(nn.Module):
     def __init__(self) -> None:
@@ -160,5 +172,6 @@ class HailingDirectNorm(nn.Module):
         N is the batch size, and the output direction vector is normalized to 1
         '''
         super().__init__()
-    def forward(self,x):
+
+    def forward(self, x):
         return F.normalize(x)

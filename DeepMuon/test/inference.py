@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-12-04 00:09:03
+LastEditTime: 2022-12-27 17:17:58
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -34,7 +34,7 @@ torch.backends.cudnn.benchmark = True
 torch.set_printoptions(profile='full')
 
 
-def main(configs, ana, thres,neuron):
+def main(configs, ana, thres, neuron):
     # Initialize the basic training configuration
     loss_fn = configs['loss_fn']['backbone'](configs['loss_fn']['params'])
     batch_size = 1
@@ -88,17 +88,18 @@ def main(configs, ana, thres,neuron):
 
     # Get GFLOPS of the model
     flops, params, sumres = model_para(
-        model=configs['model']['backbone'], datasize=configs['hyperpara']['inputshape'], depth=5, gpu=gpu)
+        model=configs['model']['backbone'](**configs['model']['params']), datasize=configs['hyperpara']['inputshape'], depth=10, gpu=gpu)
     logger.log(f'Model Architecture:\n{model}')
-    logger.log(f'{sumres}', show=False)
-    logger.log(f'GFLOPs: {flops}, Number of Parameters: {params}')
+    logger.log(f'{sumres}')
+    logger.log(f'Overall GFLOPs: {flops}, Number of Parameters: {params}')
     logger.log(f'Loss Function: {loss_fn}')
 
     # save model architecture
     # writer=SummaryWriter(os.path.join(work_dir,'LOG'))
     # writer.add_graph(model,torch.rand(configs['hyperpara']['inputshape']).to(device))
-    if neuron>=0:
-        neuron_infer(device=device,dataloader=test_dataloader,model=model,loss_fn=loss_fn,work_dir=work_dir,index=neuron)
+    if neuron >= 0:
+        neuron_infer(device=device, dataloader=test_dataloader,
+                     model=model, loss_fn=loss_fn, work_dir=work_dir, index=neuron)
     # start inferencing
     loss, pred, real, loss_map = infer(
         device, test_dataloader, model, loss_fn, logger, thres=thres, ana=ana)
@@ -134,7 +135,7 @@ def infer(device, dataloader, model, loss_fn, logger: LOGT, thres, ana=True):
     a model, and an optional loss function. The loss function is only needed if you want to 
     see the accuracy of your predictions (for example, if you are training). This will return 
     the average loss over all of the batches as well as two lists: one with predicted values for each batch and one with real values for each batch.
-    
+
     :param device: Specify which device to use
     :param dataloader: Generate the data
     :param model: Specify the model to be used
@@ -179,7 +180,7 @@ def neuron_infer(device, dataloader, model: nn.Module, loss_fn, work_dir: str, i
         - device: The torch device on which the computations will be run. This is typically set to cuda if you have a GPU available, otherwise it should be set to cpu. 
         - dataloader: A DataLoader object that can load your test dataset batch by batch (for example, ImageFolder from torchvision). It should return pairs of images and labels for each iteration. 
         - model: The PyTorch neural network model that we want to infer neurons for (in this case
-    
+
     :param device: Specify the device to use
     :param dataloader: Load the data
     :param model:nn.Module: Specify the model to be profiled
@@ -208,16 +209,20 @@ def neuron_infer(device, dataloader, model: nn.Module, loss_fn, work_dir: str, i
                 logger.log('\nModel Parameters:')
                 for name, param in model.named_parameters():
                     logger.log(
-                        f"Layer: {name} | Size: {param.size()} | Values : {param} \n",show=False)
+                        f"Layer: {name} | Size: {param.size()} | Values : {param} \n", show=False)
+
+                '''Trace Feature Map'''
                 logger.log(
-                    f'\nFeature map of data with index {index} in the dataset\n',show=False)
+                    f'\nFeature map of data with index {index} in the dataset\n', show=False)
                 nodes, _ = get_graph_node_names(model)
                 fx = create_feature_extractor(model, return_nodes=nodes)
                 fms = fx(X)
                 for key in fms.keys():
-                    logger.log(f'Feature: {key}\nValue: \n{fms[key]}\n',show=False)
+                    logger.log(
+                        f'Feature: {key}\nValue: \n{fms[key]}\n', show=False)
                 with open(os.path.join(neuron_log, 'FX.pkl'), 'wb')as f:
                     pkl.dumps(fms)
+
                 loss_value = loss_fn(pred, y).item()
                 test_loss = loss_value
                 pred_value = pred.cpu().numpy()[0]
@@ -242,7 +247,7 @@ def run(config, neuron, ana, thres):
     a threshold value for determining whether to classify as positive or negative, and 
     the neuron number you want to analyze. It then runs the training/testing process using 
     the parameters specified in that config file.
-    
+
     :param config: Pass the path to the config file
     :param neuron: Specify which data in the dataset to evaluate, if -1 specified the operation will be canceled
     :param ana: Specify which analysis to run
@@ -254,7 +259,7 @@ def run(config, neuron, ana, thres):
         warnings.warn(
             'Distributed Training is not supported during model inference')
     train_config.paras['config'] = {'path': config}
-    main(train_config.paras, ana, thres,neuron)
+    main(train_config.paras, ana, thres, neuron)
 
 
 if __name__ == '__main__':

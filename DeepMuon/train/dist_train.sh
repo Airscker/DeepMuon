@@ -1,1 +1,1 @@
-CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 --master_port 22106 $(dirname "$0")/dist_train.py --config /home/dachuang2022/Yufeng/DeepMuon/config/Hailing/RESMAX.py --msg /home/dachuang2022/Yufeng/LICENSE.txt
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 --master_port 22106 $(dirname "$0")/dist_train.py --config /home/dachuang2022/Yufeng/DeepMuon/config/Hailing/VST.py --msg /home/dachuang2022/Yufeng/LICENSE.txt
