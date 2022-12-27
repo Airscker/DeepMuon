@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-12-27 17:17:58
+LastEditTime: 2022-12-27 17:59:06
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -91,7 +91,8 @@ def main(configs, ana, thres, neuron):
         model=configs['model']['backbone'](**configs['model']['params']), datasize=configs['hyperpara']['inputshape'], depth=10, gpu=gpu)
     logger.log(f'Model Architecture:\n{model}')
     logger.log(f'{sumres}')
-    logger.log(f'Overall GFLOPs: {flops}, Number of Parameters: {params}')
+    logger.log(
+        f'Overall Model GFLOPs: {flops}, Number of Parameters: {params}')
     logger.log(f'Loss Function: {loss_fn}')
 
     # save model architecture

@@ -2,8 +2,8 @@
 Author: airscker
 Date: 2022-09-17 18:11:14
 LastEditors: airscker
-LastEditTime: 2022-12-26 22:09:43
-Description: NULL
+LastEditTime: 2022-12-27 18:01:51
+Description: Datasets Built for Hailing TRIDENT Project
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
 '''
@@ -71,44 +71,6 @@ def Flip(image, label):
     image = image[:, :, ::-1, :]
     label = np.array([label[0], label[1], -label[2]])
     return image, label
-
-
-class HailingDataset_Direct(Dataset):
-    def __init__(self, datapath='./Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl', min_z=9):
-        '''
-        ## Dataset Built for Loading the Preprocessed Hailing 1TeV/10TeV Data
-        - Args: 
-            - datapath: The datapth of the preprocessed Hailing data, default to be './Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl'
-        - Output:
-            - Pattern Image, shape: [10,10,40/50,3], dtype: nparray -> torch.tensor
-            - Position-Direction, shape: [3,], dtype: nparray -> torch.tensor, info: [px,py,pz]
-        '''
-        self.datapath = datapath
-        self.origin_data = None
-        self.pattern_imgs = []
-        self.pos_direction = []
-        self.min_z = min_z
-        self.__Init()
-
-    def __len__(self):
-        return len(self.origin_data)
-
-    def __getitem__(self, index):
-        image = np.array(self.origin_data[index][0])
-        array = np.nonzero(np.count_nonzero(image, axis=(0, 1, 3)))
-        image = image[:, :, array[0][0]:(array[0][-1]+1), :]
-        image = np.append(image, np.zeros(
-            (10, 10, max(self.min_z-image.shape[2], 0), 3)), axis=2)
-        image = torch.from_numpy(image)
-        image = torch.permute(image, (3, 0, 1, 2))
-        image[1:, :, :, :] = 0.0001*image[1:, :, :, :]
-        label = torch.from_numpy(self.origin_data[index][1][3:])
-        return image, label
-
-    def __Init(self):
-        with open(self.datapath, 'rb')as f:
-            self.origin_data = pkl.load(f)
-        f.close()
 
 
 class SSP_Dataset(Dataset):
@@ -215,39 +177,6 @@ class HailingDataset_Direct2(Dataset):
             self.origin_data = pkl.load(f)
         f.close()
         print(f'Dataset {self.datapath} loaded')
-
-
-class HailingDataset_Plane_Z(Dataset):
-    def __init__(self, datapath='./Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl', min_z=9):
-        self.datapath = datapath
-        self.origin_data = None
-        self.pattern_imgs = []
-        self.pos_direction = []
-        self.min_z = min_z
-        self.__Init()
-
-    def __len__(self):
-        return len(self.origin_data)
-
-    def __getitem__(self, index):
-        image = np.array(self.origin_data[index][0])
-        image = torch.from_numpy(image)
-        image = torch.permute(image, (3, 0, 1, 2))
-        image[1:, :, :, :] = 0.0001*image[1:, :, :, :]
-        label = self.origin_data[index][1]
-        label1 = []
-        for i in range(40):
-            t = np.float((i-label[2])/label[5])
-            label1.append(
-                [np.array((label[3]*t+label[0]), (label[4]*t+label[1]), i)])
-        label1.append(np.array(self.origin_data[index][1][3:]))
-        label1 = torch.from_numpy(label1)
-        return image, label1
-
-    def __Init(self):
-        with open(self.datapath, 'rb')as f:
-            self.origin_data = pkl.load(f)
-        f.close()
 
 
 class HailingData_Init:

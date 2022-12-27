@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-12-04 22:57:15
 LastEditors: airscker
-LastEditTime: 2022-12-05 16:51:42
+LastEditTime: 2022-12-27 18:00:42
 Description: Trilateral Projection Neural Network
     - Input
         - shape: [N,3,10,10,40/50]
@@ -90,7 +90,7 @@ class TRIP(nn.Module):
             nn.Linear(3, 1)
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         xyp = self.regs[0](self.projects[0](x).squeeze(-1)).unsqueeze(1)
         xzp = self.regs[1](self.projects[1](x).squeeze(-2)).unsqueeze(1)
         yzp = self.regs[2](self.projects[2](x).squeeze(-3)).unsqueeze(1)

@@ -1,8 +1,8 @@
 '''
 Author: Airscker
 Date: 2022-07-19 13:01:17
-LastEditors: error: git config user.name & please set dead value or install git
-LastEditTime: 2022-11-20 09:45:59
+LastEditors: airscker
+LastEditTime: 2022-12-27 18:06:32
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -18,9 +18,7 @@ from DeepMuon.tools.AirFunc import load_model, save_model, format_time
 from DeepMuon.tools.AirLogger import LOGT
 
 import torch
-from torch import nn
 from torch.utils.data import DataLoader
-import torchvision.models as models
 from ptflops import get_model_complexity_info
 from torchinfo import summary
 from torch.utils.tensorboard import SummaryWriter
