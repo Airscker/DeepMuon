@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-12-27 17:43:20
+LastEditTime: 2023-01-10 14:27:38
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -20,7 +20,6 @@ import torch
 from torch import nn
 import torch.distributed as dist
 from torch.utils.data import DataLoader
-import torchvision.models as models
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.tensorboard import SummaryWriter
@@ -66,7 +65,9 @@ def main(configs, msg=''):
 
     # Log the basic parameters
     if local_rank == 0:
+        json_info = {}
         logger = AirLogger.LOGT(log_dir=work_dir, logfile=log)
+        json_logger = AirLogger.LOGJ(log_dir=work_dir, logfile=f'{log}.json')
         # Create work_dir
         try:
             os.makedirs(work_dir)
@@ -76,15 +77,19 @@ def main(configs, msg=''):
         # show hyperparameters
         logger.log(
             f'========= Current Time: {time.ctime()} Current PID: {os.getpid()} =========')
-
+        json_info['init_time'] = time.time()
+        json_info['pid'] = os.getpid()
         logger.log(f'LOCAL WORLD SIZE: {local_world_size}')
+        json_info['local_world_size'] = local_world_size
         if not os.path.exists(msg):
             logger.log('LICENSE MISSED! REFUSE TO START TRAINING')
             return 0
         with open(msg, 'r')as f:
             msg = f.read()
         logger.log(msg)
+        json_info['license'] = msg
         keys = list(configs.keys())
+        json_info['configs'] = configs
         info = ''
         for i in range(len(keys)):
             info += f'\n{keys[i]}:'
@@ -123,6 +128,8 @@ def main(configs, msg=''):
         epoch_now = epoch_c+1
         if local_rank == 0:
             logger.log(f'Model Resumed from {resume}, Epoch now: {epoch_now}')
+            json_info['resume_model_file'] = resume
+            json_info['resume_epoch'] = epoch_now
     elif load != '':
         epoch_c, model_c, optimizer_c, schedular_c, loss_fn_c = AirFunc.load_model(
             path=load, device=device)
@@ -132,6 +139,7 @@ def main(configs, msg=''):
         if local_rank == 0:
             logger.log(
                 f'Pretrained Model Loaded from {load}, Epoch now: {epoch_now}')
+            json_info['pretrain_model_file'] = load
     epochs += epoch_now
     model_name = model._get_name()
     # save model architecture before model parallel
@@ -140,8 +148,8 @@ def main(configs, msg=''):
         writer.add_graph(model, torch.randn(
             configs['hyperpara']['inputshape']).to(device))
     # Model Parallel
-    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[
-                                                      local_rank], output_device=local_rank, find_unused_parameters=False)
+    model = DistributedDataParallel(model, device_ids=[
+                                    local_rank], output_device=local_rank, find_unused_parameters=False)
     # loss/optimizer/lr
     # loss_fn=nn.MSELoss()
     loss_fn = configs['loss_fn']['backbone'](**configs['loss_fn']['params'])
@@ -161,6 +169,7 @@ def main(configs, msg=''):
         logger.log(f'Loss Function: {loss_fn}')
         logger.log(f'Optimizer:\n{optimizer}')
         logger.log(f'Schedular: {schedular}')
+        json_logger.log(json_info)
 
     # Training Initailization
     bestloss = test(device, test_dataloader, model, loss_fn)
@@ -177,35 +186,36 @@ def main(configs, msg=''):
     for t in bar:
         start_time = time.time()
         train_dataloader.sampler.set_epoch(t)
-        tloss = train(device, train_dataloader, model,
-                      loss_fn, optimizer, schedular)
-        loss = test(device, test_dataloader, model, loss_fn)
+        trloss = train(device, train_dataloader, model,
+                       loss_fn, optimizer, schedular)
+        tsloss = test(device, test_dataloader, model, loss_fn)
         # Synchronize all threads
-        res = torch.tensor([tloss, loss], device=device)
+        res = torch.tensor([trloss, tsloss], device=device)
         dist.barrier()
         # Reduces the tensor data across all machines in such a way that all get the final result.(Add results of every gpu)
         dist.all_reduce(res)
         res = res/float(local_world_size)
 
         if local_rank == 0:
+            train_loss = res[0].item()
+            test_loss = res[1].item()
             LRn = optimizer.state_dict()['param_groups'][0]['lr']
             bar.set_description(
-                f'LR: {LRn},Test Loss: {res[1].item()},Train Loss: {res[0].item()}')
+                f'LR: {LRn},Test Loss: {test_loss},Train Loss: {train_loss}')
             writer.add_scalar(f'Test Loss Curve',
-                              res[1].item(), global_step=t+1)
+                              test_loss, global_step=t+1)
             writer.add_scalar(f'Train Loss Curve',
-                              res[0].item(), global_step=t+1)
-            if res[1].item() <= bestloss:
-                bestloss = res[1].item()
+                              train_loss, global_step=t+1)
+            if test_loss <= bestloss:
+                bestloss = test_loss
                 # Double save to make sure secure, directly save total model is forbidden, otherwise load issues occur
                 savepath = os.path.join(work_dir, 'Best_Performance.pth')
                 AirFunc.save_model(epoch=t, model=model, optimizer=optimizer,
                                    loss_fn=loss_fn, schedular=schedular, path=savepath, dist_train=True)
                 AirFunc.save_model(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn, schedular=schedular, path=os.path.join(
                     work_dir, f'{model_name}_Best_Performance.pth'), dist_train=True)
-
                 logger.log(
-                    f'Best Model Saved as {savepath}, Best Test Loss: {bestloss}, Current Epoch: {(t+1)}, Memory Left: {get_mem_info()}', show=False)
+                    f'Best Model Saved as {savepath}, Best Test Loss: {bestloss}, Current Epoch: {(t+1)}', show=False)
             if (t+1) % inter == 0:
                 # torch.save(model,os.path.join(work_dir,f'Epoch_{t+1}.pth'))
                 savepath = os.path.join(work_dir, f'Epoch_{t+1}.pth')
@@ -213,7 +223,13 @@ def main(configs, msg=''):
                                    loss_fn=loss_fn, schedular=schedular, path=savepath, dist_train=True)
                 logger.log(
                     f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=False)
-            logger.log(f'LR: {LRn}, Epoch: [{t+1}][{epochs}], Test Loss: {res[1].item()}, Train Loss: {res[0].item()}, Best Test Loss: {bestloss}, Time:{time.time()-start_time}s, ETA: {AirFunc.format_time((epochs-1-t)*(time.time()-start_time))}', show=False)
+            epoch_time = time.time()-start_time
+            eta = AirFunc.format_time((epochs-1-t)*(time.time()-start_time))
+            mem_left = get_mem_info()
+            logger.log(
+                f'LR: {LRn}, Epoch: [{t+1}][{epochs}], Test Loss: {test_loss}, Train Loss: {train_loss}, Best Test Loss: {bestloss}, Time:{epoch_time}s, ETA: {eta}, Memory Left: {mem_left}', show=False)
+            json_logger.log(dict(mode='train', lr=LRn, epoch=t+1, total_epoch=epochs, test_loss=test_loss,
+                            train_loss=train_loss, best_test_loss=bestloss, time=epoch_time, eta=eta, memory_left=mem_left))
     return bestloss
 
 

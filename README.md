@@ -1,4 +1,4 @@
-# <img src="./Resources/DeepMuon.png" width =900px>
+# <center><img src="./Resources/DeepMuon.png" width =900px></center>
 
 ## Introduction
 
@@ -26,10 +26,10 @@ pip install -v -e ./ --user
 ## Tutorials
 
 - [Regulations](./Tutorial/1.Regulations.md)
-- [Customize Dataset](./Tutorial/2.Customize Dataset.md)
-- [Customize Model](./Tutorial/3.Customize Model.md)
+- [Customize Dataset](./Tutorial/2.Customize%20Dataset.md)
+- [Customize Model](./Tutorial/3.Customize%20Model.md)
 - [Configuration](./Tutorial/4.Configuration.md)
-- [Training and Inference](./Tutorial/5.Training and Inference.md)
+- [Training and Inference](./Tutorial/5.Training%20and%20Inference.md)
 
 ## CopyRight
 
@@ -41,14 +41,12 @@ pip install -v -e ./ --user
 >
 > Author: Airscker/Yufeng Wang
 >
-> Contributors: Yufeng Wang, Yu Zhang
+> Contributors: Yufeng Wang, Yu Zhang, Shendong Su
 >
-> University of Science of Technology and Science of China
+> University of Science of Technology of China
 >
-> Internal supported sensor's dataset: Pandax-4T, Hailing
+> Internal supported sensor's dataset: Pandax-4T III, TRIDENT
 >
 > If you want to publish thesis using DeepMuon, please add bibliography:
 >
-> > To be published
->
-> Copyright (C) 2022 by Airscker, All Rights Reserved.
+> Copyright (C) 2023 by Airscker, All Rights Reserved.

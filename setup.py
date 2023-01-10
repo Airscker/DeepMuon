@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-21 18:43:31
 LastEditors: airscker
-LastEditTime: 2022-12-26 12:27:46
+LastEditTime: 2022-12-28 17:05:27
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -26,9 +26,9 @@ setup(
     description="DeepMuon Project Built for Simple and Direct Deep Learning Researches on Dark Matter Searching",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    # url="https://github.com/pypa/sampleproject",
+    url="https://airscker.github.io/DeepMuon/",
     author="Airscker/Yufeng Wang",
-    author_email="wangyufeng@mail.ustc.edu.cn",
+    author_email="airscker@gmail.com",
     classifiers=[
         # How mature is this project? Common values are
         #   3 - Alpha
@@ -83,7 +83,7 @@ setup(
                       'psutil',
                       'GPUtil',
                       'timm',
-                      'einops'],
+                      ],
     # Similar to `install_requires` above, these must be valid existing
     # projects.
     # extras_require={  # Optional
