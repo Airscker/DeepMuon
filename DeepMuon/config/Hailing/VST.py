@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 22:24:05
 LastEditors: airscker
-LastEditTime: 2022-12-23 17:30:30
+LastEditTime: 2023-01-16 21:00:16
 Description: Configuration of Hailing 1TeV MLP3_3D_Direct Model
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -15,9 +15,9 @@ model = dict(backbone='VST')
 '''
 ## Specify the dataset to load the data, all dataset are stored in 'dataset'
 '''
-train_dataset = dict(backbone='HailingDataset_Direct2', params=dict(
+train_dataset = dict(backbone='HailingDataset_DirectV3', params=dict(
     datapath='/home/dachuang2022/Yufeng/Hailing-Muon/data/1TeV/1Tev_Resample_4Sigma45_train60k.pkl', augment=True))
-test_dataset = dict(backbone='HailingDataset_Direct2', params=dict(
+test_dataset = dict(backbone='HailingDataset_DirectV3', params=dict(
     datapath='/home/dachuang2022/Yufeng/Hailing-Muon/data/1TeV/1Tev_Resample_4Sigma45_test20k.pkl', augment=False))
 '''
 ## Specify the work_dir to save the training log and checkpoints
@@ -39,7 +39,7 @@ loss_fn = dict(backbone='MSALoss')
 '''
 ## Specify the Hyperparameters to be used
 '''
-hyperpara = dict(epochs=3000, batch_size=5000, inputshape=[1, 3, 40, 10, 10])
+hyperpara = dict(epochs=3000, batch_size=2000, inputshape=[1, 3, 40, 10, 10])
 '''
 ## Specify the lr as well as its config, the lr will be optimized using torch.optim.lr_scheduler.ReduceLROnPlateau()
 '''

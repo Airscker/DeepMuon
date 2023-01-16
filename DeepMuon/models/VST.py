@@ -1,17 +1,11 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# import torch.utils.checkpoint as checkpoint
 import numpy as np
 from timm.models.layers import DropPath, trunc_normal_
-
-# from mmcv.runner import load_checkpoint
-# from mmaction.utils import get_root_logger
-# from ..builder import BACKBONES
-
 from functools import reduce, lru_cache
 from operator import mul
-# from einops import rearrange
+torch.set_default_tensor_type(torch.DoubleTensor)
 
 
 class Mlp(nn.Module):
@@ -714,8 +708,8 @@ class VST(nn.Module):
         super().__init__()
         hiddensize = [512, 128]
         self.vst = SwinTransformer3D(**kwargs)
+        self.flatten = nn.Flatten()
         self.mlp = nn.Sequential(
-            nn.Flatten(1),
             nn.Linear(768, hiddensize[0]),
             nn.BatchNorm1d(hiddensize[0]),
             nn.LeakyReLU(),
@@ -728,5 +722,5 @@ class VST(nn.Module):
         )
 
     def forward(self, x):
-        x = self.mlp(self.vst(x))
+        x = self.mlp(self.flatten(self.vst(x)))
         return F.normalize(x)

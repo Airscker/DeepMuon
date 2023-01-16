@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-13 07:51:47
 LastEditors: airscker
-LastEditTime: 2022-12-27 17:51:29
+LastEditTime: 2023-01-16 20:52:24
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -12,52 +12,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from monai.networks.blocks.convolutions import ResidualUnit
 torch.set_default_tensor_type(torch.DoubleTensor)
-
-
-class UCSPP(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.encode1 = nn.Sequential(
-            nn.AdaptiveMaxPool3d((10, 10, 20)),
-            ResidualUnit(spatial_dims=3, in_channels=3,
-                         out_channels=6, kernel_size=5),
-            nn.BatchNorm3d(6),
-            nn.LeakyReLU(),
-            ResidualUnit(spatial_dims=3, in_channels=6,
-                         out_channels=12, kernel_size=3),
-            nn.BatchNorm3d(12),
-            nn.LeakyReLU(),
-            nn.AdaptiveMaxPool3d((2, 2, 5))
-        )
-        self.encode2 = nn.Sequential(
-            nn.AdaptiveMaxPool3d((5, 5, 10)),
-            ResidualUnit(spatial_dims=3, in_channels=3,
-                         out_channels=6, kernel_size=5),
-            nn.BatchNorm3d(6),
-            nn.LeakyReLU(),
-            nn.AdaptiveMaxPool3d((2, 2, 5))
-        )
-        self.encode3 = nn.Sequential(
-            nn.AdaptiveMaxPool3d((2, 2, 5)),
-        )
-        self.mlp = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(420, 512),
-            nn.BatchNorm1d(512),
-            nn.LeakyReLU(),
-            nn.Linear(512, 128),
-            nn.BatchNorm1d(128),
-            nn.LeakyReLU(),
-            nn.Linear(128, 3),
-            HailingDirectNorm()
-        )
-
-    def forward(self, x):
-        feature1 = self.encode1(x)
-        feature2 = self.encode2(x)
-        feature3 = self.encode3(x)
-        x = torch.cat((feature1, feature2, feature3), 1)
-        return self.mlp(x)
 
 
 class ResMax(nn.Module):

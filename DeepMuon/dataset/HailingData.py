@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-17 18:11:14
 LastEditors: airscker
-LastEditTime: 2022-12-27 18:01:51
+LastEditTime: 2023-01-16 20:58:15
 Description: Datasets Built for Hailing TRIDENT Project
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -73,65 +73,49 @@ def Flip(image, label):
     return image, label
 
 
-class SSP_Dataset(Dataset):
-    def __init__(self, datapath='./Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl'):
+class HailingDataset_DirectV3(Dataset):
+    def __init__(self, datapath='./Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl', augment=False):
         '''
-        ## Dataset Built for Loading the Preprocessed Hailing 1TeV/10TeV Data
+        ## Dataset Built for Loading the Preprocessed Hailing 1TeV/10TeV Data, origial data shape: [10,10,40/50,3]
         - Args: 
             - datapath: The datapth of the preprocessed Hailing data, default to be './Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl'
         - Output:
-            - Pattern Image, shape: [10,10,40/50,3], dtype: nparray -> torch.tensor
+            - Pattern Image, shape: [3,40/50,10,10], dtype: nparray -> torch.tensor
             - Position-Direction, shape: [3,], dtype: nparray -> torch.tensor, info: [px,py,pz]
         '''
         self.datapath = datapath
         self.origin_data = None
         self.pattern_imgs = []
         self.pos_direction = []
+        self.augmentation = {0: Rotate180, 1: Rotate90, 2: Flip}
+        self.augment = augment
         self.__Init()
-        self.__sort()
 
     def __len__(self):
-        return len(self.origin_data)*8
+        return len(self.origin_data)
 
     def __getitem__(self, index):
-        # image=np.array(self.origin_data[index][0])
-        # array=np.nonzero(np.count_nonzero(image,axis=(0,1,3)))
-        # image=image[:,:,array[0][0]:(array[0][-1]+1),:]
-        # image=np.append(image,np.zeros((10,10,max(9-image.shape[2],0),3)),axis=2)
-        image = torch.from_numpy(self.sortedata[index][0])
-        image = torch.permute(image, (3, 0, 1, 2))
+        image = np.array(self.origin_data[index][0])
+        label = self.origin_data[index][1][3:]
+        '''Data augmentation'''
+        if self.augment:
+            # [-1,0]range,[0,1]random length
+            oper = np.unique(np.random.randint(0, 1, np.random.randint(0, 2)))
+            for oper_i in range(len(oper)):
+                image, label = self.augmentation[oper[oper_i]](image, label)
+        image = torch.from_numpy(image.copy())
+        # image = torch.permute(image, (3, 0, 1, 2))
+        image = torch.permute(image, (3, 2, 0, 1))
         image[1:, :, :, :] = 0.0001*image[1:, :, :, :]
-        label = 100*torch.from_numpy(self.sortedata[index][1][3:])
+        label = torch.from_numpy(label)
         return image, label
 
-    def __sort(self):
-        len_map = {}
-        for i in range(len(self.origin_data)):
-            image = np.array(self.origin_data[i][0])
-            # array=np.nonzero(np.count_nonzero(image,axis=(0,1,3)))
-            # image=image[:,:,array[0][0]:(array[0][-1]+1),:]
-            # image=np.append(image,np.zeros((10,10,max(9-image.shape[2],0),3)),axis=2)
-            image = np.delete(image, np.where(
-                np.count_nonzero(image, axis=(0, 1, 3)) == 0), axis=2)
-            image = np.append(image, np.zeros(
-                (10, 10, max(9-image.shape[2], 0), 3)), axis=2)
-            length = image.shape[2]
-            if length in len_map:
-                len_map[length].append([image, self.origin_data[i][1]])
-            else:
-                len_map[length] = [[image, self.origin_data[i][1]]]
-        len_keys = list(len_map.keys())
-        len_keys = sorted(len_keys)
-        self.sortedata = []
-        for i in range(len(len_keys)):
-            items = len_map[len_keys[i]]
-            for j in range(len(items)):
-                self.sortedata.append(items[j])
-
     def __Init(self):
+        print(f'Loading dataset {self.datapath}')
         with open(self.datapath, 'rb')as f:
             self.origin_data = pkl.load(f)
         f.close()
+        print(f'Dataset {self.datapath} loaded')
 
 
 class HailingDataset_Direct2(Dataset):
@@ -165,8 +149,8 @@ class HailingDataset_Direct2(Dataset):
             for oper_i in range(len(oper)):
                 image, label = self.augmentation[oper[oper_i]](image, label)
         image = torch.from_numpy(image.copy())
-        # image = torch.permute(image, (3, 0, 1, 2))
-        image = torch.permute(image, (3, 2, 0, 1))
+        image = torch.permute(image, (3, 0, 1, 2))
+        # image = torch.permute(image, (3, 2, 0, 1))
         image[1:, :, :, :] = 0.0001*image[1:, :, :, :]
         label = torch.from_numpy(label)
         return image, label

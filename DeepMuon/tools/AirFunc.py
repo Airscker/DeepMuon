@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-01-10 10:38:03
+LastEditTime: 2023-01-16 20:36:13
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -27,7 +27,7 @@ from torch import nn
 torch.set_default_tensor_type(torch.DoubleTensor)
 
 
-def unpack_json_log(log_path: str, start_from: int = 1) -> list:
+def unpack_json_log(log_path: str, start_from: int = 0) -> list:
     """
     The unpack_json_log function takes a log file path as an argument and returns a list of dictionaries.
     Each dictionary corresponds to one line in the log file, with keys corresponding to the JSON fields 
@@ -39,14 +39,19 @@ def unpack_json_log(log_path: str, start_from: int = 1) -> list:
     """
     with open(log_path, 'r')as f:
         ori_data = f.readlines()
-    data = ori_data[start_from:]
+    ori_data = ori_data[start_from:]
     info = []
-    for i in range(len(data)):
-        info.append(eval(data[i].split('\n')[0]))
+    for i in range(len(ori_data)):
+        try:
+            data = eval(ori_data[i].split('\n')[0])
+        except:
+            pass
+        if 'mode' in data.keys():
+            info.append(data)
     return info
 
 
-def load_json_log(log_file: str, start_from: int = 1) -> np.ndarray:
+def load_json_log(log_file: str, start_from: int = 0) -> np.ndarray:
     assert log_file.endswith(
         '.json'), f"log_file must be json file, however, {log_file} given"
     assert os.path.exists(
