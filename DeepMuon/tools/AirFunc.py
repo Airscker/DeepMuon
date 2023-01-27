@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-01-16 20:36:13
+LastEditTime: 2023-01-23 10:48:37
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -144,7 +144,7 @@ def plot_hist_2nd(data, title='x', bins=15, sigma=3, save='', show=False):
     :param title='x': Set the title of the plot
     :param bins=15: Set the number of bins in the histogram
     :param sigma=3: Set the sigma range of the distribution
-    :param save='': Save the plot as a 
+    :param save='': Save the plot as a jpg
     :param show=False: Save the plot without showing it
     :return: The n, bins, patchs from the plt
     """

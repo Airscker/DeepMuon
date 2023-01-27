@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 22:24:05
 LastEditors: airscker
-LastEditTime: 2022-12-27 18:06:15
+LastEditTime: 2023-01-18 10:09:11
 Description: Configuration of Hailing 1TeV MLP3_3D_Direct Model
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -16,21 +16,21 @@ model = dict(backbone='DResMax')
 ## Specify the dataset to load the data, all dataset are stored in 'dataset'
 '''
 train_dataset = dict(backbone='HailingDataset_Direct2', params=dict(
-    datapath='/home/dachuang2022/Yufeng/Hailing-Muon/data/1TeV/1Tev_Resample_4Sigma45_train60k.pkl', augment=True))
+    datapath='/data/Airscker/VST3/Hailing-Muon/data/1TeV/1Tev_Resample_3Sigma227_tr70k.pkl', augment=True))
 test_dataset = dict(backbone='HailingDataset_Direct2', params=dict(
-    datapath='/home/dachuang2022/Yufeng/Hailing-Muon/data/1TeV/1Tev_Resample_4Sigma45_test20k.pkl', augment=False))
+    datapath='/data/Airscker/VST3/Hailing-Muon/data/1TeV/1Tev_Resample_3Sigma227_ts10k.pkl', augment=False))
 '''
 ## Specify the work_dir to save the training log and checkpoints
 '''
 work_config = dict(
-    work_dir='/home/dachuang2022/Yufeng/Hailing-Muon/work_dir/1TeV/DResMax_5', logfile='log.log')
+    work_dir='/data/Airscker/VST3/Hailing-Muon/work_dir/1TeV/DResMax_7', logfile='log.log')
 '''
 ## Specify the checkpoint configuration
 '''
-# checkpoint_config=dict(load_from='',resume_from='/home/dachuang2022/Yufeng/Hailing-Muon/work_dir/1TeV/CSPP_3/Best_Performance.pth',save_inter=500)
+# checkpoint_config=dict(load_from='',resume_from='/data/Airscker/VST3/Hailing-Muon/work_dir/1TeV/CSPP_3/Best_Performance.pth',save_inter=500)
 # checkpoint_config=dict(load_from='',resume_from='',save_inter=500)
 checkpoint_config = dict(
-    load_from='/home/dachuang2022/Yufeng/Hailing-Muon/work_dir/1TeV/DResMax_3/Best_Performance.pth', resume_from='', save_inter=500)
+    load_from='', resume_from='/data/Airscker/VST3/Hailing-Muon/work_dir/1TeV/DResMax_6/Best_Performance.pth', save_inter=500)
 
 '''
 ## Specify the customized loss function to be used, if no customized loss function specified, nn.MSELoss() will be used

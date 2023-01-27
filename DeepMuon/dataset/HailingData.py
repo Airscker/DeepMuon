@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-17 18:11:14
 LastEditors: airscker
-LastEditTime: 2023-01-16 20:58:15
+LastEditTime: 2023-01-18 09:58:47
 Description: Datasets Built for Hailing TRIDENT Project
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -73,6 +73,10 @@ def Flip(image, label):
     return image, label
 
 
+def Same(image, label):
+    return image, label
+
+
 class HailingDataset_DirectV3(Dataset):
     def __init__(self, datapath='./Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl', augment=False):
         '''
@@ -87,7 +91,7 @@ class HailingDataset_DirectV3(Dataset):
         self.origin_data = None
         self.pattern_imgs = []
         self.pos_direction = []
-        self.augmentation = {0: Rotate180, 1: Rotate90, 2: Flip}
+        self.augmentation = {0: Rotate180, 1: Rotate90, 2: Flip, 3: Same}
         self.augment = augment
         self.__Init()
 
@@ -99,8 +103,8 @@ class HailingDataset_DirectV3(Dataset):
         label = self.origin_data[index][1][3:]
         '''Data augmentation'''
         if self.augment:
-            # [-1,0]range,[0,1]random length
-            oper = np.unique(np.random.randint(0, 1, np.random.randint(0, 2)))
+            # [0,3]range,[0,3]random length
+            oper = np.unique(np.random.randint(0, 4, np.random.randint(0, 4)))
             for oper_i in range(len(oper)):
                 image, label = self.augmentation[oper[oper_i]](image, label)
         image = torch.from_numpy(image.copy())
@@ -132,7 +136,7 @@ class HailingDataset_Direct2(Dataset):
         self.origin_data = None
         self.pattern_imgs = []
         self.pos_direction = []
-        self.augmentation = {0: Rotate180, 1: Rotate90, 2: Flip}
+        self.augmentation = {0: Rotate180, 1: Rotate90, 2: Flip, 3: Same}
         self.augment = augment
         self.__Init()
 
@@ -144,8 +148,8 @@ class HailingDataset_Direct2(Dataset):
         label = self.origin_data[index][1][3:]
         '''Data augmentation'''
         if self.augment:
-            # [-1,0]range,[0,1]random length
-            oper = np.unique(np.random.randint(0, 1, np.random.randint(0, 2)))
+            # [0,3]range,[0,3]random length
+            oper = np.unique(np.random.randint(0, 4, np.random.randint(0, 4)))
             for oper_i in range(len(oper)):
                 image, label = self.augmentation[oper[oper_i]](image, label)
         image = torch.from_numpy(image.copy())
