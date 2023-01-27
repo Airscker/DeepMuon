@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-12-04 22:57:15
 LastEditors: airscker
-LastEditTime: 2022-12-27 18:00:42
+LastEditTime: 2023-01-21 10:52:27
 Description: Trilateral Projection Neural Network
     - Input
         - shape: [N,3,10,10,40/50]
@@ -58,7 +58,7 @@ class SideP(nn.Module):
             nn.BatchNorm2d(3),
             nn.LeakyReLU()
         )
-        self.down_sample = nn.AdaptiveMaxPool2d((10, 10))
+        self.down_sample = nn.AdaptiveAvgPool2d((10, 10))
         self.mlp = nn.Sequential(
             nn.Flatten(),
             nn.Linear(300, 128),
@@ -81,13 +81,15 @@ class SideP(nn.Module):
 class TRIP(nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        self.projects = nn.ModuleList([nn.AdaptiveMaxPool3d((10, 10, 1)),
-                                       nn.AdaptiveMaxPool3d((10, 1, 40)),
-                                       nn.AdaptiveMaxPool3d((1, 10, 40))])
+        self.projects = nn.ModuleList([nn.AdaptiveAvgPool3d((10, 10, 1)),
+                                       nn.AdaptiveAvgPool3d((10, 1, 40)),
+                                       nn.AdaptiveAvgPool3d((1, 10, 40))])
         self.regs = nn.ModuleList([BotP(), SideP(), SideP()])
         self.vec = nn.Sequential(
-            nn.Linear(3, 3),
-            nn.Linear(3, 1)
+            nn.Linear(3, 9),
+            nn.BatchNorm1d(3),
+            nn.LeakyReLU(),
+            nn.Linear(9, 1)
         )
 
     def forward(self, x: torch.Tensor):

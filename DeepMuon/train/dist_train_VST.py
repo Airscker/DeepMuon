@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-01-16 21:33:14
+LastEditTime: 2023-01-20 17:14:02
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -141,17 +141,20 @@ def main(configs, msg=''):
 
     # Model Parallel
     model = DistributedDataParallel(model, device_ids=[
-                                    local_rank], output_device=local_rank, find_unused_parameters=False)
+                                    local_rank], output_device=local_rank, find_unused_parameters=True)
     # loss/optimizer/lr
     # loss_fn=nn.MSELoss()
     loss_fn = configs['loss_fn']['backbone'](**configs['loss_fn']['params'])
-    optimizer = torch.optim.AdamW(
-        model.parameters(), lr=lr, weight_decay=0.1, betas=(0.9, 0.999))
-    # optimizer = torch.optim.SGD(model.parameters(),lr=lr,momentum=0.9)
+    # optimizer = torch.optim.AdamW(
+    #     model.parameters(), lr=lr, weight_decay=0.1, betas=(0.9, 0.999))
+    optimizer = torch.optim.SGD(
+        model.parameters(), lr=lr, momentum=0.9, nesterov=True)
     # optimizer = torch.optim.Adam(model.parameters(),lr=lr,weight_decay=0.1)
     # schedular=torch.optim.lr_scheduler.StepLR(optimizer,lr_step,gamma=0.5)
-    schedular = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.5, patience=patience)
+    # schedular = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    #     optimizer, mode='min', factor=0.5, patience=patience)
+    schedular = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer=optimizer, T_max=patience)
 
     # Log the information of the model
     if local_rank == 0:
@@ -227,7 +230,7 @@ def main(configs, msg=''):
 def get_mem_info():
     gpu_id = torch.cuda.current_device()
     mem_total = torch.cuda.get_device_properties(gpu_id).total_memory
-    mem_cached = torch.cuda.memory_cached(gpu_id)
+    mem_cached = torch.cuda.memory_reserved(gpu_id)
     mem_allocated = torch.cuda.memory_allocated(gpu_id)
     return dict(mem_left=f"{(mem_total-mem_cached-mem_allocated)/1024**2:0.2f} MB", total_mem=f"{mem_total/1024**2:0.2f} MB", mem_used=f"{(mem_cached+mem_allocated)/1024**2:0.2f} MB")
 

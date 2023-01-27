@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-13 07:51:47
 LastEditors: airscker
-LastEditTime: 2023-01-16 20:52:24
+LastEditTime: 2023-01-21 11:44:43
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -110,7 +110,12 @@ class DResMax(nn.Module):
             HailingDirectNorm()
         )
 
-    def forward(self, x):
+    def freeze_stages(self):
+        self.linear_relu_stack.eval()
+        for params in self.linear_relu_stack.parameters():
+            params.requires_grad = False
+
+    def forward(self, x: torch.Tensor):
         batch = x.shape[0]
         # pos=torch.where(torch.count_nonzero(x,(0,1,2,3))>0)[0]
         # x=x[:,:,:,:,pos[0]:pos[-1]+1]
@@ -123,6 +128,10 @@ class DResMax(nn.Module):
                     (feature, self.pools[i](x).view(batch, -1)), 1)
         x = self.linear_relu_stack(feature)
         return x
+
+    def train(self, mode: bool = True):
+        super().train(mode)
+        self.freeze_stages()
 
 
 class HailingDirectNorm(nn.Module):

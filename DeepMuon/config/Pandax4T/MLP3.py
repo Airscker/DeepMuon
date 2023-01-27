@@ -2,23 +2,24 @@
 Author: airscker
 Date: 2022-09-20 22:24:05
 LastEditors: airscker
-LastEditTime: 2022-12-27 18:03:55
+LastEditTime: 2023-01-18 09:33:46
 Description: Configuration of Pandax4T-III MLP3 Model
 
-Copyright (c) 2022 by airscker, All Rights Reserved. 
+Copyright (c) 2022 by airscker, All Rights Reserved.
 '''
 
 '''
-## Specify which model to be used, all models are stored in 'models' 
+## Specify which model to be used, all models are stored in 'models'
 '''
-model = dict(backbone='MLP3')
+model = dict(filepath='./DeepMuon/models/Pandax4T.py',
+             backbone='MLP3', params=dict())
 '''
 ## Specify the dataset to load the data, all dataset are stored in 'dataset'
 '''
-train_dataset = dict(backbone='PandaxDataset',
-                     datapath='/home/dachuang2022/Yufeng/Pandax-4T-PosRec/data/IMG2D_XY.pkl')
-test_dataset = dict(backbone='PandaxDataset',
-                    datapath='/home/dachuang2022/Yufeng/Pandax-4T-PosRec/data/IMG2D_XY_test.pkl')
+train_dataset = dict(filepath='', backbone='PandaxDataset', params=dict(
+                     datapath='/home/dachuang2022/Yufeng/Pandax-4T-PosRec/data/IMG2D_XY.pkl'))
+test_dataset = dict(filepath='', backbone='PandaxDataset', params=dict(
+                    datapath='/home/dachuang2022/Yufeng/Pandax-4T-PosRec/data/IMG2D_XY_test.pkl'))
 '''
 ## Specify the work_dir to save the training log and checkpoints
 '''
@@ -33,7 +34,7 @@ checkpoint_config = dict(
 ## Specify the customized loss function to be used, if no customized loss function specified, nn.MSELoss() will be used
 '''
 loss_fn = None
-# loss_fn=dict(backbone='')
+# loss_fn=dict(filepath='',backbone='',params=dict())
 '''
 ## Specify the Hyperparameters to be used
 '''
