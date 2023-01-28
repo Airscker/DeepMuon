@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-01-20 17:13:48
+LastEditTime: 2023-01-28 13:25:11
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -146,6 +146,7 @@ def main(configs, msg=''):
     loss_fn = configs['loss_fn']['backbone'](**configs['loss_fn']['params'])
     # optimizer = torch.optim.AdamW(
     #     model.parameters(), lr=lr, weight_decay=0.1, betas=(0.9, 0.999))
+    optimizer_type = configs['optimizer']['backbone']
     optimizer = torch.optim.SGD(
         model.parameters(), lr=lr, momentum=0.9, nesterov=True)
     # optimizer = torch.optim.Adam(model.parameters(),lr=lr,weight_decay=0.1)
