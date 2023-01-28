@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-01-28 15:00:18
+LastEditTime: 2023-01-28 14:59:33
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -117,8 +117,8 @@ def main(config_info, msg=''):
     '''save model architecture before model parallel'''
     if local_rank == 0:
         writer = SummaryWriter(os.path.join(work_dir, 'LOG'))
-        writer.add_graph(model, torch.randn(
-            configs['hyperpara']['inputshape']).to(device))
+        # writer.add_graph(model, torch.randn(
+        #     configs['hyperpara']['inputshape']).to(device))
     '''Model Parallel'''
     model = DistributedDataParallel(model, device_ids=[
                                     local_rank], output_device=local_rank, find_unused_parameters=False)

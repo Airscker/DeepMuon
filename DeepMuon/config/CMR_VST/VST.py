@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 22:24:05
 LastEditors: airscker
-LastEditTime: 2023-01-28 13:24:33
+LastEditTime: 2023-01-28 15:02:49
 Description: Configuration of Hailing 1TeV MLP3_3D_Direct Model
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -36,7 +36,7 @@ checkpoint_config = dict(
 Specify the customized loss function to be used, if no customized loss function specified, nn.MSELoss() will be used
 '''
 # loss_fn=None
-loss_fn = dict(backbone='MSALoss')
+loss_fn = dict(backbone='CrossEntropyLoss')
 '''
 optimizer
 '''
