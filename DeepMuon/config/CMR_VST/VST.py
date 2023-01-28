@@ -43,9 +43,9 @@ optimizer
 optimizer = dict(backbone='SGD', params=dict(
     lr=0.0001, momentum=0.9, nesterov=True))
 '''
-schedular
+scheduler
 '''
-schedular = dict(backbone='CosineAnnealingLR', params=dict(T_max=10))
+scheduler = dict(backbone='CosineAnnealingLR', params=dict(T_max=10))
 '''
 Specify the Hyperparameters to be used
 '''

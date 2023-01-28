@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-01-10 10:49:35
+LastEditTime: 2023-01-28 15:51:36
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -105,7 +105,7 @@ def main(configs, msg=''):
         f"cuda:{gpu}" if torch.cuda.is_available() else "cpu")
     logger.log(f"Using {device} device")
 
-    # Create Model and optimizer/loss/schedular
+    # Create Model and optimizer/loss/scheduler
     # You can change the name of net as any you want just make sure the model structure is the same one
     model = configs['model']['backbone'](
         **configs['model']['params']).to(device)
@@ -113,7 +113,7 @@ def main(configs, msg=''):
     if resume == '' and load == '':
         pass
     elif resume != '':
-        epoch_c, model_c, optimizer_c, schedular_c, loss_fn_c = load_model(
+        epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = load_model(
             path=resume, device=device)
         model.load_state_dict(model_c, False)
         model.to(device)
@@ -122,7 +122,7 @@ def main(configs, msg=''):
         json_info['resume_model_file'] = resume
         json_info['resume_epoch'] = epoch_now
     elif load != '':
-        epoch_c, model_c, optimizer_c, schedular_c, loss_fn_c = load_model(
+        epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = load_model(
             path=load, device=device)
         model.load_state_dict(model_c, False)
         model.to(device)
@@ -145,8 +145,8 @@ def main(configs, msg=''):
     # MLP3_3
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.1)
 
-    # schedular=torch.optim.lr_scheduler.StepLR(optimizer,lr_step,gamma=0.5)
-    schedular = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    # scheduler=torch.optim.lr_scheduler.StepLR(optimizer,lr_step,gamma=0.5)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode='min', factor=0.5, patience=patience)
     # Get GFLOPS of the model
     # shape of the input data
@@ -158,7 +158,7 @@ def main(configs, msg=''):
     logger.log(f'Model Architecture:\n{model}')
     logger.log(f'Loss Function: {loss_fn}')
     logger.log(f'Optimizer:\n{optimizer}')
-    logger.log(f'Schedular: {schedular}')
+    logger.log(f'Scheduler: {scheduler}')
     json_logger.log(json_info)
 
     # save model architecture
@@ -172,7 +172,7 @@ def main(configs, msg=''):
     for t in bar:
         start_time = time.time()
         trloss = train(device, train_dataloader, model,
-                       loss_fn, optimizer, schedular)
+                       loss_fn, optimizer, scheduler)
         tsloss = test(device, test_dataloader, model, loss_fn)
         LRn = optimizer.state_dict()['param_groups'][0]['lr']
         bar.set_description(
@@ -185,16 +185,16 @@ def main(configs, msg=''):
             # Double save to make sure secure, directly save total model is forbidden, otherwise load issues occur
             savepath = os.path.join(work_dir, 'Best_Performance.pth')
             save_model(epoch=t, model=model, optimizer=optimizer,
-                       loss_fn=loss_fn, schedular=schedular, path=savepath)
+                       loss_fn=loss_fn, scheduler=scheduler, path=savepath)
             save_model(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn,
-                       schedular=schedular, path=os.path.join(work_dir, f'{model_name}_Best_Performance.pth'))
+                       scheduler=scheduler, path=os.path.join(work_dir, f'{model_name}_Best_Performance.pth'))
             logger.log(
                 f'Best Model Saved as {savepath}, Best Test Loss: {bestloss}, Current Epoch: {(t+1)}', show=False)
         if (t+1) % inter == 0:
             # torch.save(model,os.path.join(work_dir,f'Epoch_{t+1}.pth'))
             savepath = os.path.join(work_dir, f'Epoch_{t+1}.pth')
             save_model(epoch=t, model=model, optimizer=optimizer,
-                       loss_fn=loss_fn, schedular=schedular, path=savepath)
+                       loss_fn=loss_fn, scheduler=scheduler, path=savepath)
             logger.log(
                 f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=False)
         epoch_time = time.time()-start_time
@@ -216,7 +216,7 @@ def get_mem_info():
     return f"{(mem_total-mem_cached-mem_allocated)/1024**2:0.2f} MB"
 
 
-def train(device, dataloader, model, loss_fn, optimizer, schedular):
+def train(device, dataloader, model, loss_fn, optimizer, scheduler):
     model.train()
     train_loss = 0
     batchs = len(dataloader)
@@ -230,8 +230,8 @@ def train(device, dataloader, model, loss_fn, optimizer, schedular):
         loss.backward()
         optimizer.step()
         train_loss += loss.item()
-    # schedular.step()
-    schedular.step(train_loss/batchs)
+    # scheduler.step()
+    scheduler.step(train_loss/batchs)
     return train_loss/batchs
 
 

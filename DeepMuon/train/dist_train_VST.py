@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-01-28 14:59:33
+LastEditTime: 2023-01-28 15:51:04
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -85,7 +85,7 @@ def main(config_info, msg=''):
         test_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, sampler=test_sampler)
 
     '''
-    Create Model and optimizer/loss/schedular
+    Create Model and optimizer/loss/scheduler
     You can change the name of net as any you want just make sure the model structure is the same one
     eg. model = MLP3().to(device)
     In the example shown above, `MLP3` <> `configs['model']['backbone']`, `model_parameters` <> `**configs['model']['params']`
@@ -96,7 +96,7 @@ def main(config_info, msg=''):
     if resume == '' and load == '':
         pass
     elif resume != '':
-        epoch_c, model_c, optimizer_c, schedular_c, loss_fn_c = AirFunc.load_model(
+        epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = AirFunc.load_model(
             path=resume, device=device)
         model.load_state_dict(model_c, False)
         model.to(device)
@@ -104,7 +104,7 @@ def main(config_info, msg=''):
         if local_rank == 0:
             logger.log(f'Model Resumed from {resume}, Epoch now: {epoch_now}')
     elif load != '':
-        epoch_c, model_c, optimizer_c, schedular_c, loss_fn_c = AirFunc.load_model(
+        epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = AirFunc.load_model(
             path=load, device=device)
         model.load_state_dict(model_c, False)
         model.to(device)
@@ -123,22 +123,22 @@ def main(config_info, msg=''):
     model = DistributedDataParallel(model, device_ids=[
                                     local_rank], output_device=local_rank, find_unused_parameters=False)
     '''
-    Initialize loss/optimizer/schedular
+    Initialize loss/optimizer/scheduler
     eg. loss_fn=nn.MSELoss()
         optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9, nesterov=True)
         optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.1, betas=(0.9, 0.999))
-        schedular = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100)
-        schedular = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=10)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=10)
     In the example shown above:
         `nn.MSELoss` <> `configs['loss_fn']['backbone']`, `loss_function parameters` <> `**configs['loss_fn']['params']`
         `torch.optim.SGD` <> `configs['optimizer']['backbone']`, `lr=0.001, momentum=0.9, nesterov=True` <> `**configs['optimizer']['params']`
-        `torch.optim.lr_scheduler.ReduceLROnPlateau` <> `configs['schedular']['backbone']`, `mode='min', factor=0.5, patience=100` <> `**configs['schedular']['params']`
+        `torch.optim.lr_scheduler.ReduceLROnPlateau` <> `configs['scheduler']['backbone']`, `mode='min', factor=0.5, patience=100` <> `**configs['scheduler']['params']`
     '''
     loss_fn = configs['loss_fn']['backbone'](**configs['loss_fn']['params'])
     optimizer = configs['optimizer']['backbone'](
         model.parameters(), **configs['optimizer']['params'])
-    schedular = configs['schedular']['backbone'](
-        optimizer, **configs['schedular']['params'])
+    scheduler = configs['scheduler']['backbone'](
+        optimizer, **configs['scheduler']['params'])
 
     '''Log the information of the model'''
     if local_rank == 0:
@@ -148,7 +148,7 @@ def main(config_info, msg=''):
         logger.log(f'Loss Function: {loss_fn}')
         logger.log(f'Optimizer:\n{optimizer}')
         logger.log(
-            f'Schedular: {schedular.__class__.__name__}:\n\t{schedular.state_dict()}')
+            f'Scheduler: {scheduler.__class__.__name__}:\n\t{scheduler.state_dict()}')
 
     '''Training Initailization'''
     bestloss = test(device, test_dataloader, model, loss_fn)
@@ -166,7 +166,7 @@ def main(config_info, msg=''):
         start_time = time.time()
         train_dataloader.sampler.set_epoch(t)
         trloss = train(device, train_dataloader, model,
-                       loss_fn, optimizer, schedular)
+                       loss_fn, optimizer, scheduler)
         tsloss = test(device, test_dataloader, model, loss_fn)
         '''Synchronize all threads'''
         res = torch.tensor([trloss, tsloss], device=device)
@@ -189,15 +189,15 @@ def main(config_info, msg=''):
                 '''Double save to make sure secure, directly save total model is forbidden, otherwise load issues occur'''
                 savepath = os.path.join(work_dir, 'Best_Performance.pth')
                 AirFunc.save_model(epoch=t, model=model, optimizer=optimizer,
-                                   loss_fn=loss_fn, schedular=schedular, path=savepath, dist_train=True)
-                AirFunc.save_model(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn, schedular=schedular, path=os.path.join(
+                                   loss_fn=loss_fn, scheduler=scheduler, path=savepath, dist_train=True)
+                AirFunc.save_model(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn, scheduler=scheduler, path=os.path.join(
                     work_dir, f'{model_name}_Best_Performance.pth'), dist_train=True)
                 logger.log(
                     f'Best Model Saved as {savepath}, Best Test Loss: {bestloss}, Current Epoch: {(t+1)}', show=False)
             if (t+1) % inter == 0:
                 savepath = os.path.join(work_dir, f'Epoch_{t+1}.pth')
                 AirFunc.save_model(epoch=t, model=model, optimizer=optimizer,
-                                   loss_fn=loss_fn, schedular=schedular, path=savepath, dist_train=True)
+                                   loss_fn=loss_fn, scheduler=scheduler, path=savepath, dist_train=True)
                 logger.log(
                     f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=False)
             epoch_time = time.time()-start_time
@@ -218,7 +218,7 @@ def get_mem_info():
     return dict(mem_left=f"{(mem_total-mem_cached-mem_allocated)/1024**2:0.2f} MB", total_mem=f"{mem_total/1024**2:0.2f} MB", mem_used=f"{(mem_cached+mem_allocated)/1024**2:0.2f} MB")
 
 
-def train(device, dataloader, model, loss_fn, optimizer, schedular):
+def train(device, dataloader, model, loss_fn, optimizer, scheduler):
     model.train()
     train_loss = 0
     batchs = len(dataloader)
@@ -232,8 +232,8 @@ def train(device, dataloader, model, loss_fn, optimizer, schedular):
         loss.backward()
         optimizer.step()
         train_loss += loss.item()
-    schedular.step()
-    # schedular.step(train_loss/batchs)
+    scheduler.step()
+    # scheduler.step(train_loss/batchs)
     return train_loss/batchs
 
 

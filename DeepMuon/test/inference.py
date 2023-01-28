@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-12-27 17:59:06
+LastEditTime: 2023-01-28 15:50:16
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -79,7 +79,7 @@ def main(configs, ana, thres, neuron):
     model = configs['model']['backbone'](
         **configs['model']['params']).to(device)
     assert os.path.exists(load), f'Model inferenced can not be found: {load}'
-    epoch_c, model_c, optimizer_c, schedular_c, loss_fn_c = load_model(
+    epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = load_model(
         path=load, device=device)
     model.load_state_dict(model_c, False)
     model.to(device)

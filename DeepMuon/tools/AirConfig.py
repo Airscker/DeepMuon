@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-01-28 15:09:15
+LastEditTime: 2023-01-28 15:50:46
 Description: NULL
 
 Copyright (c) 2022 by airscker, All Rights Reserved. 
@@ -35,7 +35,7 @@ class Config:
                 'loss_fn',
                 'hyperpara',
                 'optimizer',
-                'schedular',
+                'scheduler',
                 'gpu_config'
                 ```
         '''
@@ -47,7 +47,7 @@ class Config:
                       'loss_fn': None,
                       'hyperpara': None,
                       'optimizer': None,
-                      'schedular': None,
+                      'scheduler': None,
                       'lr_config': None,
                       'gpu_config': None}
         self.config = import_module(configpath)
@@ -64,11 +64,11 @@ class Config:
         for i in range(len(paras_check)):
             if paras_check[i] not in paras_config:
                 error.append(paras_check[i])
-        if 'lr_config' in error and 'optimizer' not in error and 'schedular' not in error:
+        if 'lr_config' in error and 'optimizer' not in error and 'scheduler' not in error:
             error.remove('lr_config')
         if 'lr_config' not in error:
-            if 'schedular' in error:
-                error.remove('schedular')
+            if 'scheduler' in error:
+                error.remove('scheduler')
             if 'optimizer' in error:
                 error.remove('optimizer')
         assert len(
@@ -139,10 +139,10 @@ class Config:
         if 'lr_config' in self.config_keys:
             self.paras['optimizer'] = dict(backbone=SGD,
                                            params=dict(lr=self.config.lr_config['init']))
-            self.paras['schedular'] = dict(backbone=ReduceLROnPlateau,
+            self.paras['scheduler'] = dict(backbone=ReduceLROnPlateau,
                                            params=dict(patience=self.config.lr_config['patience']))
             warnings.warn(
-                f"'lr_config' will be deprectaed in future versions, please specify 'optimizer' and 'schedular' in {self.configpath}, now optimizer has been set as SGD and schedular has been set as ReduceLROnPlateau")
+                f"'lr_config' will be deprecated in future versions, please specify 'optimizer' and 'scheduler' in {self.configpath}, now optimizer has been set as SGD and scheduler has been set as ReduceLROnPlateau")
         else:
             optimizer_info = getattr(self.config, 'optimizer')
             if 'params' not in optimizer_info.keys():
@@ -153,15 +153,15 @@ class Config:
             else:
                 self.paras['optimizer'] = dict(bakcbone=getattr(import_module(optimizer_info['filepath']), optimizer_info['backbone']),
                                                params=optimizer_info['params'])
-            schedular_info = getattr(self.config, 'schedular')
-            if 'params' not in schedular_info.keys():
-                schedular_info['params'] = dict()
-            if 'filepath' not in schedular_info.keys() or not os.path.exists(schedular_info['filepath']):
-                self.paras['schedular'] = dict(backbone=internal_env[schedular_info['backbone']],
-                                               params=schedular_info['params'])
+            scheduler_info = getattr(self.config, 'scheduler')
+            if 'params' not in scheduler_info.keys():
+                scheduler_info['params'] = dict()
+            if 'filepath' not in scheduler_info.keys() or not os.path.exists(scheduler_info['filepath']):
+                self.paras['scheduler'] = dict(backbone=internal_env[scheduler_info['backbone']],
+                                               params=scheduler_info['params'])
             else:
-                self.paras['schedular'] = dict(backbone=getattr(import_module(schedular_info['filepath']), schedular_info['backbone']),
-                                               params=schedular_info['params'])
+                self.paras['scheduler'] = dict(backbone=getattr(import_module(scheduler_info['filepath']), scheduler_info['backbone']),
+                                               params=scheduler_info['params'])
         self.paras['hyperpara'] = self.config.hyperpara
         self.paras['work_config'] = self.config.work_config
         self.paras['checkpoint_config'] = self.config.checkpoint_config

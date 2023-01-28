@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-01-23 10:48:37
+LastEditTime: 2023-01-28 15:50:52
 Description: NULL
 
 Copyright (c) 2022 by Airscker, All Rights Reserved. 
@@ -16,14 +16,6 @@ import importlib
 
 import torch
 from torch import nn
-# from torch import Tensor
-# import torch.nn.functional as F
-# from torch.utils.data import Dataset
-# from torchvision.transforms import ToTensor
-# import torchvision.models as models
-# from torch.utils.data import DataLoader
-# from monai.networks.blocks import
-# from torch.utils.tensorboard import SummaryWriter
 torch.set_default_tensor_type(torch.DoubleTensor)
 
 
@@ -241,14 +233,14 @@ def format_time(second):
     return f'{hours}:{minutes:02d}:{second:02d}'
 
 
-def save_model(epoch: int, model: nn.Module, optimizer, loss_fn, schedular, path, dist_train=False):
+def save_model(epoch: int, model: nn.Module, optimizer, loss_fn, scheduler, path, dist_train=False):
     """Save a model to disk, Only their state_dict()
     Args:
         epoch\n
         model\n
         optimizer\n
         loss_fn\n
-        schedular\n
+        scheduler\n
         path\n
         dist_train\n
     """
@@ -257,7 +249,7 @@ def save_model(epoch: int, model: nn.Module, optimizer, loss_fn, schedular, path
         'model': model.state_dict() if dist_train == False else model.module.state_dict(),
         'optimizer': optimizer.state_dict(),
         'loss_fn': loss_fn.state_dict(),
-        'schedular': schedular.state_dict(),
+        'scheduler': scheduler.state_dict(),
     }, path)
     return 0
 
@@ -270,16 +262,19 @@ def load_model(path: str, device: torch.device):
         epoch: last trained epoch\n
         model_dic\n
         optimizer_dic\n
-        schedular_dic\n
+        scheduler_dic\n
         loss_fn_dic\n
     """
     checkpoint = torch.load(path, map_location=device)
     model_dic = checkpoint['model']
     optimizer_dic = checkpoint['optimizer']
-    schedular_dic = checkpoint['schedular']
+    try:
+        scheduler_dic = checkpoint['scheduler']
+    except:
+        scheduler_dic = checkpoint['schedular']
     epoch = checkpoint['epoch']
     loss_fn_dic = checkpoint['loss_fn']
-    return epoch, model_dic, optimizer_dic, schedular_dic, loss_fn_dic
+    return epoch, model_dic, optimizer_dic, scheduler_dic, loss_fn_dic
 
 
 def del_pycache(path='./'):
