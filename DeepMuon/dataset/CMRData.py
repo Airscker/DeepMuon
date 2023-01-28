@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-27 19:51:21
 LastEditors: airscker
-LastEditTime: 2023-01-28 10:43:54
+LastEditTime: 2023-01-28 15:58:11
 Description: Dataset built for Video Swin-Transformer (VST) CMR Screening & Diagnose Model
 
 Copyright (c) 2023 by airscker, All Rights Reserved.
@@ -84,7 +84,7 @@ def Resize(frames: np.ndarray, size=(240, 240)):
     return np.array(new_imgs)
 
 
-class NNIDecodeV2(Dataset):
+class NIIDecodeV2(Dataset):
     """
     ## Load and decode Nifti dataset
     No necessarity of giving the file paths of masks, only crop position supported, higher processing efficiency.
