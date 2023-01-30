@@ -2,10 +2,10 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-01-28 15:51:04
+LastEditTime: 2023-01-30 21:43:52
 Description: NULL
 
-Copyright (c) 2022 by Airscker, All Rights Reserved. 
+Copyright (c) 2023 by Airscker, All Rights Reserved.
 '''
 import time
 import os
@@ -23,6 +23,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.tensorboard import SummaryWriter
+
 torch.set_default_tensor_type(torch.DoubleTensor)
 torch.backends.cudnn.benchmark = True
 torch.manual_seed(3407)
@@ -46,7 +47,6 @@ def main(config_info, msg=''):
     local_world_size = os.environ['LOCAL_WORLD_SIZE']
     torch.cuda.set_device(local_rank)
     device = torch.device("cuda", local_rank)
-
     '''Log the basic parameters'''
     if local_rank == 0:
         logger = AirLogger.LOGT(log_dir=work_dir, logfile=log)
@@ -64,11 +64,10 @@ def main(config_info, msg=''):
         if not os.path.exists(msg):
             logger.log('LICENSE MISSED! REFUSE TO START TRAINING')
             return 0
-        with open(msg, 'r')as f:
+        with open(msg, 'r') as f:
             msg = f.read()
         logger.log(msg)
         logger.log(config_info)
-
     '''
     Load datasets
     eg. train_dataset=PandaxDataset(IMG_XY_path=train_data)
@@ -83,7 +82,6 @@ def main(config_info, msg=''):
         train_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, sampler=train_sampler)
     test_dataloader = DataLoader(
         test_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, sampler=test_sampler)
-
     '''
     Create Model and optimizer/loss/scheduler
     You can change the name of net as any you want just make sure the model structure is the same one
@@ -91,7 +89,8 @@ def main(config_info, msg=''):
     In the example shown above, `MLP3` <> `configs['model']['backbone']`, `model_parameters` <> `**configs['model']['params']`
     '''
     model: nn.Module = configs['model']['backbone'](
-        **configs['model']['params']).to(device)
+        **configs['model']['params'])
+    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model).to(device)
     epoch_now = 0
     if resume == '' and load == '':
         pass
@@ -100,7 +99,7 @@ def main(config_info, msg=''):
             path=resume, device=device)
         model.load_state_dict(model_c, False)
         model.to(device)
-        epoch_now = epoch_c+1
+        epoch_now = epoch_c + 1
         if local_rank == 0:
             logger.log(f'Model Resumed from {resume}, Epoch now: {epoch_now}')
     elif load != '':
@@ -125,21 +124,24 @@ def main(config_info, msg=''):
     '''
     Initialize loss/optimizer/scheduler
     eg. loss_fn=nn.MSELoss()
-        optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9, nesterov=True)
-        optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.1, betas=(0.9, 0.999))
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100)
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=10)
+        optimizer = torch.optim.SGD(
+            model.parameters(), lr=0.001, momentum=0.9, nesterov=True)
+        optimizer = torch.optim.AdamW(
+            model.parameters(), lr=0.001, weight_decay=0.1, betas=(0.9, 0.999))
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode='min', factor=0.5, patience=100)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer=optimizer, T_max=10)
     In the example shown above:
         `nn.MSELoss` <> `configs['loss_fn']['backbone']`, `loss_function parameters` <> `**configs['loss_fn']['params']`
         `torch.optim.SGD` <> `configs['optimizer']['backbone']`, `lr=0.001, momentum=0.9, nesterov=True` <> `**configs['optimizer']['params']`
         `torch.optim.lr_scheduler.ReduceLROnPlateau` <> `configs['scheduler']['backbone']`, `mode='min', factor=0.5, patience=100` <> `**configs['scheduler']['params']`
     '''
     loss_fn = configs['loss_fn']['backbone'](**configs['loss_fn']['params'])
-    optimizer = configs['optimizer']['backbone'](
-        model.parameters(), **configs['optimizer']['params'])
+    optimizer = configs['optimizer']['backbone'](model.parameters(),
+                                                 **configs['optimizer']['params'])
     scheduler = configs['scheduler']['backbone'](
         optimizer, **configs['scheduler']['params'])
-
     '''Log the information of the model'''
     if local_rank == 0:
         # flops, params = get_model_complexity_info(model,(1,17,17),as_strings=True,print_per_layer_stat=False, verbose=True)
@@ -149,14 +151,12 @@ def main(config_info, msg=''):
         logger.log(f'Optimizer:\n{optimizer}')
         logger.log(
             f'Scheduler: {scheduler.__class__.__name__}:\n\t{scheduler.state_dict()}')
-
     '''Training Initailization'''
-    bestloss = test(device, test_dataloader, model, loss_fn)
-    bestloss = torch.tensor([bestloss], device=device)
+    tsloss, tsc, tst = test(device, test_dataloader, model, loss_fn)
+    bestres = torch.tensor([tsloss, tsc, tst], device=device)
     dist.barrier()
-    dist.all_reduce(bestloss)
-    bestloss = bestloss/float(local_world_size)
-    bestloss = bestloss.item()
+    dist.all_reduce(bestres)
+    bestacc = bestres[1].item()/bestres[2].item()
     if local_rank == 0:
         bar = tqdm(range(epoch_now, epochs), mininterval=1)
     else:
@@ -165,27 +165,34 @@ def main(config_info, msg=''):
     for t in bar:
         start_time = time.time()
         train_dataloader.sampler.set_epoch(t)
-        trloss = train(device, train_dataloader, model,
-                       loss_fn, optimizer, scheduler)
-        tsloss = test(device, test_dataloader, model, loss_fn)
+        trloss, tr_correct, tr_total = train(
+            device, train_dataloader, model, loss_fn, optimizer, scheduler)
+        tsloss, ts_correct, ts_total = test(
+            device, test_dataloader, model, loss_fn)
         '''Synchronize all threads'''
-        res = torch.tensor([trloss, tsloss], device=device)
+        res = torch.tensor([trloss, tr_correct, tr_total,
+                           tsloss, ts_correct, ts_total], device=device)
         dist.barrier()
         '''Reduces the tensor data across all machines in such a way that all get the final result.(Add results of every gpu)'''
-        dist.all_reduce(res)
-        res = res/float(local_world_size)
+        dist.all_reduce(res, op=torch.distributed.ReduceOp.SUM)
+        # res = res/float(local_world_size)
         if local_rank == 0:
-            train_loss = res[0].item()
-            test_loss = res[1].item()
+            train_loss = res[0].item() / local_world_size
+            test_loss = res[3].item() / local_world_size
+            train_acc = res[1].item()/res[2].item()
+            test_acc = res[4].item()/res[5].item()
             LRn = optimizer.state_dict()['param_groups'][0]['lr']
             bar.set_description(
-                f'LR: {LRn},Test Loss: {test_loss},Train Loss: {train_loss}')
-            writer.add_scalar(f'Test Loss Curve',
-                              test_loss, global_step=t+1)
+                f'LR: {LRn},Test Loss: {test_loss},Train Loss: {train_loss},Train Top1ACC: {train_acc},Test Top1ACC:{test_acc}')
+            writer.add_scalar(f'Test Loss Curve', test_loss, global_step=t + 1)
             writer.add_scalar(f'Train Loss Curve',
-                              train_loss, global_step=t+1)
-            if test_loss <= bestloss:
-                bestloss = test_loss
+                              train_loss, global_step=t + 1)
+            writer.add_scalar(f'Test Top1ACC Curve',
+                              test_acc, global_step=t + 1)
+            writer.add_scalar(f'Train Top1ACC Curve',
+                              train_acc, global_step=t + 1)
+            if test_acc <= bestacc:
+                bestacc = test_acc
                 '''Double save to make sure secure, directly save total model is forbidden, otherwise load issues occur'''
                 savepath = os.path.join(work_dir, 'Best_Performance.pth')
                 AirFunc.save_model(epoch=t, model=model, optimizer=optimizer,
@@ -193,21 +200,21 @@ def main(config_info, msg=''):
                 AirFunc.save_model(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn, scheduler=scheduler, path=os.path.join(
                     work_dir, f'{model_name}_Best_Performance.pth'), dist_train=True)
                 logger.log(
-                    f'Best Model Saved as {savepath}, Best Test Loss: {bestloss}, Current Epoch: {(t+1)}', show=False)
-            if (t+1) % inter == 0:
+                    f'Best Model Saved as {savepath}, Best Test Top1ACC: {bestacc}, Current Epoch: {(t+1)}', show=False)
+            if (t + 1) % inter == 0:
                 savepath = os.path.join(work_dir, f'Epoch_{t+1}.pth')
                 AirFunc.save_model(epoch=t, model=model, optimizer=optimizer,
                                    loss_fn=loss_fn, scheduler=scheduler, path=savepath, dist_train=True)
                 logger.log(
                     f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=False)
-            epoch_time = time.time()-start_time
-            eta = AirFunc.format_time((epochs-1-t)*(time.time()-start_time))
+            epoch_time = time.time() - start_time
+            eta = AirFunc.format_time(
+                (epochs - 1 - t) * (time.time() - start_time))
             mem_info = get_mem_info()
-            logger.log(
-                f"LR: {LRn}, Epoch: [{t+1}][{epochs}], Test Loss: {test_loss}, Train Loss: {train_loss}, Best Test Loss: {bestloss}, Time:{epoch_time}s, ETA: {eta}, Memory Left: {mem_info['mem_left']} Memory Used: {mem_info['mem_used']}", show=False)
-            json_logger.log(dict(mode='train', lr=LRn, epoch=t+1, total_epoch=epochs, test_loss=test_loss,
-                            train_loss=train_loss, best_test_loss=bestloss, time=epoch_time, eta=eta, memory_left=mem_info['mem_left'], memory_used=mem_info['mem_used']))
-    return bestloss
+            logger.log(f"LR: {LRn}, Epoch: [{t+1}][{epochs}], Test Loss: {test_loss}, Train Loss: {train_loss}, Best Test Top1ACC: {bestacc}, Train Top1ACC:{train_acc} Test Top1ACC:{test_acc}, Time:{epoch_time}s, ETA: {eta}, Memory Left: {mem_info['mem_left']} Memory Used: {mem_info['mem_used']}", show=False)
+            json_logger.log(dict(mode='train', lr=LRn, epoch=t + 1, total_epoch=epochs, test_loss=test_loss, train_loss=train_loss, test_t1acc=test_acc, train_t1acc=train_acc,
+                            best_test_t1acc=bestacc, time=epoch_time, eta=eta, memory_left=mem_info['mem_left'], memory_used=mem_info['mem_used']))
+    return bestacc
 
 
 def get_mem_info():
@@ -215,26 +222,38 @@ def get_mem_info():
     mem_total = torch.cuda.get_device_properties(gpu_id).total_memory
     mem_cached = torch.cuda.memory_reserved(gpu_id)
     mem_allocated = torch.cuda.memory_allocated(gpu_id)
-    return dict(mem_left=f"{(mem_total-mem_cached-mem_allocated)/1024**2:0.2f} MB", total_mem=f"{mem_total/1024**2:0.2f} MB", mem_used=f"{(mem_cached+mem_allocated)/1024**2:0.2f} MB")
+    return dict(mem_left=f"{(mem_total-mem_cached-mem_allocated)/1024**2:0.2f} MB",
+                total_mem=f"{mem_total/1024**2:0.2f} MB",
+                mem_used=f"{(mem_cached+mem_allocated)/1024**2:0.2f} MB")
 
 
 def train(device, dataloader, model, loss_fn, optimizer, scheduler):
     model.train()
-    train_loss = 0
-    batchs = len(dataloader)
-    for batch, (X, y) in enumerate(dataloader):
-        X, y = X.to(device), y.to(device)
-        '''Compute prediction error'''
-        pred = model(X)
+    train_loss, correct, total = 0.0, 0.0, 0.0
+    for i, batch in enumerate(dataloader):
+        x, y = batch
+        x = x.type(torch.FloatTensor)
+        # if num_frames is not None:
+        #     y = np.repeat(y, num_frames)
+        if isinstance(x, list):
+            x = [torch.autograd.Variable(x_).cuda(
+                device, non_blocking=True) for x_ in x]
+            h0 = model.module.init_hidden(x[0].size(0))
+        else:
+            x = torch.autograd.Variable(x).cuda(device, non_blocking=True)
+            h0 = model.module.init_hidden(x.size(0))
+        y = torch.autograd.Variable(y).cuda(device, non_blocking=True)
+        pred = model(x, h0)
         loss = loss_fn(pred, y)
-        '''Backpropagation'''
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         train_loss += loss.item()
+        total += y.size(0)
+        _, predicted = torch.max(pred.data, 1)
+        correct += predicted.eq(y.data).cpu().sum()
     scheduler.step()
-    # scheduler.step(train_loss/batchs)
-    return train_loss/batchs
+    return train_loss, correct, total
 
 
 def test(device, dataloader, model, loss_fn):
@@ -248,6 +267,31 @@ def test(device, dataloader, model, loss_fn):
             test_loss += loss_fn(pred, y).item()
     test_loss /= num_batches
     return test_loss
+
+
+def test(device, dataloader, model, loss_fn):
+    model.eval()
+    test_correct, test_total, test_loss = 0, 0, 0
+    with torch.no_grad():
+        for i, batch in enumerate(dataloader):
+            x, y = batch
+            x = x.type(torch.FloatTensor)
+            # if num_frames is not None:
+            #     y = np.repeat(y, num_frames)
+            if isinstance(x, list):
+                x = [torch.autograd.Variable(x_).cuda(
+                    device, non_blocking=True) for x_ in x]
+                h0 = model.module.init_hidden(x[0].size(0))
+            else:
+                x = torch.autograd.Variable(x).cuda(device, non_blocking=True)
+                h0 = model.module.init_hidden(x.size(0))
+            y = torch.autograd.Variable(y).cuda(device, non_blocking=True)
+            outputs = model(x, h0)
+            test_loss += loss_fn(outputs, y).item()
+            _, predicted = torch.max(outputs.data, 1)
+            test_correct += predicted.eq(y.data).cpu().sum()
+            test_total += y.size(0)
+    return test_loss, test_correct, test_total
 
 
 @click.command()

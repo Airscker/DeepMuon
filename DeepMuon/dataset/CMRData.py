@@ -2,21 +2,28 @@
 Author: airscker
 Date: 2023-01-27 19:51:21
 LastEditors: airscker
-LastEditTime: 2023-01-28 15:58:11
-Description: Dataset built for Video Swin-Transformer (VST) CMR Screening & Diagnose Model
+LastEditTime: 2023-01-30 22:05:17
+Description:
+    ## Dataset built for:
+        - Video Swin-Transformer (VST) CMR Screening & Diagnose Model
+        - CNNLSTM CMR Screening & Diagnose Model
 
-Copyright (c) 2023 by airscker, All Rights Reserved.
+Copyright (C) 2023 by Airscker, All Rights Reserved.
 '''
+import os
+import cv2
+import random
+import warnings
 import numpy as np
 import pickle as pkl
-import os
-import warnings
 import SimpleITK as sitk
-import cv2
+from PIL import Image
 from skimage import exposure
 
 import torch
+from torchvision import transforms
 from torch.utils.data import Dataset
+import torchvision.transforms.functional as tf
 torch.set_default_tensor_type(torch.DoubleTensor)
 
 
@@ -84,14 +91,71 @@ def Resize(frames: np.ndarray, size=(240, 240)):
     return np.array(new_imgs)
 
 
-class NIIDecodeV2(Dataset):
+def transform_train(image):
+    angle = transforms.RandomRotation.get_params([-90, 90])
+    flip = False
+    cont = False
+    negative = False
+    if random.random() > 0.5:
+        flip = True
+    if random.random() > 0.5:
+        cont = True
+    if random.random() > 0.5:
+        negative = True
+    delta = torch.randn(1)
+    if negative:
+        delta = -delta
+    delta = delta / 10
+    for i in range(image.shape[0]):
+        img = Image.fromarray(
+            np.uint8(np.transpose(image[i, :, :, :], (1, 2, 0))))
+        if cont:
+            img = tf.adjust_contrast(img, 2)
+        if flip:
+            img = tf.hflip(img)
+        img = tf.rotate(img, angle)
+        img = tf.to_tensor(img)
+        img = tf.normalize(img, torch.mean(
+            img, (1, 2)).tolist(), torch.std(img, (1, 2)).tolist())
+        # img = tf.normalize(img, [0.27154714, 0.27154769, 0.27156396], [0.31989314, 0.31985731, 0.31968247])
+        image[i, :, :, :] = img + delta
+    return image
+
+
+def transform_test(image):
+    for i in range(image.shape[0]):
+        img = Image.fromarray(
+            np.uint8(np.transpose(image[i, :, :, :], (1, 2, 0))))
+        img = tf.to_tensor(img)
+        img = tf.normalize(img, torch.mean(
+            img, (1, 2)).tolist(), torch.std(img, (1, 2)).tolist())
+        # img = tf.normalize(img, [0.27089914, 0.27090737, 0.2709189], [0.32018263, 0.32015745, 0.31996976])
+        image[i, :, :, :] = img
+    return image
+
+
+'''
+Dataset for VST
+'''
+
+
+class VST_Loader(Dataset):
     """
-    ## Load and decode Nifti dataset
+    ## Load and decode Nifti dataset for Video Swin-Transformer CMR Diagnose/Screening Model
     No necessarity of giving the file paths of masks, only crop position supported, higher processing efficiency.
-    Tips:
-        SAX cinema data:
-            Must have keywords: `mid`, `up`, `down` in every patients' sax cinema filenames, such as `114514_ZHANG_SAN/slice_up.nii.gz`, `114514_ZHANG_SAN/slice_mid.nii.gz`, `114514_ZHANG_SAN/slice_down.nii.gz`.\n
-            Slices' keyword should represent their physical position along the `z` axis, we recommand you to get it by `SimpleITK.Image.GetOrigin()[-1]`.
+    Pipeline:
+        - Load text annotation file
+        - Load data <-> roi annotation hash map file
+        - Decide augmentation pipelines
+        - Data preprocession:
+            - Read nifti format data
+            - Crop ROI
+            - Clip the maximum/minimum (defaultly 0.1%) voxel according their intensity values
+            - Normalize data within [0,255] integer space(unsigned int8)
+            - Augmentation
+    Tips for short axis(SAX) cinema data:
+        - Must have keywords: `mid`, `up`, `down` in every patients' sax cinema filenames, such as `114514_ZHANG_SAN/slice_up.nii.gz`, `114514_ZHANG_SAN/slice_mid.nii.gz`, `114514_ZHANG_SAN/slice_down.nii.gz`.
+        - Slices' keyword should represent their physical position along the `z` axis, we recommand you to get it by `SimpleITK.Image.GetOrigin()[-1]`.
     Args:
         mask_ann: The path of the `nifti filepath <-> mask crop position(np.array([x_min,x_max,y_min,y_max]))` hash map, data structure: `dict()`, only support `.pkl` file.
     """
@@ -247,3 +311,43 @@ class NIIDecodeV2(Dataset):
             results[mod] = torch.from_numpy(np.moveaxis(results[mod], -1, 1))
         label = torch.LongTensor([self.nifti_info_list[index]['label']])
         return results, label
+
+
+'''
+Dataset for CNNLSTM
+'''
+
+
+class MapDataset(torch.utils.data.Dataset):
+    """
+    Given a dataset, creates a dataset which applies a mapping function
+    to its items (lazily, only when an item is called).
+
+    Note that data is not cloned/copied from the initial dataset.
+    """
+
+    def __init__(self, dataset, map_fn):
+        self.dataset = dataset
+        self.map = map_fn
+
+    def __getitem__(self, index):
+        if self.map:
+            x = self.map(self.dataset[index][0])
+        else:
+            x = self.dataset[index][0]  # image
+        y = self.dataset[index][1]  # label
+        return x, y
+
+    def __len__(self):
+        return len(self.dataset)
+
+
+class CNNLSTM_Loader(Dataset):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def __len__(self):
+        pass
+
+    def __getitem__(self, index):
+        pass
