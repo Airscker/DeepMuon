@@ -8,7 +8,7 @@ Description:
 ### Corresponding Dataset: `DeepMuon.dataset.Pandax4TData.PandaxDataset`
 ### Overall Model GFLOPs: 216.32 KMac, Params: 215.68 k
 
-Copyright (C) 2022 by Airscker(Yufeng), All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 
 from torch import nn

@@ -5,7 +5,7 @@ LastEditors: airscker
 LastEditTime: 2022-12-27 17:12:52
 Description: NULL
 
-Copyright (C) 2022 by Airscker(Yufeng), All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import torch
 from ptflops import get_model_complexity_info

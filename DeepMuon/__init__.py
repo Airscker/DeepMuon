@@ -5,7 +5,7 @@ LastEditors: airscker
 LastEditTime: 2023-01-28 11:01:10
 Description: DeepMuon
 
-Copyright (C) 2022 by Airscker(Yufeng), All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 from .__version__ import __version__
 import DeepMuon.dataset as dataset

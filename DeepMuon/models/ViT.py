@@ -5,7 +5,7 @@ LastEditors: airscker
 LastEditTime: 2022-12-23 10:58:33
 Description: NULL
 
-Copyright (C) 2022 by Airscker(Yufeng), All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import torch
 from torch import nn
