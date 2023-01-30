@@ -9,7 +9,7 @@ Description: Trilateral Projection Neural Network
     - Output
         - note: normalized three dimensional direction vector
 
-Copyright (c) 2022 by airscker, All Rights Reserved. 
+Copyright (C) 2022 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import torch
 from torch import nn

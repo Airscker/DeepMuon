@@ -5,7 +5,7 @@ LastEditors: airscker
 LastEditTime: 2023-01-18 09:58:47
 Description: Datasets Built for Hailing TRIDENT Project
 
-Copyright (c) 2022 by airscker, All Rights Reserved. 
+Copyright (C) 2022 by Airscker(Yufeng), All Rights Reserved. 
 '''
 
 import numpy as np

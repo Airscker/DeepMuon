@@ -49,4 +49,4 @@ pip install -v -e ./ --user
 >
 > If you want to publish thesis using DeepMuon, please add bibliography:
 >
-> Copyright (C) 2023 by Airscker, All Rights Reserved.
+> Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.

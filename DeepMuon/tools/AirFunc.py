@@ -5,7 +5,7 @@ LastEditors: airscker
 LastEditTime: 2023-01-28 15:50:52
 Description: NULL
 
-Copyright (c) 2022 by Airscker, All Rights Reserved. 
+Copyright (C) 2022 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import os
 import matplotlib.pyplot as plt

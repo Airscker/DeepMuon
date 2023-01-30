@@ -5,7 +5,7 @@ LastEditors: airscker
 LastEditTime: 2022-12-26 21:52:37
 Description: NULL
 
-Copyright (c) 2022 by airscker, All Rights Reserved. 
+Copyright (C) 2022 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import pynvml
 import GPUtil

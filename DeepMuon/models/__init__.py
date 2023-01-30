@@ -5,7 +5,7 @@ LastEditors: airscker
 LastEditTime: 2023-01-30 22:11:18
 Description: NULL
 
-Copyright (c) 2022 by airscker, All Rights Reserved. 
+Copyright (C) 2022 by Airscker(Yufeng), All Rights Reserved. 
 '''
 from .Pandax4T import MLP3
 from .ViT import Vit_MLP, Vit_MLP2, Vit_MLP3

@@ -2,13 +2,13 @@
 Author: airscker
 Date: 2023-01-27 19:51:21
 LastEditors: airscker
-LastEditTime: 2023-01-30 22:05:17
+LastEditTime: 2023-01-30 22:17:29
 Description:
     ## Dataset built for:
         - Video Swin-Transformer (VST) CMR Screening & Diagnose Model
         - CNNLSTM CMR Screening & Diagnose Model
 
-Copyright (C) 2023 by Airscker, All Rights Reserved.
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 import os
 import cv2
@@ -143,7 +143,8 @@ class VST_Loader(Dataset):
     """
     ## Load and decode Nifti dataset for Video Swin-Transformer CMR Diagnose/Screening Model
     No necessarity of giving the file paths of masks, only crop position supported, higher processing efficiency.
-    Pipeline:
+
+    Pipeline of data loading/preprocessing:
         - Load text annotation file
         - Load data <-> roi annotation hash map file
         - Decide augmentation pipelines
@@ -153,6 +154,8 @@ class VST_Loader(Dataset):
             - Clip the maximum/minimum (defaultly 0.1%) voxel according their intensity values
             - Normalize data within [0,255] integer space(unsigned int8)
             - Augmentation
+        - To Tensor
+
     Tips for short axis(SAX) cinema data:
         - Must have keywords: `mid`, `up`, `down` in every patients' sax cinema filenames, such as `114514_ZHANG_SAN/slice_up.nii.gz`, `114514_ZHANG_SAN/slice_mid.nii.gz`, `114514_ZHANG_SAN/slice_down.nii.gz`.
         - Slices' keyword should represent their physical position along the `z` axis, we recommand you to get it by `SimpleITK.Image.GetOrigin()[-1]`.

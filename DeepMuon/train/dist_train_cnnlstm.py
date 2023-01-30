@@ -5,7 +5,7 @@ LastEditors: airscker
 LastEditTime: 2023-01-30 21:43:52
 Description: NULL
 
-Copyright (c) 2023 by Airscker, All Rights Reserved.
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 import time
 import os
