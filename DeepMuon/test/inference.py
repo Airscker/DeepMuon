@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-01-28 15:50:16
+LastEditTime: 2023-01-31 14:48:02
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -17,9 +17,10 @@ import pickle as pkl
 
 from DeepMuon.tools.AirConfig import Config
 from DeepMuon.tools.AirFunc import load_model, format_time, plot_hist_2nd
-from DeepMuon.tools.AirLogger import LOGT
+from DeepMuon.tools.AirLogger import LOGT, LOGJ
 from DeepMuon.tools.model_info import model_para
 from DeepMuon.test.analysis import loss_dist, data_analysis
+from DeepMuon.loss_fn.evaluation import confusion_matrix
 
 import torch
 from torch import nn
@@ -34,7 +35,8 @@ torch.backends.cudnn.benchmark = True
 torch.set_printoptions(profile='full')
 
 
-def main(configs, ana, thres, neuron):
+def main(config_info, ana, thres, neuron):
+    configs = config_info.paras
     # Initialize the basic training configuration
     loss_fn = configs['loss_fn']['backbone'](configs['loss_fn']['params'])
     batch_size = 1
@@ -48,6 +50,7 @@ def main(configs, ana, thres, neuron):
     load = os.path.join(work_dir, 'Best_Performance.pth')
     gpu = configs['gpu_config']['gpuid']
     logger = LOGT(log_dir=infer_path, logfile=log, new=True)
+    json_logger = LOGJ(log_dir=infer_path, logfile=f'{log}.json', new=True)
     log = os.path.join(infer_path, log)
     ana_path = os.path.join(work_dir, 'ana')
 
@@ -103,8 +106,14 @@ def main(configs, ana, thres, neuron):
                      model=model, loss_fn=loss_fn, work_dir=work_dir, index=neuron)
     # start inferencing
     loss, pred, real, loss_map = infer(
-        device, test_dataloader, model, loss_fn, logger, thres=thres, ana=ana)
+        work_dir, device, test_dataloader, model, loss_fn, logger, thres=thres, ana=ana)
     # Save results
+    np.save(os.path.join(work_dir, 'scores.npy'), np.array(pred))
+    np.save(os.path.join(work_dir, 'True_Value.npy'), np.array(real))
+    np.save(os.path.join(work_dir, 'Predicted_Value.npy'),
+            np.array(np.argmax(pred), axis=1))
+    np.save(os.path.join(work_dir, 'Confusion_Matrix.npy'),
+            np.array(confusion_matrix(pred, real)))
     with open(res, 'wb')as f:
         pkl.dump({'loss': loss, 'pred': pred, 'real': real}, f)
     f.close()
@@ -130,7 +139,7 @@ def main(configs, ana, thres, neuron):
             f'Threshold {thres} Loss ID-[data,pred,real,loss] hash map saved as {name}, total number: {len(loss_map)}')
 
 
-def infer(device, dataloader, model, loss_fn, logger: LOGT, thres, ana=True):
+def infer(workdir, device, dataloader, model, loss_fn, logger: LOGT, thres, ana=True):
     """
     The infer function is used to test the model on a dataset. It takes in a dataloader, 
     a model, and an optional loss function. The loss function is only needed if you want to 
@@ -145,7 +154,6 @@ def infer(device, dataloader, model, loss_fn, logger: LOGT, thres, ana=True):
     :param thres: Filter out the abnormal data
     :param ana=True: Determine whether to analyze the data
     :return: The loss value, predicted values and real values
-    :doc-author: Trelent
     """
     num_batches = len(dataloader)
     model.eval()
@@ -259,8 +267,7 @@ def run(config, neuron, ana, thres):
     if train_config.paras['gpu_config']['distributed'] == True:
         warnings.warn(
             'Distributed Training is not supported during model inference')
-    train_config.paras['config'] = {'path': config}
-    main(train_config.paras, ana, thres, neuron)
+    main(train_config, ana, thres, neuron)
 
 
 if __name__ == '__main__':

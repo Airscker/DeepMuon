@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-01-30 21:43:52
+LastEditTime: 2023-01-31 17:45:58
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -152,8 +152,11 @@ def main(config_info, msg=''):
         logger.log(
             f'Scheduler: {scheduler.__class__.__name__}:\n\t{scheduler.state_dict()}')
     '''Training Initailization'''
-    tsloss, tsc, tst = test(device, test_dataloader, model, loss_fn)
-    bestres = torch.tensor([tsloss, tsc, tst], device=device)
+    tsloss, ts_score, ts_real = test(device, test_dataloader, model, loss_fn)
+    bestres = torch.tensor([tsloss, ts_score, ts_real], device=device)
+    # ----------------------------------------------------------
+    # Add evaluation pipeline here
+    # ----------------------------------------------------------
     dist.barrier()
     dist.all_reduce(bestres)
     bestacc = bestres[1].item()/bestres[2].item()
@@ -167,8 +170,8 @@ def main(config_info, msg=''):
         train_dataloader.sampler.set_epoch(t)
         trloss, tr_correct, tr_total = train(
             device, train_dataloader, model, loss_fn, optimizer, scheduler)
-        tsloss, ts_correct, ts_total = test(
-            device, test_dataloader, model, loss_fn)
+        tsloss, ts_correct, ts_total, _ = test(
+            device, test_dataloader, model, loss_fn, configs['evaluation']['metrics'])
         '''Synchronize all threads'''
         res = torch.tensor([trloss, tr_correct, tr_total,
                            tsloss, ts_correct, ts_total], device=device)
@@ -177,8 +180,8 @@ def main(config_info, msg=''):
         dist.all_reduce(res, op=torch.distributed.ReduceOp.SUM)
         # res = res/float(local_world_size)
         if local_rank == 0:
-            train_loss = res[0].item() / local_world_size
-            test_loss = res[3].item() / local_world_size
+            train_loss = res[0].item()/local_world_size
+            test_loss = res[3].item()/local_world_size
             train_acc = res[1].item()/res[2].item()
             test_acc = res[4].item()/res[5].item()
             LRn = optimizer.state_dict()['param_groups'][0]['lr']
@@ -212,8 +215,9 @@ def main(config_info, msg=''):
                 (epochs - 1 - t) * (time.time() - start_time))
             mem_info = get_mem_info()
             logger.log(f"LR: {LRn}, Epoch: [{t+1}][{epochs}], Test Loss: {test_loss}, Train Loss: {train_loss}, Best Test Top1ACC: {bestacc}, Train Top1ACC:{train_acc} Test Top1ACC:{test_acc}, Time:{epoch_time}s, ETA: {eta}, Memory Left: {mem_info['mem_left']} Memory Used: {mem_info['mem_used']}", show=False)
-            json_logger.log(dict(mode='train', lr=LRn, epoch=t + 1, total_epoch=epochs, test_loss=test_loss, train_loss=train_loss, test_t1acc=test_acc, train_t1acc=train_acc,
-                            best_test_t1acc=bestacc, time=epoch_time, eta=eta, memory_left=mem_info['mem_left'], memory_used=mem_info['mem_used']))
+            log_info = dict(mode='train', lr=LRn, epoch=t + 1, total_epoch=epochs, test_loss=test_loss, train_loss=train_loss, test_t1acc=test_acc, train_t1acc=train_acc,
+                            best_test_t1acc=bestacc, time=epoch_time, eta=eta, memory_left=mem_info['mem_left'], memory_used=mem_info['mem_used'])
+            json_logger.log(log_info)
     return bestacc
 
 
@@ -250,23 +254,10 @@ def train(device, dataloader, model, loss_fn, optimizer, scheduler):
         optimizer.step()
         train_loss += loss.item()
         total += y.size(0)
-        _, predicted = torch.max(pred.data, 1)
+        predicted = torch.argmax(pred.data, 1)
         correct += predicted.eq(y.data).cpu().sum()
     scheduler.step()
     return train_loss, correct, total
-
-
-def test(device, dataloader, model, loss_fn):
-    num_batches = len(dataloader)
-    model.eval()
-    test_loss = 0
-    with torch.no_grad():
-        for X, y in dataloader:
-            X, y = X.to(device), y.to(device)
-            pred = model(X)
-            test_loss += loss_fn(pred, y).item()
-    test_loss /= num_batches
-    return test_loss
 
 
 def test(device, dataloader, model, loss_fn):
@@ -291,7 +282,7 @@ def test(device, dataloader, model, loss_fn):
             _, predicted = torch.max(outputs.data, 1)
             test_correct += predicted.eq(y.data).cpu().sum()
             test_total += y.size(0)
-    return test_loss, test_correct, test_total
+    return test_loss, outputs.detach().cpu().numpy(), y.detach().cpu().numpy()
 
 
 @click.command()

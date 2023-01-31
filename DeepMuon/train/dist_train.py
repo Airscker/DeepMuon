@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-01-28 15:51:32
+LastEditTime: 2023-01-31 16:42:32
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -180,10 +180,8 @@ def main(config_info, msg=''):
             LRn = optimizer.state_dict()['param_groups'][0]['lr']
             bar.set_description(
                 f'LR: {LRn},Test Loss: {test_loss},Train Loss: {train_loss}')
-            writer.add_scalar(f'Test Loss Curve',
-                              test_loss, global_step=t+1)
-            writer.add_scalar(f'Train Loss Curve',
-                              train_loss, global_step=t+1)
+            writer.add_scalar(f'Test Loss Curve', test_loss, global_step=t+1)
+            writer.add_scalar(f'Train Loss Curve', train_loss, global_step=t+1)
             if test_loss <= bestloss:
                 bestloss = test_loss
                 '''Double save to make sure secure, directly save total model is forbidden, otherwise load issues occur'''
@@ -205,8 +203,9 @@ def main(config_info, msg=''):
             mem_info = get_mem_info()
             logger.log(
                 f"LR: {LRn}, Epoch: [{t+1}][{epochs}], Test Loss: {test_loss}, Train Loss: {train_loss}, Best Test Loss: {bestloss}, Time:{epoch_time}s, ETA: {eta}, Memory Left: {mem_info['mem_left']} Memory Used: {mem_info['mem_used']}", show=False)
-            json_logger.log(dict(mode='train', lr=LRn, epoch=t+1, total_epoch=epochs, test_loss=test_loss,
-                            train_loss=train_loss, best_test_loss=bestloss, time=epoch_time, eta=eta, memory_left=mem_info['mem_left'], memory_used=mem_info['mem_used']))
+            log_info = dict(mode='train', lr=LRn, epoch=t+1, total_epoch=epochs, test_loss=test_loss,
+                            train_loss=train_loss, best_test_loss=bestloss, time=epoch_time, eta=eta, memory_left=mem_info['mem_left'], memory_used=mem_info['mem_used'])
+            json_logger.log(log_info)
     return bestloss
 
 

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-27 19:51:21
 LastEditors: airscker
-LastEditTime: 2023-01-30 22:17:29
+LastEditTime: 2023-01-31 09:26:51
 Description:
     ## Dataset built for:
         - Video Swin-Transformer (VST) CMR Screening & Diagnose Model
@@ -134,17 +134,12 @@ def transform_test(image):
     return image
 
 
-'''
-Dataset for VST
-'''
-
-
-class VST_Loader(Dataset):
+class NIIDecodeV2(Dataset):
     """
-    ## Load and decode Nifti dataset for Video Swin-Transformer CMR Diagnose/Screening Model
+    ## Load and decode Nifti dataset for Video Swin-Transformer/CNNLSTM CMR Diagnose/Screening Model
     No necessarity of giving the file paths of masks, only crop position supported, higher processing efficiency.
 
-    Pipeline of data loading/preprocessing:
+    ### Pipeline of data loading/preprocessing:
         - Load text annotation file
         - Load data <-> roi annotation hash map file
         - Decide augmentation pipelines
@@ -154,13 +149,19 @@ class VST_Loader(Dataset):
             - Clip the maximum/minimum (defaultly 0.1%) voxel according their intensity values
             - Normalize data within [0,255] integer space(unsigned int8)
             - Augmentation
-        - To Tensor
+        - To Tensor(NTHWC -> NCTHW)
 
-    Tips for short axis(SAX) cinema data:
+    ### Tips for short axis(SAX) cinema data:
         - Must have keywords: `mid`, `up`, `down` in every patients' sax cinema filenames, such as `114514_ZHANG_SAN/slice_up.nii.gz`, `114514_ZHANG_SAN/slice_mid.nii.gz`, `114514_ZHANG_SAN/slice_down.nii.gz`.
         - Slices' keyword should represent their physical position along the `z` axis, we recommand you to get it by `SimpleITK.Image.GetOrigin()[-1]`.
-    Args:
-        mask_ann: The path of the `nifti filepath <-> mask crop position(np.array([x_min,x_max,y_min,y_max]))` hash map, data structure: `dict()`, only support `.pkl` file.
+
+    ### Args:
+        - mask_ann: The path of the `nifti filepath <-> mask crop position(np.array([x_min,x_max,y_min,y_max]))` hash map, data structure: `dict()`, only support `.pkl` file.
+        - fusion: Whether to train fusion model
+        - modalities: The list of modality of datasets, avilable modalitiesare `sax`,`4ch`,`lge`.
+            - eg. `modalities=['sax','4ch']`
+        - augment_pipeline: The list of augmentation function names as well as their parameters.
+            - eg. `augment_pipeline = [dict(type='HistEqual'),dict(type='SingleNorm'),dict(type='Padding',size=(120, 120)),dict(type='Resize', size=(240, 240))]`
     """
 
     def __init__(self, ann_file: str = None,
@@ -180,13 +181,6 @@ class VST_Loader(Dataset):
         self.nifti_info_list = self.__load_annotations()
         self.__load_mask_ann()
         self.augment_pipeline = augment_pipeline
-        self.augment_methods = {
-            'HistEqual': HistEqual,
-            'SingleNorm': SingleNorm,
-            'Padding': Padding,
-            'Resize': Resize,
-            'Random_rotate': Random_rotate,
-            'Random_Gamma_Bright': Random_Gamma_Bright}
 
     def __load_mask_ann(self):
         if self.mask_ann is None:
@@ -240,8 +234,6 @@ class VST_Loader(Dataset):
         if not file_path.endswith('.nii.gz'):
             file_path += '.nii.gz'
         if mod == 'sax':
-            # mid_slice_num = int(file_path.split(
-            #     '/')[-1].split('.nii.gz')[0].split('_')[-1])
             sax_mid = sitk.GetArrayFromImage(sitk.ReadImage(file_path))
             sax_up = sitk.GetArrayFromImage(sitk.ReadImage(
                 file_path.replace('mid', 'up')))
@@ -249,7 +241,6 @@ class VST_Loader(Dataset):
                 file_path.replace('mid', 'down')))
 
             if self.mask_ann is not None:
-                # crop_pos = self.__get_crop_pos(file_path=file_path)
                 crop_pos = self.data_mask_map[file_path]
                 sax_mid = self.clip_top_bottom(
                     sax_mid[:, crop_pos[2]:crop_pos[3], crop_pos[0]:crop_pos[1]])
@@ -269,11 +260,11 @@ class VST_Loader(Dataset):
         elif mod == '4ch' or mod == 'lge':
             data = sitk.GetArrayFromImage(sitk.ReadImage(file_path))
             if self.mask_ann is not None:
-                # crop_pos = self.__get_crop_pos(file_path=file_path)
                 crop_pos = self.data_mask_map[file_path]
                 data = self.clip_top_bottom(data[:, crop_pos[2]:crop_pos[3],
                                                  crop_pos[0]:crop_pos[1]])
             rgbdata = np.array([data]*3)
+            # CTHW -> THWC
             rgbdata = np.moveaxis(rgbdata, 0, -1)
             return rgbdata
 
@@ -306,51 +297,12 @@ class VST_Loader(Dataset):
             lge_data = self.__crop(
                 file_path=self.nifti_info_list[index]['lge'], mod='lge')
             results['lge'] = lge_data
+        env = globals()
         for mod in self.modalities:
             for augment in self.augment_pipeline:
-                results[mod] = self.augment_methods[augment['type']](
+                results[mod] = env[augment['type']](
                     results[mod], **augment.pop('type'))
             # NTHWC -> NCTHW
             results[mod] = torch.from_numpy(np.moveaxis(results[mod], -1, 1))
         label = torch.LongTensor([self.nifti_info_list[index]['label']])
         return results, label
-
-
-'''
-Dataset for CNNLSTM
-'''
-
-
-class MapDataset(torch.utils.data.Dataset):
-    """
-    Given a dataset, creates a dataset which applies a mapping function
-    to its items (lazily, only when an item is called).
-
-    Note that data is not cloned/copied from the initial dataset.
-    """
-
-    def __init__(self, dataset, map_fn):
-        self.dataset = dataset
-        self.map = map_fn
-
-    def __getitem__(self, index):
-        if self.map:
-            x = self.map(self.dataset[index][0])
-        else:
-            x = self.dataset[index][0]  # image
-        y = self.dataset[index][1]  # label
-        return x, y
-
-    def __len__(self):
-        return len(self.dataset)
-
-
-class CNNLSTM_Loader(Dataset):
-    def __init__(self) -> None:
-        super().__init__()
-
-    def __len__(self):
-        pass
-
-    def __getitem__(self, index):
-        pass

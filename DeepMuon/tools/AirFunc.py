@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-01-28 15:50:52
+LastEditTime: 2023-01-31 16:11:17
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -17,6 +17,28 @@ import importlib
 import torch
 from torch import nn
 torch.set_default_tensor_type(torch.DoubleTensor)
+
+
+def readable_dict(data: dict, i=0, show=False):
+    """
+    The print_dict function prints a dictionary in a more readable format.
+    It is intended to be used for debugging purposes.
+
+    :param data: Pass the data to be printed
+    :param i: Control the indentation of the output
+    :return: A string represent the dictionary
+    """
+    info = ''
+    for key in data:
+        info += '\t'*i
+        info += f'{key}: '
+        if isinstance(data[key], dict):
+            info += f"\n{readable_dict(data[key], i+1)}"
+        else:
+            info += f"{data[key]}\n"
+    if show:
+        print(info)
+    return info
 
 
 def unpack_json_log(log_path: str, start_from: int = 0) -> list:

@@ -2,49 +2,78 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-01-28 15:50:46
+LastEditTime: 2023-01-31 17:07:41
 Description: NULL
 
-Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 
 import os
+import warnings
+from DeepMuon.loss_fn import *
 from DeepMuon.models import *
 from DeepMuon.dataset import *
-from DeepMuon.tools.AirFunc import import_module
+from DeepMuon.tools.AirFunc import import_module, readable_dict
 from torch.optim import *
 from torch.optim.lr_scheduler import *
 from torch.nn.modules.loss import *
-import warnings
 
 
 class Config:
+    """
+    ## Load Training Configuration from Python File stored in Folder 'config'
+    ### Args:
+        - configpath: The path of the config file, must be in 'config' folder
+    ### Attributions:
+        - paras: The parameters in config file, dtype: dict
+            - must have:
+                `model,
+                train_dataset,
+                test_dataset,
+                work_config,
+                checkpoint_config,
+                loss_fn,
+                hyperpara,
+                optimizer,
+                scheduler,
+                gpu_config`
+            - optional:
+                `evaluation`
+    ### Example:
+
+    >>> model = dict(backbone='VST', params=dict(n_classes=11, input_shape=(3, 130, 130), seq_dropout=0.1))
+    >>> train_dataset = dict(backbone='NIIDecodeV2',params=dict(ann_file=None,mask_ann=None,fusion=False,modalities=[],
+                                                                augment_pipeline=[dict(type='HistEqual'),
+                                                                                dict(
+                                                                                    type='SingleNorm'),
+                                                                                dict(
+                                                                                    type='Padding', size=(120, 120)),
+                                                                                dict(type='Resize', size=(130, 130))]))
+    >>> test_dataset = dict(backbone='NIIDecodeV2',params=dict(ann_file=None,mask_ann=None,fusion=False,modalities=[],
+                                                                augment_pipeline=[dict(type='HistEqual'),
+                                                                                dict(
+                                                                                    type='SingleNorm'),
+                                                                                dict(
+                                                                                    type='Padding', size=(120, 120)),
+                                                                                dict(type='Resize', size=(130, 130))]))
+    >>> work_config = dict(work_dir='./VST_1', logfile='log.log')
+    >>> checkpoint_config = dict(load_from='', resume_from='', save_inter=50)
+    >>> loss_fn = dict(backbone='CrossEntropyLoss')
+    >>> evaluation = dict(interval=1, metrics=['f1_score'])
+    >>> optimizer = dict(backbone='SGD', params=dict(lr=0.0001, momentum=0.9, nesterov=True))
+    >>> scheduler = dict(backbone='CosineAnnealingLR', params=dict(T_max=10))
+    >>> hyperpara = dict(epochs=2000, batch_size=7500, inputshape=[1, 3, 40, 10, 10])
+    >>> gpu_config = dict(distributed=True, gpuid=0)
+    """
+
     def __init__(self, configpath: str):
-        '''
-        ## Load Training Configuration from Python File stored in Folder 'config'
-        - Args:
-            - configpath: The path of the config file, must be in 'config' folder
-        - Attributions:
-            - paras: The parameters in config file, dtype: dict
-                ```
-                'model',
-                'train_dataset',
-                'test_dataset',
-                'work_config',
-                'checkpoint_config',
-                'loss_fn',
-                'hyperpara',
-                'optimizer',
-                'scheduler',
-                'gpu_config'
-                ```
-        '''
         self.paras = {'model': None,
                       'train_dataset': None,
                       'test_dataset': None,
                       'work_config': None,
                       'checkpoint_config': None,
                       'loss_fn': None,
+                      'evaluation': None,
                       'hyperpara': None,
                       'optimizer': None,
                       'scheduler': None,
@@ -60,10 +89,9 @@ class Config:
     def __check_config(self):
         paras_config = self.config_keys
         error = []
-        paras_check = list(self.paras.keys())
-        for i in range(len(paras_check)):
-            if paras_check[i] not in paras_config:
-                error.append(paras_check[i])
+        for key in self.paras.keys():
+            if key not in paras_config:
+                error.append(key)
         if 'lr_config' in error and 'optimizer' not in error and 'scheduler' not in error:
             error.remove('lr_config')
         if 'lr_config' not in error:
@@ -71,6 +99,8 @@ class Config:
                 error.remove('scheduler')
             if 'optimizer' in error:
                 error.remove('optimizer')
+        if 'evaluation' in error:
+            error.remove('evaluation')
         assert len(
             error) == 0, f'These basic configurations are not specified in {self.configpath}:\n{error}'
 
@@ -167,9 +197,34 @@ class Config:
         self.paras['checkpoint_config'] = self.config.checkpoint_config
         self.paras['gpu_config'] = self.config.gpu_config
         self.paras['config'] = dict(path=self.configpath)
+        if 'evaluation' in self.config_keys:
+            evaluation_op = getattr(self.config, 'evaluation')
+            if 'interval' not in evaluation_op.keys():
+                warnings.warn(
+                    f"'interval' in evaluation command expected, however {evaluation_op} given, interval is set as 1 defaultly to avoid errors")
+                evaluation_op['interval'] = 1
+            if 'metrics' not in evaluation_op.keys():
+                warnings.warn(
+                    f"'metrics' in evaluation command expected, however {evaluation_op} given, metrics is set as empty defaultly to avoid errors")
+                eva_metrics = {}
+            else:
+                eva_metrics = {}
+                for ops in evaluation_op['metrics']:
+                    if ops not in internal_env.keys():
+                        warnings.warn(
+                            f"evaluaction metrics '{ops}' doesn't exists!")
+                        continue
+                    eva_metrics[ops] = internal_env[ops]
+            if 'sota_target' not in evaluation_op.keys():
+                evaluation_op['sota_target'] = dict(mode='min', target=None)
+            else:
+                assert evaluation_op['sota_target'][
+                    'mode'] == 'min' or 'max', f"mode='min'/'max' expected in evaluation command, however {evaluation_op} given"
+                assert evaluation_op['sota_target']['target'] == None or evaluation_op['sota_target']['target'] in evaluation_op[
+                    'metrics'], f"'target' in evaluation command should be None/within metrics, however {evaluation_op} given"
+                evaluation_op['sota_target']['target'] = internal_env[evaluation_op['sota_target']['target']]
+            self.paras['evaluation'] = dict(
+                interval=evaluation_op['interval'], metrics=eva_metrics, sota_target=evaluation_op['sota_target'])
 
     def __repr__(self) -> str:
-        info = ''
-        for key in self.paras:
-            info += f"{key}:\n\t{self.paras[key]}\n"
-        return info
+        return readable_dict(self.paras)
