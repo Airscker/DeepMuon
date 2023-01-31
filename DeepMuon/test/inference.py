@@ -2,14 +2,13 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-01-31 14:48:02
+LastEditTime: 2023-01-31 19:58:58
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import time
 import os
-from tqdm import tqdm
 import click
 import warnings
 import numpy as np
