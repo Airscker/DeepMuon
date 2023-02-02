@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-02 19:27:38
+LastEditTime: 2023-02-02 18:10:09
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -122,40 +122,22 @@ def main(config_info, msg=''):
     '''
     Initialize loss/optimizer/scheduler
     eg. loss_fn=nn.MSELoss()
-        optimizer = torch.optim.SGD(
-            model.parameters(), lr=0.001, momentum=0.9, nesterov=True)
-        optimizer = torch.optim.AdamW(
-            model.parameters(), lr=0.001, weight_decay=0.1, betas=(0.9, 0.999))
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode='min', factor=0.5, patience=100)
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer=optimizer, T_max=10)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9, nesterov=True)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.1, betas=(0.9, 0.999))
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=10)
     In the example shown above:
         `nn.MSELoss` <> `configs['loss_fn']['backbone']`, `loss_function parameters` <> `**configs['loss_fn']['params']`
         `torch.optim.SGD` <> `configs['optimizer']['backbone']`, `lr=0.001, momentum=0.9, nesterov=True` <> `**configs['optimizer']['params']`
         `torch.optim.lr_scheduler.ReduceLROnPlateau` <> `configs['scheduler']['backbone']`, `mode='min', factor=0.5, patience=100` <> `**configs['scheduler']['params']`
     '''
     loss_fn = configs['loss_fn']['backbone'](**configs['loss_fn']['params'])
-
-   # optimizer = torch.optim.AdamW(
-   #     model.parameters(), lr=lr, weight_decay=0.1, betas=(0.9, 0.999))
-   optimizer = torch.optim.SGD(
-        model.parameters(), lr=lr, momentum=0.9, nesterov=True)
-    # optimizer = torch.optim.Adam(model.parameters(),lr=lr,weight_decay=0.1)
-    # schedular=torch.optim.lr_scheduler.StepLR(optimizer,lr_step,gamma=0.5)
-    # schedular = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    #     optimizer, mode='min', factor=0.5, patience=patience)
-    schedular = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer=optimizer, T_max=patience)
-
-    # Log the information of the model
     optimizer = configs['optimizer']['backbone'](
         model.parameters(), **configs['optimizer']['params'])
     scheduler = configs['scheduler']['backbone'](
         optimizer, **configs['scheduler']['params'])
     '''Log the information of the model'''
->>>>>> > CMR_VST
-   if local_rank == 0:
+    if local_rank == 0:
         # flops, params = get_model_complexity_info(model,(1,17,17),as_strings=True,print_per_layer_stat=False, verbose=True)
         # logger.log(f'GFLOPs: {flops}, Number of Parameters: {params}')
         logger.log(f'Model Architecture:\n{model}')
@@ -238,18 +220,6 @@ def main(config_info, msg=''):
                 logger.log(AirFunc.readable_dict(ts_eva_info))
                 logger.log(AirFunc.readable_dict(tr_eva_info))
     return bestres
-
-
-<<<<<< < HEAD
-
-
-def get_mem_info():
-    gpu_id = torch.cuda.current_device()
-    mem_total = torch.cuda.get_device_properties(gpu_id).total_memory
-    mem_cached = torch.cuda.memory_reserved(gpu_id)
-    mem_allocated = torch.cuda.memory_allocated(gpu_id)
-    return dict(mem_left=f"{(mem_total-mem_cached-mem_allocated)/1024**2:0.2f} MB", total_mem=f"{mem_total/1024**2:0.2f} MB", mem_used=f"{(mem_cached+mem_allocated)/1024**2:0.2f} MB")
-
 
 
 def tensorboard_plot(metrics: dict, epoch: int, writer, tag):
