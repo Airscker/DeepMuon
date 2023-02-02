@@ -2,13 +2,14 @@
 Author: Airscker
 Date: 2022-08-26 21:23:01
 LastEditors: airscker
-LastEditTime: 2023-01-10 10:54:22
+LastEditTime: 2023-02-02 18:08:38
 Description: NULL
 
-Copyright (c) 2022 by Airscker, All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import os
 import json
+import numpy as np
 
 
 class LOGT(object):
@@ -64,6 +65,10 @@ class LOGJ(object):
         Write the message to the logfile.
         @param message - the message to be written to the logfile.
         """
+        for key in message.keys():
+            value = message[key]
+            if isinstance(value, np.ndarray):
+                message[key] = value.tolist()
         message_json = json.dumps(message)
         with open(self.logfile, 'a+')as f:
             f.write(f"{message_json}\n")

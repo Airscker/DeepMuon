@@ -5,7 +5,7 @@ LastEditors: airscker
 LastEditTime: 2022-12-27 18:02:59
 Description: Dataset Built for Pandax4T-III Pattern Relocalization Project
 
-Copyright (c) 2022 by Airscker, All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import numpy as np
 from tqdm import tqdm

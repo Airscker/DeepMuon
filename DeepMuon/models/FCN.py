@@ -2,10 +2,10 @@
 Author: airscker
 Date: 2023-01-23 17:10:49
 LastEditors: airscker
-LastEditTime: 2023-01-23 17:30:04
+LastEditTime: 2023-02-02 19:23:02
 Description: NULL
 
-Copyright (c) 2023 by airscker, All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import torch
 import torch.nn as nn

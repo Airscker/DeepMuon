@@ -2,9 +2,9 @@
 Author: airscker
 Date: 2022-09-21 18:46:04
 LastEditors: airscker
-LastEditTime: 2023-01-20 19:06:06
+LastEditTime: 2023-02-02 19:23:15
 Description: Version file of DeepMuon
 
-Copyright (c) 2022 by airscker, All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
-__version__ = '1.23.2'
+__version__ = '1.23.21'

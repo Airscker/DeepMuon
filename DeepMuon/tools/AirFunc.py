@@ -2,29 +2,54 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-01-23 10:48:37
+LastEditTime: 2023-02-02 19:22:57
 Description: NULL
 
-Copyright (c) 2022 by Airscker, All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import os
-import matplotlib.pyplot as plt
-import numpy as np
 import shutil
 import importlib
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 import torch
 from torch import nn
-# from torch import Tensor
-# import torch.nn.functional as F
-# from torch.utils.data import Dataset
-# from torchvision.transforms import ToTensor
-# import torchvision.models as models
-# from torch.utils.data import DataLoader
-# from monai.networks.blocks import
-# from torch.utils.tensorboard import SummaryWriter
 torch.set_default_tensor_type(torch.DoubleTensor)
+
+
+def get_mem_info(gpu_id=None):
+    if gpu_id is None:
+        gpu_id = torch.cuda.current_device()
+    mem_total = torch.cuda.get_device_properties(gpu_id).total_memory
+    mem_cached = torch.cuda.memory_reserved(gpu_id)
+    mem_allocated = torch.cuda.memory_allocated(gpu_id)
+    return dict(mem_left=f"{(mem_total-mem_cached-mem_allocated)/1024**2:0.2f} MB",
+                mem_used=f"{(mem_cached+mem_allocated)/1024**2:0.2f} MB",
+                total_mem=f"{mem_total/1024**2:0.2f} MB")
+
+
+def readable_dict(data: dict, i=0, show=False, indent='\t', sep='\n'):
+    """
+    The print_dict function prints a dictionary in a more readable format.
+    It is intended to be used for debugging purposes.
+
+    :param data: Pass the data to be printed
+    :param i: Control the indentation of the output
+    :return: A string represent the dictionary
+    """
+    info = ''
+    for key in data:
+        info += indent*i
+        info += f'{key}: '
+        if isinstance(data[key], dict):
+            info += f"{sep}{readable_dict(data[key], i+1,indent=indent,sep=sep)}"
+        else:
+            info += f"{data[key]}{sep}"
+    if show:
+        print(info)
+    return info
 
 
 def unpack_json_log(log_path: str, start_from: int = 0) -> list:
@@ -241,14 +266,14 @@ def format_time(second):
     return f'{hours}:{minutes:02d}:{second:02d}'
 
 
-def save_model(epoch: int, model: nn.Module, optimizer, loss_fn, schedular, path, dist_train=False):
+def save_model(epoch: int, model: nn.Module, optimizer, loss_fn, scheduler, path, dist_train=False):
     """Save a model to disk, Only their state_dict()
     Args:
         epoch\n
         model\n
         optimizer\n
         loss_fn\n
-        schedular\n
+        scheduler\n
         path\n
         dist_train\n
     """
@@ -257,7 +282,7 @@ def save_model(epoch: int, model: nn.Module, optimizer, loss_fn, schedular, path
         'model': model.state_dict() if dist_train == False else model.module.state_dict(),
         'optimizer': optimizer.state_dict(),
         'loss_fn': loss_fn.state_dict(),
-        'schedular': schedular.state_dict(),
+        'scheduler': scheduler.state_dict(),
     }, path)
     return 0
 
@@ -270,16 +295,19 @@ def load_model(path: str, device: torch.device):
         epoch: last trained epoch\n
         model_dic\n
         optimizer_dic\n
-        schedular_dic\n
+        scheduler_dic\n
         loss_fn_dic\n
     """
     checkpoint = torch.load(path, map_location=device)
     model_dic = checkpoint['model']
     optimizer_dic = checkpoint['optimizer']
-    schedular_dic = checkpoint['schedular']
+    try:
+        scheduler_dic = checkpoint['scheduler']
+    except:
+        scheduler_dic = checkpoint['schedular']
     epoch = checkpoint['epoch']
     loss_fn_dic = checkpoint['loss_fn']
-    return epoch, model_dic, optimizer_dic, schedular_dic, loss_fn_dic
+    return epoch, model_dic, optimizer_dic, scheduler_dic, loss_fn_dic
 
 
 def del_pycache(path='./'):

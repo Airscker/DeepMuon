@@ -2,30 +2,29 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2022-12-27 17:59:06
+LastEditTime: 2023-02-02 18:28:31
 Description: NULL
 
-Copyright (c) 2022 by Airscker, All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import time
 import os
-from tqdm import tqdm
 import click
 import warnings
 import numpy as np
 import pickle as pkl
 
 from DeepMuon.tools.AirConfig import Config
-from DeepMuon.tools.AirFunc import load_model, format_time, plot_hist_2nd
-from DeepMuon.tools.AirLogger import LOGT
+import DeepMuon.tools.AirFunc as AirFunc
+import DeepMuon.tools.AirLogger as AirLogger
 from DeepMuon.tools.model_info import model_para
 from DeepMuon.test.analysis import loss_dist, data_analysis
+from DeepMuon.loss_fn.evaluation import confusion_matrix
 
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
-import torchvision.models as models
-from torchvision.models.feature_extraction import get_graph_node_names, create_feature_extractor
+# from torchvision.models.feature_extraction import get_graph_node_names, create_feature_extractor
 from ptflops import get_model_complexity_info
 from torchinfo import summary
 from torch.utils.tensorboard import SummaryWriter
@@ -34,8 +33,9 @@ torch.backends.cudnn.benchmark = True
 torch.set_printoptions(profile='full')
 
 
-def main(configs, ana, thres, neuron):
-    # Initialize the basic training configuration
+def main(config_info, ana, thres, neuron):
+    '''Initialize the basic training configuration'''
+    configs = config_info.paras
     loss_fn = configs['loss_fn']['backbone'](configs['loss_fn']['params'])
     batch_size = 1
     test_data = configs['test_dataset']['params']
@@ -47,20 +47,21 @@ def main(configs, ana, thres, neuron):
     res = os.path.join(infer_path, 'inference_res.pkl')
     load = os.path.join(work_dir, 'Best_Performance.pth')
     gpu = configs['gpu_config']['gpuid']
-    logger = LOGT(log_dir=infer_path, logfile=log, new=True)
+    logger = AirLogger.LOGT(log_dir=work_dir, logfile=log)
+    json_logger = AirLogger.LOGJ(log_dir=work_dir, logfile=f'{log}.json')
     log = os.path.join(infer_path, log)
     ana_path = os.path.join(work_dir, 'ana')
 
-    # load datasets
+    '''load datasets'''
     test_dataset = configs['test_dataset']['backbone'](**test_data)
     test_dataloader = DataLoader(
         test_dataset, batch_size=batch_size, shuffle=False, pin_memory=True)
 
-    # Get cpu or gpu device for training.
+    '''Get cpu or gpu device for training.'''
     device = torch.device(
         f"cuda:{gpu}" if torch.cuda.is_available() else "cpu")
 
-    # show hyperparameters
+    '''show hyperparameters'''
     logger.log(f'========= Current Time: {time.ctime()} =========')
     logger.log(f'Current PID: {os.getpid()}')
     config_path = configs['config']['path']
@@ -79,7 +80,7 @@ def main(configs, ana, thres, neuron):
     model = configs['model']['backbone'](
         **configs['model']['params']).to(device)
     assert os.path.exists(load), f'Model inferenced can not be found: {load}'
-    epoch_c, model_c, optimizer_c, schedular_c, loss_fn_c = load_model(
+    epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = AirFunc.load_model(
         path=load, device=device)
     model.load_state_dict(model_c, False)
     model.to(device)
@@ -95,16 +96,17 @@ def main(configs, ana, thres, neuron):
         f'Overall Model GFLOPs: {flops}, Number of Parameters: {params}')
     logger.log(f'Loss Function: {loss_fn}')
 
-    # save model architecture
+    '''save model architecture'''
     # writer=SummaryWriter(os.path.join(work_dir,'LOG'))
     # writer.add_graph(model,torch.rand(configs['hyperpara']['inputshape']).to(device))
-    if neuron >= 0:
-        neuron_infer(device=device, dataloader=test_dataloader,
-                     model=model, loss_fn=loss_fn, work_dir=work_dir, index=neuron)
-    # start inferencing
+    # if neuron >= 0:
+    #     neuron_infer(device=device, dataloader=test_dataloader,
+    #                  model=model, loss_fn=loss_fn, work_dir=work_dir, index=neuron)
+    '''start inferencing'''
     loss, pred, real, loss_map = infer(
-        device, test_dataloader, model, loss_fn, logger, thres=thres, ana=ana)
+        work_dir, device, test_dataloader, model, loss_fn, logger, thres=thres, ana=ana)
     # Save results
+
     with open(res, 'wb')as f:
         pkl.dump({'loss': loss, 'pred': pred, 'real': real}, f)
     f.close()
@@ -130,7 +132,7 @@ def main(configs, ana, thres, neuron):
             f'Threshold {thres} Loss ID-[data,pred,real,loss] hash map saved as {name}, total number: {len(loss_map)}')
 
 
-def infer(device, dataloader, model, loss_fn, logger: LOGT, thres, ana=True):
+def infer(workdir, device, dataloader, model, loss_fn, logger: AirLogger.LOGT, thres, ana=True):
     """
     The infer function is used to test the model on a dataset. It takes in a dataloader, 
     a model, and an optional loss function. The loss function is only needed if you want to 
@@ -145,7 +147,6 @@ def infer(device, dataloader, model, loss_fn, logger: LOGT, thres, ana=True):
     :param thres: Filter out the abnormal data
     :param ana=True: Determine whether to analyze the data
     :return: The loss value, predicted values and real values
-    :doc-author: Trelent
     """
     num_batches = len(dataloader)
     model.eval()
@@ -162,78 +163,78 @@ def infer(device, dataloader, model, loss_fn, logger: LOGT, thres, ana=True):
             pred = model(X)
             loss_value = loss_fn(pred, y).item()
             test_loss.append(loss_value)
-            pred_value.append(pred.cpu().numpy()[0])
-            real_value.append(y.cpu().numpy()[0])
+            pred_value.append(pred.detach().cpu().numpy())
+            real_value.append(y.detach().cpu().numpy())
             if ana and loss_value > thres:
                 loss_map[num-1] = [X.cpu().numpy(), pred_value[num-1],
                                    real_value[num-1], loss_value]
             now_time = time.time()
             logger.log(
-                f'{num}/{num_batches} Loss: {loss_value}, Predicted: {pred_value[num-1]}, Real: {real_value[num-1]}, Time: {now_time-start_time}s, ETA: {format_time((num_batches-num)*(now_time-start_time))}')
+                f'{num}/{num_batches} Loss: {loss_value}, Predicted: {pred_value[num-1]}, Real: {real_value[num-1]}, Time: {now_time-start_time}s, ETA: {AirFunc.format_time((num_batches-num)*(now_time-start_time))}')
             num += 1
     return test_loss, pred_value, real_value, loss_map
 
 
-def neuron_infer(device, dataloader, model: nn.Module, loss_fn, work_dir: str, index=0):
-    """
-    The neuron_infer function is used to infer the neuron values of a given model.
-    It takes in the following parameters:
-        - device: The torch device on which the computations will be run. This is typically set to cuda if you have a GPU available, otherwise it should be set to cpu. 
-        - dataloader: A DataLoader object that can load your test dataset batch by batch (for example, ImageFolder from torchvision). It should return pairs of images and labels for each iteration. 
-        - model: The PyTorch neural network model that we want to infer neurons for (in this case
+# def neuron_infer(device, dataloader, model: nn.Module, loss_fn, work_dir: str, index=0):
+#     """
+#     The neuron_infer function is used to infer the neuron values of a given model.
+#     It takes in the following parameters:
+#         - device: The torch device on which the computations will be run. This is typically set to cuda if you have a GPU available, otherwise it should be set to cpu.
+#         - dataloader: A DataLoader object that can load your test dataset batch by batch (for example, ImageFolder from torchvision). It should return pairs of images and labels for each iteration.
+#         - model: The PyTorch neural network model that we want to infer neurons for (in this case
 
-    :param device: Specify the device to use
-    :param dataloader: Load the data
-    :param model:nn.Module: Specify the model to be profiled
-    :param loss_fn: Calculate the loss of the model
-    :param work_dir:str: Specify the directory where the log file and neuron
-    :param index=0: Specify the index of the data in the dataset
-    :return: The loss value, the predicted value and the real value of a data point
-    """
-    num_batches = len(dataloader)
-    model.eval()
-    num = 1
-    neuron_log = os.path.join(work_dir, 'neuron')
-    logger = LOGT(log_dir=neuron_log, logfile='neuron.log', new=True)
-    with torch.no_grad():
-        for X, y in dataloader:
-            if num-1 == index:
-                start_time = time.time()
-                X, y = X.to(device), y.to(device)
-                with torch.autograd.profiler.profile(enabled=True, use_cuda=True, record_shapes=True, profile_memory=True) as prof_ana:
-                    pred = model(X)
-                table = prof_ana.table()
-                logger.log(f'Model architecture: \n{model}\n\n')
-                logger.log(table, show=False)
-                prof_ana.export_chrome_trace(
-                    os.path.join(neuron_log, 'model_profile.json'))
-                logger.log('\nModel Parameters:')
-                for name, param in model.named_parameters():
-                    logger.log(
-                        f"Layer: {name} | Size: {param.size()} | Values : {param} \n", show=False)
+#     :param device: Specify the device to use
+#     :param dataloader: Load the data
+#     :param model:nn.Module: Specify the model to be profiled
+#     :param loss_fn: Calculate the loss of the model
+#     :param work_dir:str: Specify the directory where the log file and neuron
+#     :param index=0: Specify the index of the data in the dataset
+#     :return: The loss value, the predicted value and the real value of a data point
+#     """
+#     num_batches = len(dataloader)
+#     model.eval()
+#     num = 1
+#     neuron_log = os.path.join(work_dir, 'neuron')
+#     logger = LOGT(log_dir=neuron_log, logfile='neuron.log', new=True)
+#     with torch.no_grad():
+#         for X, y in dataloader:
+#             if num-1 == index:
+#                 start_time = time.time()
+#                 X, y = X.to(device), y.to(device)
+#                 with torch.autograd.profiler.profile(enabled=True, use_cuda=True, record_shapes=True, profile_memory=True) as prof_ana:
+#                     pred = model(X)
+#                 table = prof_ana.table()
+#                 logger.log(f'Model architecture: \n{model}\n\n')
+#                 logger.log(table, show=False)
+#                 prof_ana.export_chrome_trace(
+#                     os.path.join(neuron_log, 'model_profile.json'))
+#                 logger.log('\nModel Parameters:')
+#                 for name, param in model.named_parameters():
+#                     logger.log(
+#                         f"Layer: {name} | Size: {param.size()} | Values : {param} \n", show=False)
 
-                '''Trace Feature Map'''
-                logger.log(
-                    f'\nFeature map of data with index {index} in the dataset\n', show=False)
-                nodes, _ = get_graph_node_names(model)
-                fx = create_feature_extractor(model, return_nodes=nodes)
-                fms = fx(X)
-                for key in fms.keys():
-                    logger.log(
-                        f'Feature: {key}\nValue: \n{fms[key]}\n', show=False)
-                with open(os.path.join(neuron_log, 'FX.pkl'), 'wb')as f:
-                    pkl.dumps(fms)
+#                 '''Trace Feature Map'''
+#                 logger.log(
+#                     f'\nFeature map of data with index {index} in the dataset\n', show=False)
+#                 nodes, _ = get_graph_node_names(model)
+#                 fx = create_feature_extractor(model, return_nodes=nodes)
+#                 fms = fx(X)
+#                 for key in fms.keys():
+#                     logger.log(
+#                         f'Feature: {key}\nValue: \n{fms[key]}\n', show=False)
+#                 with open(os.path.join(neuron_log, 'FX.pkl'), 'wb')as f:
+#                     pkl.dumps(fms)
 
-                loss_value = loss_fn(pred, y).item()
-                test_loss = loss_value
-                pred_value = pred.cpu().numpy()[0]
-                real_value = y.cpu().numpy()[0]
-                now_time = time.time()
-                logger.log(
-                    f'{index} Loss: {loss_value}, Predicted: {pred_value}, Real: {real_value}, Time: {now_time-start_time}s')
-                break
-            num += 1
-    return test_loss, pred_value, real_value
+#                 loss_value = loss_fn(pred, y).item()
+#                 test_loss = loss_value
+#                 pred_value = pred.cpu().numpy()[0]
+#                 real_value = y.cpu().numpy()[0]
+#                 now_time = time.time()
+#                 logger.log(
+#                     f'{index} Loss: {loss_value}, Predicted: {pred_value}, Real: {real_value}, Time: {now_time-start_time}s')
+#                 break
+#             num += 1
+#     return test_loss, pred_value, real_value
 
 
 @click.command()
@@ -259,8 +260,7 @@ def run(config, neuron, ana, thres):
     if train_config.paras['gpu_config']['distributed'] == True:
         warnings.warn(
             'Distributed Training is not supported during model inference')
-    train_config.paras['config'] = {'path': config}
-    main(train_config.paras, ana, thres, neuron)
+    main(train_config, ana, thres, neuron)
 
 
 if __name__ == '__main__':

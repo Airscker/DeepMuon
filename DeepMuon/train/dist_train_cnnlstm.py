@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-02 19:27:38
+LastEditTime: 2023-02-02 18:10:20
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -88,7 +88,8 @@ def main(config_info, msg=''):
     In the example shown above, `MLP3` <> `configs['model']['backbone']`, `model_parameters` <> `**configs['model']['params']`
     '''
     model: nn.Module = configs['model']['backbone'](
-        **configs['model']['params']).to(device)
+        **configs['model']['params'])
+    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model).to(device)
     epoch_now = 0
     if resume == '' and load == '':
         pass
@@ -122,40 +123,22 @@ def main(config_info, msg=''):
     '''
     Initialize loss/optimizer/scheduler
     eg. loss_fn=nn.MSELoss()
-        optimizer = torch.optim.SGD(
-            model.parameters(), lr=0.001, momentum=0.9, nesterov=True)
-        optimizer = torch.optim.AdamW(
-            model.parameters(), lr=0.001, weight_decay=0.1, betas=(0.9, 0.999))
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode='min', factor=0.5, patience=100)
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer=optimizer, T_max=10)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9, nesterov=True)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.1, betas=(0.9, 0.999))
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=10)
     In the example shown above:
         `nn.MSELoss` <> `configs['loss_fn']['backbone']`, `loss_function parameters` <> `**configs['loss_fn']['params']`
         `torch.optim.SGD` <> `configs['optimizer']['backbone']`, `lr=0.001, momentum=0.9, nesterov=True` <> `**configs['optimizer']['params']`
         `torch.optim.lr_scheduler.ReduceLROnPlateau` <> `configs['scheduler']['backbone']`, `mode='min', factor=0.5, patience=100` <> `**configs['scheduler']['params']`
     '''
     loss_fn = configs['loss_fn']['backbone'](**configs['loss_fn']['params'])
-
-   # optimizer = torch.optim.AdamW(
-   #     model.parameters(), lr=lr, weight_decay=0.1, betas=(0.9, 0.999))
-   optimizer = torch.optim.SGD(
-        model.parameters(), lr=lr, momentum=0.9, nesterov=True)
-    # optimizer = torch.optim.Adam(model.parameters(),lr=lr,weight_decay=0.1)
-    # schedular=torch.optim.lr_scheduler.StepLR(optimizer,lr_step,gamma=0.5)
-    # schedular = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    #     optimizer, mode='min', factor=0.5, patience=patience)
-    schedular = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer=optimizer, T_max=patience)
-
-    # Log the information of the model
     optimizer = configs['optimizer']['backbone'](
         model.parameters(), **configs['optimizer']['params'])
     scheduler = configs['scheduler']['backbone'](
         optimizer, **configs['scheduler']['params'])
     '''Log the information of the model'''
->>>>>> > CMR_VST
-   if local_rank == 0:
+    if local_rank == 0:
         # flops, params = get_model_complexity_info(model,(1,17,17),as_strings=True,print_per_layer_stat=False, verbose=True)
         # logger.log(f'GFLOPs: {flops}, Number of Parameters: {params}')
         logger.log(f'Model Architecture:\n{model}')
@@ -240,18 +223,6 @@ def main(config_info, msg=''):
     return bestres
 
 
-<<<<<< < HEAD
-
-
-def get_mem_info():
-    gpu_id = torch.cuda.current_device()
-    mem_total = torch.cuda.get_device_properties(gpu_id).total_memory
-    mem_cached = torch.cuda.memory_reserved(gpu_id)
-    mem_allocated = torch.cuda.memory_allocated(gpu_id)
-    return dict(mem_left=f"{(mem_total-mem_cached-mem_allocated)/1024**2:0.2f} MB", total_mem=f"{mem_total/1024**2:0.2f} MB", mem_used=f"{(mem_cached+mem_allocated)/1024**2:0.2f} MB")
-
-
-
 def tensorboard_plot(metrics: dict, epoch: int, writer, tag):
     for key in metrics:
         try:
@@ -297,24 +268,35 @@ def evaluation(scores, labels, evaluation_command, best_target, loss):
         return eva_res, loss
 
 
-def train(device, dataloader, model, loss_fn, optimizer, scheduler):
+def train(device, dataloader, model, loss_fn, optimizer, scheduler, gradient_accumulation=8):
     model.train()
     train_loss = 0
     predictions = []
     labels = []
     batchs = len(dataloader)
-    for batch, (X, y) in enumerate(dataloader):
-        X, y = X.to(device), y.to(device)
-        '''Compute prediction error'''
-        pred = model(X)
+    for i, batch in enumerate(dataloader):
+        x, y = batch
+        y = y.reshape(-1)
+        # if num_frames is not None:
+        #     y = np.repeat(y, num_frames)
+        if isinstance(x, list):
+            x = [torch.autograd.Variable(x_).cuda(
+                device, non_blocking=True) for x_ in x]
+            h0 = model.module.init_hidden(x[0].size(0))
+        else:
+            x = torch.autograd.Variable(x).cuda(device, non_blocking=True)
+            h0 = model.module.init_hidden(x.size(0))
+        y = torch.autograd.Variable(y).cuda(device, non_blocking=True)
+        pred = model(x, h0)
         predictions.append(pred.detach().cpu().numpy())
         labels.append(y.detach().cpu().numpy())
         loss = loss_fn(pred, y)
-        '''Backpropagation'''
-        optimizer.zero_grad()
+        loss = loss/gradient_accumulation
         loss.backward()
-        optimizer.step()
         train_loss += loss.item()
+        if (i+1) % gradient_accumulation == 0:
+            optimizer.step()
+            optimizer.zero_grad()
     scheduler.step()
     return train_loss/batchs, np.concatenate(predictions, axis=0), np.concatenate(labels, axis=0)
 
@@ -326,9 +308,20 @@ def test(device, dataloader, model, loss_fn):
     predictions = []
     labels = []
     with torch.no_grad():
-        for X, y in dataloader:
-            X, y = X.to(device), y.to(device)
-            pred = model(X)
+        for i, batch in enumerate(dataloader):
+            x, y = batch
+            y = y.reshape(-1)
+            # if num_frames is not None:
+            #     y = np.repeat(y, num_frames)
+            if isinstance(x, list):
+                x = [torch.autograd.Variable(x_).cuda(
+                    device, non_blocking=True) for x_ in x]
+                h0 = model.module.init_hidden(x[0].size(0))
+            else:
+                x = torch.autograd.Variable(x).cuda(device, non_blocking=True)
+                h0 = model.module.init_hidden(x.size(0))
+            y = torch.autograd.Variable(y).cuda(device, non_blocking=True)
+            pred = model(x, h0)
             predictions.append(pred.detach().cpu().numpy())
             labels.append(y.detach().cpu().numpy())
             test_loss += loss_fn(pred, y).item()

@@ -2,10 +2,10 @@
 Author: airscker
 Date: 2022-09-20 22:24:05
 LastEditors: airscker
-LastEditTime: 2023-01-18 09:33:46
+LastEditTime: 2023-02-02 19:24:22
 Description: Configuration of Pandax4T-III MLP3 Model
 
-Copyright (c) 2022 by airscker, All Rights Reserved.
+Copyright (C) 2022 by Airscker(Yufeng), All Rights Reserved.
 '''
 
 '''

@@ -2,12 +2,11 @@
 Author: airscker
 Date: 2022-09-20 22:24:05
 LastEditors: airscker
-LastEditTime: 2023-01-18 09:57:58
+LastEditTime: 2023-02-02 19:23:25
 Description: Configuration of Hailing 1TeV MLP3_3D_Direct Model
 
-Copyright (c) 2022 by airscker, All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
-
 '''
 ## Specify which model to be used, all models are stored in 'models' 
 '''
@@ -31,7 +30,6 @@ work_config = dict(
 checkpoint_config = dict(
     load_from='', resume_from='/data/Airscker/VST3/Hailing-Muon/work_dir/1TeV/VST_1/Best_Performance.pth', save_inter=500)
 # checkpoint_config = dict(load_from='/data/Airscker/VST3/Hailing-Muon/work_dir/1TeV/DResMax_3/Best_Performance.pth', resume_from='', save_inter=500)
-
 '''
 ## Specify the customized loss function to be used, if no customized loss function specified, nn.MSELoss() will be used
 '''

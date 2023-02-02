@@ -2,22 +2,22 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-01-10 10:49:35
+LastEditTime: 2023-01-31 12:39:48
 Description: NULL
 
-Copyright (c) 2022 by Airscker, All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 import time
 import os
 from tqdm import tqdm
 import click
-# import nni
 
 from DeepMuon.tools.AirConfig import Config
-from DeepMuon.tools.AirFunc import load_model, save_model, format_time
-from DeepMuon.tools.AirLogger import LOGT, LOGJ
+import DeepMuon.tools.AirFunc as AirFunc
+import DeepMuon.tools.AirLogger as AirLogger
 
 import torch
+from torch import nn
 from torch.utils.data import DataLoader
 from ptflops import get_model_complexity_info
 from torchinfo import summary
@@ -25,74 +25,46 @@ from torch.utils.tensorboard import SummaryWriter
 torch.set_default_tensor_type(torch.DoubleTensor)
 torch.backends.cudnn.benchmark = True
 torch.manual_seed(3407)
-# @click.command()
-# @click.option('--batch_size',default=400)
-# @click.option('--epochs',default=10)
-# @click.option('--train_data',default='./Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl')
-# @click.option('--test_data',default='./Hailing-Muon/data/1TeV/Hailing_1TeV_val_data.pkl')
-# @click.option('--lr',default=0.0005)
-# @click.option('--resume',default='')
-# @click.option('--load',default='')
-# @click.option('--patience',default=100)
-# @click.option('--momentum',default=0.9)
-# @click.option('--gpu',default=0)
-# @click.option('--log',default='log.log')
-# @click.option('--work_dir',default=f'./Hailing-Muon/work_dir/1TeV/MLP3_3D')
-# @click.option('--inter',default=10,help='Interval of model saving')
-# def main(batch_size,epochs,train_data,test_data,lr,lr_step,resume,momentum,gpu,log):
-# def main(batch_size,epochs,train_data,test_data,lr,patience,resume,load,momentum,gpu,log,work_dir,inter):
 
 
-def main(configs, msg=''):
-    # Initialize the basic training configuration
+def main(config_info, msg=''):
+    '''Initialize the basic training configuration'''
+    configs = config_info.paras
     batch_size = configs['hyperpara']['batch_size']
     epochs = configs['hyperpara']['epochs']
     train_data = configs['train_dataset']['params']
     test_data = configs['test_dataset']['params']
     work_dir = configs['work_config']['work_dir']
     log = configs['work_config']['logfile']
-    patience = configs['lr_config']['patience']
-    lr = configs['lr_config']['init']
     resume = configs['checkpoint_config']['resume_from']
     load = configs['checkpoint_config']['load_from']
     inter = configs['checkpoint_config']['save_inter']
     gpu = configs['gpu_config']['gpuid']
-    logger = LOGT(log_dir=work_dir, logfile=log)
-    json_logger = LOGJ(log_dir=work_dir, logfile=f'{log}.json')
-    # Create work_dir
+    logger = AirLogger.LOGT(log_dir=work_dir, logfile=log)
+    json_logger = AirLogger.LOGJ(log_dir=work_dir, logfile=f'{log}.json')
+    '''Create work_dir'''
     try:
         os.makedirs(work_dir)
     except:
         pass
     log = os.path.join(work_dir, log)
-    json_info = {}
-    # show hyperparameters
-    logger.log(f'========= Current Time: {time.ctime()} =========')
-    logger.log(f'Current PID: {os.getpid()}')
-    json_info['init_time'] = time.time()
-    json_info['pid'] = os.getpid()
+    '''show hyperparameters'''
+    logger.log(
+        f'========= Current Time: {time.ctime()} Current PID: {os.getpid()} =========')
     if not os.path.exists(msg):
         logger.log('LICENSE MISSED! REFUSE TO START TRAINING')
         return 0
     with open(msg, 'r')as f:
         msg = f.read()
     logger.log(msg)
-    json_info['license'] = msg
-    keys = list(configs.keys())
-    json_info['configs'] = configs
-    info = ''
-    for i in range(len(keys)):
-        info += f'\n{keys[i]}:'
-        info_keys = list(configs[keys[i]].keys())
-        for j in range(len(info_keys)):
-            info += f'\n\t{info_keys[j]}: {configs[keys[i]][info_keys[j]]}'
-    logger.log(info)
-    # logger.log(f'Batch Size: {batch_size}, Epochs: {epochs}, LR patience Step: {patience}, Initial Learn Rate: {lr}, GPUID: {gpu}, Resume From: {resume} Load from: {load}')
-    # logger.log(f'Command: --batch_size={batch_size} --epochs={epochs} --resume="{resume}" --load={load} --patience={patience} --gpu={gpu} --lr={lr} --work_dir="{work_dir}" --inter="{inter}"')
+    logger.log(config_info)
 
-    # load datasets
-    # train_dataset=PandaxDataset(IMG_XY_path=train_data)
-    # test_dataset=PandaxDataset(IMG_XY_path=test_data)
+    '''
+    Load datasets
+    eg. train_dataset=PandaxDataset(IMG_XY_path=train_data)
+        test_dataset=PandaxDataset(IMG_XY_path=test_data)
+    In the example shown above, `configs['train_dataset']['backbone']` <> `PandaxDataset`, `IMG_XY_path=train_data` <> `**train_data`
+    '''
     train_dataset = configs['train_dataset']['backbone'](**train_data)
     test_dataset = configs['test_dataset']['backbone'](**test_data)
     train_dataloader = DataLoader(
@@ -100,138 +72,134 @@ def main(configs, msg=''):
     test_dataloader = DataLoader(
         test_dataset, batch_size=batch_size, shuffle=False, pin_memory=True)
 
-    # Get cpu or gpu device for training.
+    ''' Get cpu or gpu device for training.'''
     device = torch.device(
         f"cuda:{gpu}" if torch.cuda.is_available() else "cpu")
     logger.log(f"Using {device} device")
 
-    # Create Model and optimizer/loss/schedular
-    # You can change the name of net as any you want just make sure the model structure is the same one
-    model = configs['model']['backbone'](
+    '''
+    Create Model and optimizer/loss/scheduler
+    You can change the name of net as any you want just make sure the model structure is the same one
+    eg. model = MLP3().to(device)
+    In the example shown above, `MLP3` <> `configs['model']['backbone']`, `model_parameters` <> `**configs['model']['params']`
+    '''
+    model: nn.Module = configs['model']['backbone'](
         **configs['model']['params']).to(device)
     epoch_now = 0
     if resume == '' and load == '':
         pass
     elif resume != '':
-        epoch_c, model_c, optimizer_c, schedular_c, loss_fn_c = load_model(
+        epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = AirFunc.load_model(
             path=resume, device=device)
         model.load_state_dict(model_c, False)
         model.to(device)
         epoch_now = epoch_c+1
         logger.log(f'Model Resumed from {resume}, Epoch now: {epoch_now}')
-        json_info['resume_model_file'] = resume
-        json_info['resume_epoch'] = epoch_now
     elif load != '':
-        epoch_c, model_c, optimizer_c, schedular_c, loss_fn_c = load_model(
+        epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = AirFunc.load_model(
             path=load, device=device)
         model.load_state_dict(model_c, False)
         model.to(device)
         epoch_now = 0
         logger.log(
             f'Pretrained Model Loaded from {load}, Epoch now: {epoch_now}')
-        json_info['pretrain_model_file'] = load
     epochs += epoch_now
     model_name = model._get_name()
-    # loss/optimizer/lr
-    # loss_fn=nn.MSELoss()
-    loss_fn = configs['loss_fn']['backbone'](configs['loss_fn']['params'])
-    # loss_fn=MSALoss()
-    # loss_fn=nn.L1Loss()
-
-    # MLP3_pretrain
-    # optimizer = torch.optim.SGD(model.parameters(),lr=lr,momentum=momentum)
-    # MLP3_2
-    # optimizer = torch.optim.Adam(model.parameters(),lr=lr,weight_decay=0.1)
-    # MLP3_3
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.1)
-
-    # schedular=torch.optim.lr_scheduler.StepLR(optimizer,lr_step,gamma=0.5)
-    schedular = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.5, patience=patience)
-    # Get GFLOPS of the model
-    # shape of the input data
-    flops, params = get_model_complexity_info(model, tuple(
-        configs['hyperpara']['inputshape']), as_strings=True, print_per_layer_stat=False, verbose=True)
-    logger.log(f'GFLOPs: {flops}, Number of Parameters: {params}')
-    json_info['GFLOPS'] = flops
-    json_info['num_para'] = params
-    logger.log(f'Model Architecture:\n{model}')
-    logger.log(f'Loss Function: {loss_fn}')
-    logger.log(f'Optimizer:\n{optimizer}')
-    logger.log(f'Schedular: {schedular}')
-    json_logger.log(json_info)
-
-    # save model architecture
+    '''save model architecture'''
     writer = SummaryWriter(os.path.join(work_dir, 'LOG'))
     writer.add_graph(model, torch.randn(
         configs['hyperpara']['inputshape']).to(device))
+    '''
+    Initialize loss/optimizer/scheduler
+    eg. loss_fn=nn.MSELoss()
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9, nesterov=True)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.1, betas=(0.9, 0.999))
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=10)
+    In the example shown above:
+        `nn.MSELoss` <> `configs['loss_fn']['backbone']`, `loss_function parameters` <> `**configs['loss_fn']['params']`
+        `torch.optim.SGD` <> `configs['optimizer']['backbone']`, `lr=0.001, momentum=0.9, nesterov=True` <> `**configs['optimizer']['params']`
+        `torch.optim.lr_scheduler.ReduceLROnPlateau` <> `configs['scheduler']['backbone']`, `mode='min', factor=0.5, patience=100` <> `**configs['scheduler']['params']`
+    '''
+    loss_fn = configs['loss_fn']['backbone'](**configs['loss_fn']['params'])
+    optimizer = configs['optimizer']['backbone'](
+        model.parameters(), **configs['optimizer']['params'])
+    scheduler = configs['scheduler']['backbone'](
+        optimizer, **configs['scheduler']['params'])
 
-    # start training
+    '''Log the information of the model'''
+    flops, params = get_model_complexity_info(model, tuple(
+        configs['hyperpara']['inputshape']), as_strings=True, print_per_layer_stat=False, verbose=True)
+    logger.log(f'GFLOPs: {flops}, Number of Parameters: {params}')
+    logger.log(f'Model Architecture:\n{model}')
+    logger.log(f'Loss Function: {loss_fn}')
+    logger.log(f'Optimizer:\n{optimizer}')
+    logger.log(
+        f'scheduler: {scheduler.__class__.__name__}:\n\t{scheduler.state_dict()}')
+
+    '''Training Initailization'''
     bar = tqdm(range(epoch_now, epochs), mininterval=1)
     bestloss = test(device, test_dataloader, model, loss_fn)
     for t in bar:
         start_time = time.time()
         trloss = train(device, train_dataloader, model,
-                       loss_fn, optimizer, schedular)
+                       loss_fn, optimizer, scheduler)
         tsloss = test(device, test_dataloader, model, loss_fn)
         LRn = optimizer.state_dict()['param_groups'][0]['lr']
         bar.set_description(
             f'LR: {LRn},Test Loss: {tsloss},Train Loss: {trloss}')
         writer.add_scalar(f'Test Loss Curve', tsloss, global_step=t+1)
         writer.add_scalar(f'Train Loss Curve', trloss, global_step=t+1)
-        # nni.report_intermediate_result(loss)
         if tsloss <= bestloss:
             bestloss = tsloss
-            # Double save to make sure secure, directly save total model is forbidden, otherwise load issues occur
+            '''Double save to make sure secure, directly save total model is forbidden, otherwise load issues occur'''
             savepath = os.path.join(work_dir, 'Best_Performance.pth')
-            save_model(epoch=t, model=model, optimizer=optimizer,
-                       loss_fn=loss_fn, schedular=schedular, path=savepath)
-            save_model(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn,
-                       schedular=schedular, path=os.path.join(work_dir, f'{model_name}_Best_Performance.pth'))
+            AirFunc.save_model(epoch=t, model=model, optimizer=optimizer,
+                               loss_fn=loss_fn, scheduler=scheduler, path=savepath)
+            AirFunc.save_model(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn,
+                               scheduler=scheduler, path=os.path.join(work_dir, f'{model_name}_Best_Performance.pth'))
             logger.log(
                 f'Best Model Saved as {savepath}, Best Test Loss: {bestloss}, Current Epoch: {(t+1)}', show=False)
         if (t+1) % inter == 0:
-            # torch.save(model,os.path.join(work_dir,f'Epoch_{t+1}.pth'))
             savepath = os.path.join(work_dir, f'Epoch_{t+1}.pth')
-            save_model(epoch=t, model=model, optimizer=optimizer,
-                       loss_fn=loss_fn, schedular=schedular, path=savepath)
+            AirFunc.save_model(epoch=t, model=model, optimizer=optimizer,
+                               loss_fn=loss_fn, scheduler=scheduler, path=savepath)
             logger.log(
                 f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=False)
         epoch_time = time.time()-start_time
-        eta = format_time((epochs-1-t)*(time.time()-start_time))
-        mem_left = get_mem_info()
+        eta = AirFunc.format_time((epochs-1-t)*(time.time()-start_time))
+        mem_info = get_mem_info()
         logger.log(
-            f'LR: {LRn}, Epoch: [{t+1}][{epochs}], Test Loss: {tsloss}, Train Loss: {trloss}, Best Test Loss: {bestloss}, Time:{epoch_time}s, ETA: {eta}, Memory Left: {mem_left}', show=False)
+            f"LR: {LRn}, Epoch: [{t+1}][{epochs}], Test Loss: {tsloss}, Train Loss: {trloss}, Best Test Loss: {bestloss}, Time:{epoch_time}s, ETA: {eta}, Memory Left: {mem_info['mem_left']} Memory Used: {mem_info['mem_used']}", show=False)
         json_logger.log(dict(mode='train', lr=LRn, epoch=t+1, total_epoch=epochs, test_loss=tsloss,
-                             train_loss=trloss, best_test_loss=bestloss, time=epoch_time, eta=eta, memory_left=mem_left))
-    # nni.report_final_result(loss)
+                             train_loss=trloss, best_test_loss=bestloss, time=epoch_time, eta=eta, memory_left=mem_info['mem_left'], memory_used=mem_info['mem_used']))
     return bestloss
 
 
 def get_mem_info():
     gpu_id = torch.cuda.current_device()
     mem_total = torch.cuda.get_device_properties(gpu_id).total_memory
-    mem_cached = torch.cuda.memory_cached(gpu_id)
+    mem_cached = torch.cuda.memory_reserved(gpu_id)
     mem_allocated = torch.cuda.memory_allocated(gpu_id)
-    return f"{(mem_total-mem_cached-mem_allocated)/1024**2:0.2f} MB"
+    return dict(mem_left=f"{(mem_total-mem_cached-mem_allocated)/1024**2:0.2f} MB", total_mem=f"{mem_total/1024**2:0.2f} MB", mem_used=f"{(mem_cached+mem_allocated)/1024**2:0.2f} MB")
 
 
-def train(device, dataloader, model, loss_fn, optimizer, schedular):
+def train(device, dataloader, model, loss_fn, optimizer, scheduler):
     model.train()
     train_loss = 0
     batchs = len(dataloader)
     for batch, (X, y) in enumerate(dataloader):
         X, y = X.to(device), y.to(device)
-        # Compute prediction error
+        '''Compute prediction error'''
         pred = model(X)
         loss = loss_fn(pred, y)
-        # Backpropagation
+        '''Backpropagation'''
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         train_loss += loss.item()
-    # schedular.step()
-    schedular.step(train_loss/batchs)
+    scheduler.step()
+    # scheduler.step(train_loss/batchs)
     return train_loss/batchs
 
 
@@ -257,12 +225,11 @@ def test(device, dataloader, model, loss_fn):
 def run(config, msg):
     train_config = Config(configpath=config)
     if train_config.paras['gpu_config']['distributed'] == False:
-        train_config.paras['config'] = {'path': config}
-        main(train_config.paras, msg)
+        main(train_config, msg)
     else:
         print('Distributed Training is not supported!')
 
 
 if __name__ == '__main__':
-    print('\n---Starting Neural Network...---')
+    print(f'\n---Starting Neural Network...PID:{os.getpid()}---')
     run()

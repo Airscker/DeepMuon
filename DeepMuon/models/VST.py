@@ -2,10 +2,10 @@
 Author: airscker
 Date: 2022-12-23 10:33:54
 LastEditors: airscker
-LastEditTime: 2023-01-22 19:14:49
+LastEditTime: 2023-02-02 19:26:43
 Description: NULL
 
-Copyright (c) 2023 by airscker, All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import torch
 import torch.nn as nn
@@ -703,10 +703,10 @@ class SwinTransformer3D(nn.Module):
 
         return x
 
-    # def train(self, mode=True):
-    #     """Convert the model into training mode while keep layers freezed."""
-    #     super(SwinTransformer3D, self).train(mode)
-    #     self._freeze_stages()
+    def train(self, mode=True):
+        #     """Convert the model into training mode while keep layers freezed."""
+        super(SwinTransformer3D, self).train(mode)
+        self._freeze_stages()
 
 
 class VST(nn.Module):

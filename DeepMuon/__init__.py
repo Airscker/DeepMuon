@@ -2,10 +2,10 @@
 Author: airscker
 Date: 2022-09-21 18:50:43
 LastEditors: airscker
-LastEditTime: 2023-01-20 19:05:53
-Description: NULL
+LastEditTime: 2023-01-28 11:01:10
+Description: DeepMuon
 
-Copyright (c) 2022 by airscker, All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 from .__version__ import __version__
 import DeepMuon.dataset as dataset

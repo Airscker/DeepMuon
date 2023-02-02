@@ -5,7 +5,7 @@ LastEditors: airscker
 LastEditTime: 2022-12-28 17:05:27
 Description: NULL
 
-Copyright (c) 2022 by airscker, All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 
 # Always prefer setuptools over distutils
