@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-02 16:26:25
+LastEditTime: 2023-02-02 18:28:31
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -15,8 +15,8 @@ import numpy as np
 import pickle as pkl
 
 from DeepMuon.tools.AirConfig import Config
-from DeepMuon.tools.AirFunc import load_model, format_time, plot_hist_2nd
-from DeepMuon.tools.AirLogger import LOGT, LOGJ
+import DeepMuon.tools.AirFunc as AirFunc
+import DeepMuon.tools.AirLogger as AirLogger
 from DeepMuon.tools.model_info import model_para
 from DeepMuon.test.analysis import loss_dist, data_analysis
 from DeepMuon.loss_fn.evaluation import confusion_matrix
@@ -24,7 +24,6 @@ from DeepMuon.loss_fn.evaluation import confusion_matrix
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
-import torchvision.models as models
 # from torchvision.models.feature_extraction import get_graph_node_names, create_feature_extractor
 from ptflops import get_model_complexity_info
 from torchinfo import summary
@@ -35,8 +34,8 @@ torch.set_printoptions(profile='full')
 
 
 def main(config_info, ana, thres, neuron):
+    '''Initialize the basic training configuration'''
     configs = config_info.paras
-    # Initialize the basic training configuration
     loss_fn = configs['loss_fn']['backbone'](configs['loss_fn']['params'])
     batch_size = 1
     test_data = configs['test_dataset']['params']
@@ -48,21 +47,21 @@ def main(config_info, ana, thres, neuron):
     res = os.path.join(infer_path, 'inference_res.pkl')
     load = os.path.join(work_dir, 'Best_Performance.pth')
     gpu = configs['gpu_config']['gpuid']
-    logger = LOGT(log_dir=infer_path, logfile=log, new=True)
-    json_logger = LOGJ(log_dir=infer_path, logfile=f'{log}.json', new=True)
+    logger = AirLogger.LOGT(log_dir=work_dir, logfile=log)
+    json_logger = AirLogger.LOGJ(log_dir=work_dir, logfile=f'{log}.json')
     log = os.path.join(infer_path, log)
     ana_path = os.path.join(work_dir, 'ana')
 
-    # load datasets
+    '''load datasets'''
     test_dataset = configs['test_dataset']['backbone'](**test_data)
     test_dataloader = DataLoader(
         test_dataset, batch_size=batch_size, shuffle=False, pin_memory=True)
 
-    # Get cpu or gpu device for training.
+    '''Get cpu or gpu device for training.'''
     device = torch.device(
         f"cuda:{gpu}" if torch.cuda.is_available() else "cpu")
 
-    # show hyperparameters
+    '''show hyperparameters'''
     logger.log(f'========= Current Time: {time.ctime()} =========')
     logger.log(f'Current PID: {os.getpid()}')
     config_path = configs['config']['path']
@@ -81,7 +80,7 @@ def main(config_info, ana, thres, neuron):
     model = configs['model']['backbone'](
         **configs['model']['params']).to(device)
     assert os.path.exists(load), f'Model inferenced can not be found: {load}'
-    epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = load_model(
+    epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = AirFunc.load_model(
         path=load, device=device)
     model.load_state_dict(model_c, False)
     model.to(device)
@@ -97,22 +96,17 @@ def main(config_info, ana, thres, neuron):
         f'Overall Model GFLOPs: {flops}, Number of Parameters: {params}')
     logger.log(f'Loss Function: {loss_fn}')
 
-    # save model architecture
+    '''save model architecture'''
     # writer=SummaryWriter(os.path.join(work_dir,'LOG'))
     # writer.add_graph(model,torch.rand(configs['hyperpara']['inputshape']).to(device))
-    if neuron >= 0:
-        neuron_infer(device=device, dataloader=test_dataloader,
-                     model=model, loss_fn=loss_fn, work_dir=work_dir, index=neuron)
-    # start inferencing
+    # if neuron >= 0:
+    #     neuron_infer(device=device, dataloader=test_dataloader,
+    #                  model=model, loss_fn=loss_fn, work_dir=work_dir, index=neuron)
+    '''start inferencing'''
     loss, pred, real, loss_map = infer(
         work_dir, device, test_dataloader, model, loss_fn, logger, thres=thres, ana=ana)
     # Save results
-    np.save(os.path.join(work_dir, 'scores.npy'), np.array(pred))
-    np.save(os.path.join(work_dir, 'True_Value.npy'), np.array(real))
-    np.save(os.path.join(work_dir, 'Predicted_Value.npy'),
-            np.array(np.argmax(pred), axis=1))
-    np.save(os.path.join(work_dir, 'Confusion_Matrix.npy'),
-            np.array(confusion_matrix(pred, real)))
+
     with open(res, 'wb')as f:
         pkl.dump({'loss': loss, 'pred': pred, 'real': real}, f)
     f.close()
@@ -138,7 +132,7 @@ def main(config_info, ana, thres, neuron):
             f'Threshold {thres} Loss ID-[data,pred,real,loss] hash map saved as {name}, total number: {len(loss_map)}')
 
 
-def infer(workdir, device, dataloader, model, loss_fn, logger: LOGT, thres, ana=True):
+def infer(workdir, device, dataloader, model, loss_fn, logger: AirLogger.LOGT, thres, ana=True):
     """
     The infer function is used to test the model on a dataset. It takes in a dataloader, 
     a model, and an optional loss function. The loss function is only needed if you want to 
@@ -169,14 +163,14 @@ def infer(workdir, device, dataloader, model, loss_fn, logger: LOGT, thres, ana=
             pred = model(X)
             loss_value = loss_fn(pred, y).item()
             test_loss.append(loss_value)
-            pred_value.append(pred.cpu().numpy()[0])
-            real_value.append(y.cpu().numpy()[0])
+            pred_value.append(pred.detach().cpu().numpy())
+            real_value.append(y.detach().cpu().numpy())
             if ana and loss_value > thres:
                 loss_map[num-1] = [X.cpu().numpy(), pred_value[num-1],
                                    real_value[num-1], loss_value]
             now_time = time.time()
             logger.log(
-                f'{num}/{num_batches} Loss: {loss_value}, Predicted: {pred_value[num-1]}, Real: {real_value[num-1]}, Time: {now_time-start_time}s, ETA: {format_time((num_batches-num)*(now_time-start_time))}')
+                f'{num}/{num_batches} Loss: {loss_value}, Predicted: {pred_value[num-1]}, Real: {real_value[num-1]}, Time: {now_time-start_time}s, ETA: {AirFunc.format_time((num_batches-num)*(now_time-start_time))}')
             num += 1
     return test_loss, pred_value, real_value, loss_map
 
