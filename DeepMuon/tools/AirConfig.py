@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-02-02 16:41:41
+LastEditTime: 2023-02-02 20:32:33
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -10,6 +10,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 
 import os
 import warnings
+import shutil
 from DeepMuon.loss_fn import *
 from DeepMuon.models import *
 from DeepMuon.dataset import *
@@ -85,6 +86,13 @@ class Config:
         self.__check_config()
         self.__para_config()
         # print(self.paras)
+
+    def move_config(self):
+        try:
+            shutil.copyfile(self.configpath, os.path.join(
+                self.paras['work_config']['work_dir'], 'config.py'))
+        except:
+            pass
 
     def __check_config(self):
         paras_config = self.config_keys

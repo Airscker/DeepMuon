@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-02 20:14:28
+LastEditTime: 2023-02-02 20:33:19
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -55,6 +55,7 @@ def main(config_info, msg=''):
             os.makedirs(work_dir)
         except:
             pass
+        config_info.move_config()
         log = os.path.join(work_dir, log)
         '''show hyperparameters'''
         logger.log(
