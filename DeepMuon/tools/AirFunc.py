@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-01-31 16:11:17
+LastEditTime: 2023-02-02 15:05:52
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -19,7 +19,7 @@ from torch import nn
 torch.set_default_tensor_type(torch.DoubleTensor)
 
 
-def readable_dict(data: dict, i=0, show=False):
+def readable_dict(data: dict, i=0, show=False, indent='\t', sep='\n'):
     """
     The print_dict function prints a dictionary in a more readable format.
     It is intended to be used for debugging purposes.
@@ -30,12 +30,12 @@ def readable_dict(data: dict, i=0, show=False):
     """
     info = ''
     for key in data:
-        info += '\t'*i
+        info += indent*i
         info += f'{key}: '
         if isinstance(data[key], dict):
-            info += f"\n{readable_dict(data[key], i+1)}"
+            info += f"{sep}{readable_dict(data[key], i+1,indent=indent,sep=sep)}"
         else:
-            info += f"{data[key]}\n"
+            info += f"{data[key]}{sep}"
     if show:
         print(info)
     return info

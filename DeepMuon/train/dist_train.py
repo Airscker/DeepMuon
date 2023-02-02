@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-01-31 16:42:32
+LastEditTime: 2023-02-02 14:53:02
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -157,10 +157,7 @@ def main(config_info, msg=''):
     dist.all_reduce(bestloss)
     bestloss = bestloss/float(local_world_size)
     bestloss = bestloss.item()
-    if local_rank == 0:
-        bar = tqdm(range(epoch_now, epochs), mininterval=1)
-    else:
-        bar = range(epoch_now, epochs)
+    bar = range(epoch_now, epochs)
     '''Start training'''
     for t in bar:
         start_time = time.time()
@@ -178,8 +175,6 @@ def main(config_info, msg=''):
             train_loss = res[0].item()
             test_loss = res[1].item()
             LRn = optimizer.state_dict()['param_groups'][0]['lr']
-            bar.set_description(
-                f'LR: {LRn},Test Loss: {test_loss},Train Loss: {train_loss}')
             writer.add_scalar(f'Test Loss Curve', test_loss, global_step=t+1)
             writer.add_scalar(f'Train Loss Curve', train_loss, global_step=t+1)
             if test_loss <= bestloss:
@@ -202,7 +197,7 @@ def main(config_info, msg=''):
             eta = AirFunc.format_time((epochs-1-t)*(time.time()-start_time))
             mem_info = get_mem_info()
             logger.log(
-                f"LR: {LRn}, Epoch: [{t+1}][{epochs}], Test Loss: {test_loss}, Train Loss: {train_loss}, Best Test Loss: {bestloss}, Time:{epoch_time}s, ETA: {eta}, Memory Left: {mem_info['mem_left']} Memory Used: {mem_info['mem_used']}", show=False)
+                f"LR: {LRn}, Epoch: [{t+1}][{epochs}], Test Loss: {test_loss}, Train Loss: {train_loss}, Best Test Loss: {bestloss}, Time:{epoch_time}s, ETA: {eta}, Memory Left: {mem_info['mem_left']} Memory Used: {mem_info['mem_used']}", show=True)
             log_info = dict(mode='train', lr=LRn, epoch=t+1, total_epoch=epochs, test_loss=test_loss,
                             train_loss=train_loss, best_test_loss=bestloss, time=epoch_time, eta=eta, memory_left=mem_info['mem_left'], memory_used=mem_info['mem_used'])
             json_logger.log(log_info)

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-31 09:01:02
 LastEditors: airscker
-LastEditTime: 2023-01-31 17:05:58
+LastEditTime: 2023-02-02 15:21:54
 Description: NULL
 
 Copyright (C) 2023 sby Airscker(Yufeng), All Rights Reserved.
@@ -19,7 +19,7 @@ Specify the dataset to load the data, all dataset are stored in 'dataset'
 train_dataset = dict(
     backbone='NIIDecodeV2',
     params=dict(ann_file=None,
-                mask_ann=None,
+                mask_ann='/data/JoyceW/VST_fusion_dataset/workdir/mask_ann_map.pkl',
                 fusion=False,
                 modalities=[],
                 augment_pipeline=[dict(type='HistEqual'),
@@ -29,7 +29,7 @@ train_dataset = dict(
 test_dataset = dict(
     backbone='NIIDecodeV2',
     params=dict(ann_file=None,
-                mask_ann=None,
+                mask_ann='/data/JoyceW/VST_fusion_dataset/workdir/mask_ann_map.pkl',
                 fusion=False,
                 modalities=[],
                 augment_pipeline=[dict(type='HistEqual'),

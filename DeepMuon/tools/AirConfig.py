@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-01-31 17:07:41
+LastEditTime: 2023-02-02 11:12:03
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -222,7 +222,7 @@ class Config:
                     'mode'] == 'min' or 'max', f"mode='min'/'max' expected in evaluation command, however {evaluation_op} given"
                 assert evaluation_op['sota_target']['target'] == None or evaluation_op['sota_target']['target'] in evaluation_op[
                     'metrics'], f"'target' in evaluation command should be None/within metrics, however {evaluation_op} given"
-                evaluation_op['sota_target']['target'] = internal_env[evaluation_op['sota_target']['target']]
+                # evaluation_op['sota_target']['target'] = internal_env[evaluation_op['sota_target']['target']]
             self.paras['evaluation'] = dict(
                 interval=evaluation_op['interval'], metrics=eva_metrics, sota_target=evaluation_op['sota_target'])
 

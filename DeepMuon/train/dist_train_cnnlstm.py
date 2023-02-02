@@ -2,15 +2,15 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-01-31 17:45:58
+LastEditTime: 2023-02-02 15:23:19
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 import time
 import os
-from tqdm import tqdm
 import click
+import numpy as np
 
 from DeepMuon.tools.AirConfig import Config
 import DeepMuon.tools.AirFunc as AirFunc
@@ -151,89 +151,138 @@ def main(config_info, msg=''):
         logger.log(f'Optimizer:\n{optimizer}')
         logger.log(
             f'Scheduler: {scheduler.__class__.__name__}:\n\t{scheduler.state_dict()}')
-    '''Training Initailization'''
-    tsloss, ts_score, ts_real = test(device, test_dataloader, model, loss_fn)
-    bestres = torch.tensor([tsloss, ts_score, ts_real], device=device)
-    # ----------------------------------------------------------
-    # Add evaluation pipeline here
-    # ----------------------------------------------------------
-    dist.barrier()
-    dist.all_reduce(bestres)
-    bestacc = bestres[1].item()/bestres[2].item()
-    if local_rank == 0:
-        bar = tqdm(range(epoch_now, epochs), mininterval=1)
-    else:
-        bar = range(epoch_now, epochs)
     '''Start training'''
+    bestres = None
+    bar = range(epoch_now, epochs)
     for t in bar:
         start_time = time.time()
         train_dataloader.sampler.set_epoch(t)
-        trloss, tr_correct, tr_total = train(
+        trloss, tr_score, tr_label = train(
             device, train_dataloader, model, loss_fn, optimizer, scheduler)
-        tsloss, ts_correct, ts_total, _ = test(
-            device, test_dataloader, model, loss_fn, configs['evaluation']['metrics'])
-        '''Synchronize all threads'''
-        res = torch.tensor([trloss, tr_correct, tr_total,
-                           tsloss, ts_correct, ts_total], device=device)
+        tsloss, ts_score, ts_label = test(
+            device, test_dataloader, model, loss_fn)
+        '''
+        Synchronize all threads
+        Reduces the tensor data across all machines in such a way that all get the final result.(Add/Gather results of every gpu)
+        '''
+        loss_values = torch.tensor([trloss, tsloss], device=device)
         dist.barrier()
-        '''Reduces the tensor data across all machines in such a way that all get the final result.(Add results of every gpu)'''
-        dist.all_reduce(res, op=torch.distributed.ReduceOp.SUM)
-        # res = res/float(local_world_size)
+        dist.all_reduce(loss_values, op=torch.distributed.ReduceOp.SUM)
+        tr_score_val, tr_label_val = gather_score_label(
+            tr_score, tr_label, local_world_size)
+        ts_score_val, ts_label_val = gather_score_label(
+            ts_score, ts_label, local_world_size)
+        loss_values = loss_values/float(local_world_size)
         if local_rank == 0:
-            train_loss = res[0].item()/local_world_size
-            test_loss = res[3].item()/local_world_size
-            train_acc = res[1].item()/res[2].item()
-            test_acc = res[4].item()/res[5].item()
+            train_loss = loss_values[0].item()/local_world_size
+            test_loss = loss_values[1].item()/local_world_size
             LRn = optimizer.state_dict()['param_groups'][0]['lr']
-            bar.set_description(
-                f'LR: {LRn},Test Loss: {test_loss},Train Loss: {train_loss},Train Top1ACC: {train_acc},Test Top1ACC:{test_acc}')
-            writer.add_scalar(f'Test Loss Curve', test_loss, global_step=t + 1)
-            writer.add_scalar(f'Train Loss Curve',
-                              train_loss, global_step=t + 1)
-            writer.add_scalar(f'Test Top1ACC Curve',
-                              test_acc, global_step=t + 1)
-            writer.add_scalar(f'Train Top1ACC Curve',
-                              train_acc, global_step=t + 1)
-            if test_acc <= bestacc:
-                bestacc = test_acc
-                '''Double save to make sure secure, directly save total model is forbidden, otherwise load issues occur'''
-                savepath = os.path.join(work_dir, 'Best_Performance.pth')
+            ts_eva_metrics, ts_target = evaluation(
+                ts_score_val, ts_label_val, configs['evaluation'], bestres, tsloss)
+            tr_eva_metrics, tr_target = evaluation(
+                tr_score_val, tr_label_val, configs['evaluation'], bestres, 0)
+            '''Add tensorboard scalar curves'''
+            writer.add_scalar('test loss', test_loss, global_step=t + 1)
+            writer.add_scalar('train loss', train_loss, global_step=t + 1)
+            writer.add_scalar('learning rate', LRn, global_step=t + 1)
+            tensorboard_plot(tr_eva_metrics, t+1, writer, 'train')
+            tensorboard_plot(ts_eva_metrics, t+1, writer, 'test')
+            '''Save best model accoeding to the value of sota target'''
+            if ts_target != bestres:
+                bestres = ts_target
+                sota_target = configs['evaluation']['sota_target']['target']
+                if sota_target is None:
+                    sota_target = 'loss'
+                savepath = os.path.join(
+                    work_dir, f"Best_{sota_target}_epoch_{t+1}.pth")
                 AirFunc.save_model(epoch=t, model=model, optimizer=optimizer,
                                    loss_fn=loss_fn, scheduler=scheduler, path=savepath, dist_train=True)
-                AirFunc.save_model(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn, scheduler=scheduler, path=os.path.join(
-                    work_dir, f'{model_name}_Best_Performance.pth'), dist_train=True)
                 logger.log(
-                    f'Best Model Saved as {savepath}, Best Test Top1ACC: {bestacc}, Current Epoch: {(t+1)}', show=False)
+                    f'Best Model Saved as {savepath},Best {sota_target}:{bestres}, Current Epoch: {t+1}', show=True)
             if (t + 1) % inter == 0:
                 savepath = os.path.join(work_dir, f'Epoch_{t+1}.pth')
                 AirFunc.save_model(epoch=t, model=model, optimizer=optimizer,
                                    loss_fn=loss_fn, scheduler=scheduler, path=savepath, dist_train=True)
                 logger.log(
-                    f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=False)
+                    f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=True)
             epoch_time = time.time() - start_time
-            eta = AirFunc.format_time(
-                (epochs - 1 - t) * (time.time() - start_time))
+            eta = AirFunc.format_time((epochs - 1 - t) * epoch_time)
+            time_info = dict(time=epoch_time, eta=eta)
             mem_info = get_mem_info()
-            logger.log(f"LR: {LRn}, Epoch: [{t+1}][{epochs}], Test Loss: {test_loss}, Train Loss: {train_loss}, Best Test Top1ACC: {bestacc}, Train Top1ACC:{train_acc} Test Top1ACC:{test_acc}, Time:{epoch_time}s, ETA: {eta}, Memory Left: {mem_info['mem_left']} Memory Used: {mem_info['mem_used']}", show=False)
-            log_info = dict(mode='train', lr=LRn, epoch=t + 1, total_epoch=epochs, test_loss=test_loss, train_loss=train_loss, test_t1acc=test_acc, train_t1acc=train_acc,
-                            best_test_t1acc=bestacc, time=epoch_time, eta=eta, memory_left=mem_info['mem_left'], memory_used=mem_info['mem_used'])
+            loss_info = dict(mode='train', lr=LRn, epoch=t+1, total_epoch=epochs,
+                             test_loss=test_loss, train_loss=train_loss, sota=bestres)
+            log_info = {**loss_info, **time_info, **mem_info}
+            tr_eva_info = dict(mode='tr_eval')
+            ts_eva_info = dict(mode='ts_eval')
+            tr_eva_info = {**tr_eva_info, **tr_eva_metrics}
+            ts_eva_info = {**ts_eva_info, **ts_eva_metrics}
             json_logger.log(log_info)
-    return bestacc
+            json_logger.log(ts_eva_info)
+            json_logger.log(tr_eva_info)
+            logger.log(AirFunc.readable_dict(log_info, indent='', sep=','))
+            logger.log(AirFunc.readable_dict(ts_eva_info))
+            logger.log(AirFunc.readable_dict(tr_eva_info))
+    return bestres
 
 
-def get_mem_info():
-    gpu_id = torch.cuda.current_device()
+def tensorboard_plot(metrics: dict, epoch: int, writer, tag):
+    for key in metrics:
+        try:
+            writer.add_scalar(f'{tag}_{key}', metrics[key], global_step=epoch)
+        except:
+            pass
+
+
+def gather_score_label(score, label, world_size):
+    gathered_data = [None]*world_size
+    dist.all_gather_object(gathered_data, [score, label])
+    scores = []
+    labels = []
+    for data in gathered_data:
+        scores.append(data[0])
+        labels.append(data[1])
+    scores = np.concatenate(scores, axis=0)
+    labels = np.concatenate(labels, axis=0)
+    return scores, labels
+
+
+def evaluation(scores, labels, evaluation_command, best_target, loss):
+    metrics = evaluation_command['metrics']
+    mode = evaluation_command['sota_target']['mode']
+    target = evaluation_command['sota_target']['target']
+    eva_res = {}
+    for key in metrics:
+        eva_res[key] = metrics[key](scores, labels)
+    if target is not None and best_target is not None:
+        if mode == 'min':
+            if eva_res[target] < best_target:
+                best_target = eva_res[target]
+        elif mode == 'max':
+            if eva_res[target] > best_target:
+                best_target = eva_res[target]
+        return eva_res, best_target
+    elif target is not None and best_target is None:
+        return eva_res, eva_res[target]
+    elif target is None and best_target is not None:
+        if loss < best_target:
+            return eva_res, loss
+    elif target is None and best_target is None:
+        return eva_res, loss
+
+
+def get_mem_info(gpu_id=None):
+    if gpu_id is None:
+        gpu_id = torch.cuda.current_device()
     mem_total = torch.cuda.get_device_properties(gpu_id).total_memory
     mem_cached = torch.cuda.memory_reserved(gpu_id)
     mem_allocated = torch.cuda.memory_allocated(gpu_id)
     return dict(mem_left=f"{(mem_total-mem_cached-mem_allocated)/1024**2:0.2f} MB",
-                total_mem=f"{mem_total/1024**2:0.2f} MB",
-                mem_used=f"{(mem_cached+mem_allocated)/1024**2:0.2f} MB")
+                mem_used=f"{(mem_cached+mem_allocated)/1024**2:0.2f} MB",
+                total_mem=f"{mem_total/1024**2:0.2f} MB",)
 
 
-def train(device, dataloader, model, loss_fn, optimizer, scheduler):
+def train(device, dataloader, model, loss_fn, optimizer, scheduler, gradient_accumulation=8):
     model.train()
-    train_loss, correct, total = 0.0, 0.0, 0.0
     for i, batch in enumerate(dataloader):
         x, y = batch
         x = x.type(torch.FloatTensor)
@@ -249,20 +298,18 @@ def train(device, dataloader, model, loss_fn, optimizer, scheduler):
         y = torch.autograd.Variable(y).cuda(device, non_blocking=True)
         pred = model(x, h0)
         loss = loss_fn(pred, y)
-        optimizer.zero_grad()
+        loss = loss/gradient_accumulation
         loss.backward()
-        optimizer.step()
-        train_loss += loss.item()
-        total += y.size(0)
-        predicted = torch.argmax(pred.data, 1)
-        correct += predicted.eq(y.data).cpu().sum()
+        if (i+1) % gradient_accumulation == 0:
+            optimizer.step()
+            optimizer.zero_grad()
     scheduler.step()
-    return train_loss, correct, total
+    return loss.item(), pred.detach().cpu().numpy(), y.detach().cpu().numpy()
 
 
 def test(device, dataloader, model, loss_fn):
     model.eval()
-    test_correct, test_total, test_loss = 0, 0, 0
+    test_loss = 0
     with torch.no_grad():
         for i, batch in enumerate(dataloader):
             x, y = batch
@@ -279,9 +326,6 @@ def test(device, dataloader, model, loss_fn):
             y = torch.autograd.Variable(y).cuda(device, non_blocking=True)
             outputs = model(x, h0)
             test_loss += loss_fn(outputs, y).item()
-            _, predicted = torch.max(outputs.data, 1)
-            test_correct += predicted.eq(y.data).cpu().sum()
-            test_total += y.size(0)
     return test_loss, outputs.detach().cpu().numpy(), y.detach().cpu().numpy()
 
 
