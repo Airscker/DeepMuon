@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-02 18:10:20
+LastEditTime: 2023-02-02 20:14:28
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -274,6 +274,7 @@ def train(device, dataloader, model, loss_fn, optimizer, scheduler, gradient_acc
     predictions = []
     labels = []
     batchs = len(dataloader)
+    gradient_accumulation = min(batchs, gradient_accumulation)
     for i, batch in enumerate(dataloader):
         x, y = batch
         y = y.reshape(-1)

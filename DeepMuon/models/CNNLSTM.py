@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-30 18:27:14
 LastEditors: airscker
-LastEditTime: 2023-02-02 11:40:36
+LastEditTime: 2023-02-02 20:13:55
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -106,22 +106,22 @@ class RNN(nn.Module):
             a = T' . tanh(Wx + b)
             where x is the input, b is the bias.
         """
-        emb_squish = F.tanh(self.attn_linear_w_1(x))
+        emb_squish = torch.tanh(self.attn_linear_w_1(x))
         emb_attn = self.attn_linear_w_2(emb_squish)
         emb_attn.data.masked_fill_(x_mask.unsqueeze(2).data, float("-inf"))
-        emb_attn_norm = F.softmax(emb_attn.squeeze(2), dim=0)
+        emb_attn_norm = torch.softmax(emb_attn.squeeze(2), dim=0)
         emb_attn_vectors = torch.bmm(x.transpose(
             1, 2), emb_attn_norm.unsqueeze(2)).squeeze(2)
         return emb_attn_vectors
 
     def _two_fold_attn_pooling(self, x):
-        emb_squish_1 = F.tanh(self.attn_linear_w_1(x))
+        emb_squish_1 = torch.tanh(self.attn_linear_w_1(x))
         emb_attn_1 = self.attn_linear_w_2(emb_squish_1)
-        emb_squish_2 = F.tanh(self.attn_linear_w_1a(x))
+        emb_squish_2 = torch.tanh(self.attn_linear_w_1a(x))
         emb_attn_2 = self.attn_linear_w_2a(emb_squish_2)
-        alpha_limit = F.sigmoid(self.alpha)
+        alpha_limit = torch.sigmoid(self.alpha)
         emb_attn = alpha_limit * emb_attn_1 + (1 - alpha_limit) * emb_attn_2
-        emb_attn_norm = F.softmax(emb_attn.squeeze(2), dim=0)
+        emb_attn_norm = torch.softmax(emb_attn.squeeze(2), dim=0)
         emb_attn_vectors = torch.bmm(x.transpose(
             1, 2), emb_attn_norm.unsqueeze(2)).squeeze(2)
         return emb_attn_vectors

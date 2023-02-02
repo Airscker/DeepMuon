@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-27 19:51:21
 LastEditors: airscker
-LastEditTime: 2023-02-02 17:41:26
+LastEditTime: 2023-02-02 20:13:15
 Description:
     ## Dataset built for:
         - Video Swin-Transformer (VST) CMR Screening & Diagnose Model
@@ -153,12 +153,12 @@ class NIIDecodeV2(Dataset):
         with open(self.mask_ann, 'rb')as f:
             self.data_mask_map = pkl.load(f)
         f.close()
-        files = list(self.data_mask_map.keys())
-        for i in range(len(files)):
-            if not os.path.exists(files[i]):
-                self.data_mask_map.pop(files[i])
+        all_num = len(self.data_mask_map)
+        for key in self.data_mask_map.keys():
+            if not os.path.exists(key):
+                self.data_mask_map.pop(key)
         print(
-            f'{len(files)} mask_ann hash mapping given, {len(self.data_mask_map)} maps available')
+            f'{all_num} mask_ann hash mapping given, {len(self.data_mask_map)} maps available')
 
     def __load_annotations(self):
         """Load annotation file to get nifti data information."""
