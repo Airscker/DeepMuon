@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-02 15:23:19
+LastEditTime: 2023-02-02 18:10:20
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -23,7 +23,6 @@ from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.tensorboard import SummaryWriter
-
 torch.set_default_tensor_type(torch.DoubleTensor)
 torch.backends.cudnn.benchmark = True
 torch.manual_seed(3407)
@@ -44,7 +43,7 @@ def main(config_info, msg=''):
     '''Initialize Distributed Training'''
     group = torch.distributed.init_process_group(backend="nccl")
     local_rank = torch.distributed.get_rank()
-    local_world_size = os.environ['LOCAL_WORLD_SIZE']
+    local_world_size = int(os.environ['LOCAL_WORLD_SIZE'])
     torch.cuda.set_device(local_rank)
     device = torch.device("cuda", local_rank)
     '''Log the basic parameters'''
@@ -64,7 +63,7 @@ def main(config_info, msg=''):
         if not os.path.exists(msg):
             logger.log('LICENSE MISSED! REFUSE TO START TRAINING')
             return 0
-        with open(msg, 'r') as f:
+        with open(msg, 'r')as f:
             msg = f.read()
         logger.log(msg)
         logger.log(config_info)
@@ -124,22 +123,18 @@ def main(config_info, msg=''):
     '''
     Initialize loss/optimizer/scheduler
     eg. loss_fn=nn.MSELoss()
-        optimizer = torch.optim.SGD(
-            model.parameters(), lr=0.001, momentum=0.9, nesterov=True)
-        optimizer = torch.optim.AdamW(
-            model.parameters(), lr=0.001, weight_decay=0.1, betas=(0.9, 0.999))
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode='min', factor=0.5, patience=100)
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer=optimizer, T_max=10)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9, nesterov=True)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.1, betas=(0.9, 0.999))
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=10)
     In the example shown above:
         `nn.MSELoss` <> `configs['loss_fn']['backbone']`, `loss_function parameters` <> `**configs['loss_fn']['params']`
         `torch.optim.SGD` <> `configs['optimizer']['backbone']`, `lr=0.001, momentum=0.9, nesterov=True` <> `**configs['optimizer']['params']`
         `torch.optim.lr_scheduler.ReduceLROnPlateau` <> `configs['scheduler']['backbone']`, `mode='min', factor=0.5, patience=100` <> `**configs['scheduler']['params']`
     '''
     loss_fn = configs['loss_fn']['backbone'](**configs['loss_fn']['params'])
-    optimizer = configs['optimizer']['backbone'](model.parameters(),
-                                                 **configs['optimizer']['params'])
+    optimizer = configs['optimizer']['backbone'](
+        model.parameters(), **configs['optimizer']['params'])
     scheduler = configs['scheduler']['backbone'](
         optimizer, **configs['scheduler']['params'])
     '''Log the information of the model'''
@@ -154,6 +149,7 @@ def main(config_info, msg=''):
     '''Start training'''
     bestres = None
     bar = range(epoch_now, epochs)
+    eva_interval = configs['evaluation']['interval']
     for t in bar:
         start_time = time.time()
         train_dataloader.sampler.set_epoch(t)
@@ -185,8 +181,9 @@ def main(config_info, msg=''):
             writer.add_scalar('test loss', test_loss, global_step=t + 1)
             writer.add_scalar('train loss', train_loss, global_step=t + 1)
             writer.add_scalar('learning rate', LRn, global_step=t + 1)
-            tensorboard_plot(tr_eva_metrics, t+1, writer, 'train')
-            tensorboard_plot(ts_eva_metrics, t+1, writer, 'test')
+            if (t+1) % eva_interval == 0:
+                tensorboard_plot(tr_eva_metrics, t+1, writer, 'train')
+                tensorboard_plot(ts_eva_metrics, t+1, writer, 'test')
             '''Save best model accoeding to the value of sota target'''
             if ts_target != bestres:
                 bestres = ts_target
@@ -208,20 +205,21 @@ def main(config_info, msg=''):
             epoch_time = time.time() - start_time
             eta = AirFunc.format_time((epochs - 1 - t) * epoch_time)
             time_info = dict(time=epoch_time, eta=eta)
-            mem_info = get_mem_info()
+            mem_info = AirFunc.get_mem_info(device)
             loss_info = dict(mode='train', lr=LRn, epoch=t+1, total_epoch=epochs,
                              test_loss=test_loss, train_loss=train_loss, sota=bestres)
             log_info = {**loss_info, **time_info, **mem_info}
-            tr_eva_info = dict(mode='tr_eval')
-            ts_eva_info = dict(mode='ts_eval')
-            tr_eva_info = {**tr_eva_info, **tr_eva_metrics}
-            ts_eva_info = {**ts_eva_info, **ts_eva_metrics}
             json_logger.log(log_info)
-            json_logger.log(ts_eva_info)
-            json_logger.log(tr_eva_info)
             logger.log(AirFunc.readable_dict(log_info, indent='', sep=','))
-            logger.log(AirFunc.readable_dict(ts_eva_info))
-            logger.log(AirFunc.readable_dict(tr_eva_info))
+            if (t+1) % eva_interval == 0:
+                tr_eva_info = dict(mode='tr_eval')
+                ts_eva_info = dict(mode='ts_eval')
+                tr_eva_info = {**tr_eva_info, **tr_eva_metrics}
+                ts_eva_info = {**ts_eva_info, **ts_eva_metrics}
+                json_logger.log(ts_eva_info)
+                json_logger.log(tr_eva_info)
+                logger.log(AirFunc.readable_dict(ts_eva_info))
+                logger.log(AirFunc.readable_dict(tr_eva_info))
     return bestres
 
 
@@ -270,22 +268,15 @@ def evaluation(scores, labels, evaluation_command, best_target, loss):
         return eva_res, loss
 
 
-def get_mem_info(gpu_id=None):
-    if gpu_id is None:
-        gpu_id = torch.cuda.current_device()
-    mem_total = torch.cuda.get_device_properties(gpu_id).total_memory
-    mem_cached = torch.cuda.memory_reserved(gpu_id)
-    mem_allocated = torch.cuda.memory_allocated(gpu_id)
-    return dict(mem_left=f"{(mem_total-mem_cached-mem_allocated)/1024**2:0.2f} MB",
-                mem_used=f"{(mem_cached+mem_allocated)/1024**2:0.2f} MB",
-                total_mem=f"{mem_total/1024**2:0.2f} MB",)
-
-
 def train(device, dataloader, model, loss_fn, optimizer, scheduler, gradient_accumulation=8):
     model.train()
+    train_loss = 0
+    predictions = []
+    labels = []
+    batchs = len(dataloader)
     for i, batch in enumerate(dataloader):
         x, y = batch
-        x = x.type(torch.FloatTensor)
+        y = y.reshape(-1)
         # if num_frames is not None:
         #     y = np.repeat(y, num_frames)
         if isinstance(x, list):
@@ -297,23 +288,29 @@ def train(device, dataloader, model, loss_fn, optimizer, scheduler, gradient_acc
             h0 = model.module.init_hidden(x.size(0))
         y = torch.autograd.Variable(y).cuda(device, non_blocking=True)
         pred = model(x, h0)
+        predictions.append(pred.detach().cpu().numpy())
+        labels.append(y.detach().cpu().numpy())
         loss = loss_fn(pred, y)
         loss = loss/gradient_accumulation
         loss.backward()
+        train_loss += loss.item()
         if (i+1) % gradient_accumulation == 0:
             optimizer.step()
             optimizer.zero_grad()
     scheduler.step()
-    return loss.item(), pred.detach().cpu().numpy(), y.detach().cpu().numpy()
+    return train_loss/batchs, np.concatenate(predictions, axis=0), np.concatenate(labels, axis=0)
 
 
 def test(device, dataloader, model, loss_fn):
+    num_batches = len(dataloader)
     model.eval()
     test_loss = 0
+    predictions = []
+    labels = []
     with torch.no_grad():
         for i, batch in enumerate(dataloader):
             x, y = batch
-            x = x.type(torch.FloatTensor)
+            y = y.reshape(-1)
             # if num_frames is not None:
             #     y = np.repeat(y, num_frames)
             if isinstance(x, list):
@@ -324,9 +321,12 @@ def test(device, dataloader, model, loss_fn):
                 x = torch.autograd.Variable(x).cuda(device, non_blocking=True)
                 h0 = model.module.init_hidden(x.size(0))
             y = torch.autograd.Variable(y).cuda(device, non_blocking=True)
-            outputs = model(x, h0)
-            test_loss += loss_fn(outputs, y).item()
-    return test_loss, outputs.detach().cpu().numpy(), y.detach().cpu().numpy()
+            pred = model(x, h0)
+            predictions.append(pred.detach().cpu().numpy())
+            labels.append(y.detach().cpu().numpy())
+            test_loss += loss_fn(pred, y).item()
+    test_loss /= num_batches
+    return test_loss, np.concatenate(predictions, axis=0), np.concatenate(labels, axis=0)
 
 
 @click.command()

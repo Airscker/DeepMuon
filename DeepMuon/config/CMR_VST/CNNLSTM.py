@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-31 09:01:02
 LastEditors: airscker
-LastEditTime: 2023-02-02 15:21:54
+LastEditTime: 2023-02-02 17:56:34
 Description: NULL
 
 Copyright (C) 2023 sby Airscker(Yufeng), All Rights Reserved.
@@ -11,49 +11,50 @@ Copyright (C) 2023 sby Airscker(Yufeng), All Rights Reserved.
 '''
 Specify which model to be used, all models are stored in 'models'
 '''
-model = dict(backbone='VST', params=dict(
-    n_classes=11, input_shape=(3, 130, 130), seq_dropout=0.1))
+model = dict(backbone='Dense4012FrameRNN', params=dict(
+    n_classes=11, input_shape=(3, 90, 90), seq_dropout=0.1, pretrained=False))
 '''
 Specify the dataset to load the data, all dataset are stored in 'dataset'
 '''
 train_dataset = dict(
     backbone='NIIDecodeV2',
-    params=dict(ann_file=None,
+    params=dict(ann_file='/data/JoyceW/VST_fusion_dataset/CNNLSTM/sax_cine_1.826_11cls_test.txt',
                 mask_ann='/data/JoyceW/VST_fusion_dataset/workdir/mask_ann_map.pkl',
                 fusion=False,
-                modalities=[],
+                modalities=['sax'],
+                model='LSTM',
                 augment_pipeline=[dict(type='HistEqual'),
                                   dict(type='SingleNorm'),
                                   dict(type='Padding', size=(120, 120)),
-                                  dict(type='Resize', size=(130, 130))]))
+                                  dict(type='Resize', size=(90, 90))]))
 test_dataset = dict(
     backbone='NIIDecodeV2',
-    params=dict(ann_file=None,
+    params=dict(ann_file='/data/JoyceW/VST_fusion_dataset/CNNLSTM/sax_cine_1.826_11cls_test.txt',
                 mask_ann='/data/JoyceW/VST_fusion_dataset/workdir/mask_ann_map.pkl',
                 fusion=False,
-                modalities=[],
+                modalities=['sax'],
+                model='LSTM',
                 augment_pipeline=[dict(type='HistEqual'),
                                   dict(type='SingleNorm'),
                                   dict(type='Padding', size=(120, 120)),
-                                  dict(type='Resize', size=(130, 130))]))
+                                  dict(type='Resize', size=(90, 90))]))
 '''
 Specify the work_dir to save the training log and checkpoints
 '''
 work_config = dict(
-    work_dir='/data/Airscker/VST3/Hailing-Muon/work_dir/1TeV/VST_1', logfile='log.log')
+    work_dir='/data/JoyceW/VST_fusion_dataset/CNNLSTM/workdir', logfile='log.log')
 '''
 Specify the checkpoint configuration
 '''
 checkpoint_config = dict(
-    load_from='', resume_from='/data/Airscker/VST3/Hailing-Muon/work_dir/1TeV/VST_1/Best_Performance.pth', save_inter=500)
+    load_from='', resume_from='', save_inter=500)
 '''
 Specify the customized loss function to be used, if no customized loss function specified, nn.MSELoss() will be used
 '''
 loss_fn = dict(backbone='CrossEntropyLoss')
-evaluation = dict(interval=1,
-                  metrics=['f1_score', 'confusion_matrix',
+evaluation = dict(metrics=['f1_score', 'confusion_matrix',
                            'every_class_accuracy', 'top_k_accuracy'],
-                  sota_target=dict(mode='min', target='f1_score'))
+                  sota_target=dict(mode='max', target='f1_score'))
 '''
 optimizer
 '''
@@ -66,7 +67,7 @@ scheduler = dict(backbone='CosineAnnealingLR', params=dict(T_max=10))
 '''
 Specify the Hyperparameters to be used
 '''
-hyperpara = dict(epochs=200, batch_size=2, inputshape=[1, 3, 40, 10, 10])
+hyperpara = dict(epochs=200, batch_size=1, inputshape=[1, 3, 40, 10, 10])
 '''
 Specify the GPU config and DDP
 '''

@@ -2,15 +2,15 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-02 14:53:02
+LastEditTime: 2023-02-02 18:10:09
 Description: NULL
 
-Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 import time
 import os
-from tqdm import tqdm
 import click
+import numpy as np
 
 from DeepMuon.tools.AirConfig import Config
 import DeepMuon.tools.AirFunc as AirFunc
@@ -43,10 +43,9 @@ def main(config_info, msg=''):
     '''Initialize Distributed Training'''
     group = torch.distributed.init_process_group(backend="nccl")
     local_rank = torch.distributed.get_rank()
-    local_world_size = os.environ['LOCAL_WORLD_SIZE']
+    local_world_size = int(os.environ['LOCAL_WORLD_SIZE'])
     torch.cuda.set_device(local_rank)
     device = torch.device("cuda", local_rank)
-
     '''Log the basic parameters'''
     if local_rank == 0:
         logger = AirLogger.LOGT(log_dir=work_dir, logfile=log)
@@ -68,7 +67,6 @@ def main(config_info, msg=''):
             msg = f.read()
         logger.log(msg)
         logger.log(config_info)
-
     '''
     Load datasets
     eg. train_dataset=PandaxDataset(IMG_XY_path=train_data)
@@ -83,7 +81,6 @@ def main(config_info, msg=''):
         train_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, sampler=train_sampler)
     test_dataloader = DataLoader(
         test_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, sampler=test_sampler)
-
     '''
     Create Model and optimizer/loss/scheduler
     You can change the name of net as any you want just make sure the model structure is the same one
@@ -100,7 +97,7 @@ def main(config_info, msg=''):
             path=resume, device=device)
         model.load_state_dict(model_c, False)
         model.to(device)
-        epoch_now = epoch_c+1
+        epoch_now = epoch_c + 1
         if local_rank == 0:
             logger.log(f'Model Resumed from {resume}, Epoch now: {epoch_now}')
     elif load != '':
@@ -117,8 +114,8 @@ def main(config_info, msg=''):
     '''save model architecture before model parallel'''
     if local_rank == 0:
         writer = SummaryWriter(os.path.join(work_dir, 'LOG'))
-        writer.add_graph(model, torch.randn(
-            configs['hyperpara']['inputshape']).to(device))
+        # writer.add_graph(model, torch.randn(
+        #     configs['hyperpara']['inputshape']).to(device))
     '''Model Parallel'''
     model = DistributedDataParallel(model, device_ids=[
                                     local_rank], output_device=local_rank, find_unused_parameters=False)
@@ -139,7 +136,6 @@ def main(config_info, msg=''):
         model.parameters(), **configs['optimizer']['params'])
     scheduler = configs['scheduler']['backbone'](
         optimizer, **configs['scheduler']['params'])
-
     '''Log the information of the model'''
     if local_rank == 0:
         # flops, params = get_model_complexity_info(model,(1,17,17),as_strings=True,print_per_layer_stat=False, verbose=True)
@@ -148,78 +144,141 @@ def main(config_info, msg=''):
         logger.log(f'Loss Function: {loss_fn}')
         logger.log(f'Optimizer:\n{optimizer}')
         logger.log(
-            f'scheduler: {scheduler.__class__.__name__}:\n\t{scheduler.state_dict()}')
-
-    '''Training Initailization'''
-    bestloss = test(device, test_dataloader, model, loss_fn)
-    bestloss = torch.tensor([bestloss], device=device)
-    dist.barrier()
-    dist.all_reduce(bestloss)
-    bestloss = bestloss/float(local_world_size)
-    bestloss = bestloss.item()
-    bar = range(epoch_now, epochs)
+            f'Scheduler: {scheduler.__class__.__name__}:\n\t{scheduler.state_dict()}')
     '''Start training'''
+    bestres = None
+    bar = range(epoch_now, epochs)
+    eva_interval = configs['evaluation']['interval']
     for t in bar:
         start_time = time.time()
         train_dataloader.sampler.set_epoch(t)
-        trloss = train(device, train_dataloader, model,
-                       loss_fn, optimizer, scheduler)
-        tsloss = test(device, test_dataloader, model, loss_fn)
-        '''Synchronize all threads'''
-        res = torch.tensor([trloss, tsloss], device=device)
+        trloss, tr_score, tr_label = train(
+            device, train_dataloader, model, loss_fn, optimizer, scheduler)
+        tsloss, ts_score, ts_label = test(
+            device, test_dataloader, model, loss_fn)
+        '''
+        Synchronize all threads
+        Reduces the tensor data across all machines in such a way that all get the final result.(Add/Gather results of every gpu)
+        '''
+        loss_values = torch.tensor([trloss, tsloss], device=device)
         dist.barrier()
-        '''Reduces the tensor data across all machines in such a way that all get the final result.(Add results of every gpu)'''
-        dist.all_reduce(res)
-        res = res/float(local_world_size)
+        dist.all_reduce(loss_values, op=torch.distributed.ReduceOp.SUM)
+        tr_score_val, tr_label_val = gather_score_label(
+            tr_score, tr_label, local_world_size)
+        ts_score_val, ts_label_val = gather_score_label(
+            ts_score, ts_label, local_world_size)
+        loss_values = loss_values/float(local_world_size)
         if local_rank == 0:
-            train_loss = res[0].item()
-            test_loss = res[1].item()
+            train_loss = loss_values[0].item()/local_world_size
+            test_loss = loss_values[1].item()/local_world_size
             LRn = optimizer.state_dict()['param_groups'][0]['lr']
-            writer.add_scalar(f'Test Loss Curve', test_loss, global_step=t+1)
-            writer.add_scalar(f'Train Loss Curve', train_loss, global_step=t+1)
-            if test_loss <= bestloss:
-                bestloss = test_loss
-                '''Double save to make sure secure, directly save total model is forbidden, otherwise load issues occur'''
-                savepath = os.path.join(work_dir, 'Best_Performance.pth')
+            ts_eva_metrics, ts_target = evaluation(
+                ts_score_val, ts_label_val, configs['evaluation'], bestres, tsloss)
+            tr_eva_metrics, tr_target = evaluation(
+                tr_score_val, tr_label_val, configs['evaluation'], bestres, 0)
+            '''Add tensorboard scalar curves'''
+            writer.add_scalar('test loss', test_loss, global_step=t + 1)
+            writer.add_scalar('train loss', train_loss, global_step=t + 1)
+            writer.add_scalar('learning rate', LRn, global_step=t + 1)
+            if (t+1) % eva_interval == 0:
+                tensorboard_plot(tr_eva_metrics, t+1, writer, 'train')
+                tensorboard_plot(ts_eva_metrics, t+1, writer, 'test')
+            '''Save best model accoeding to the value of sota target'''
+            if ts_target != bestres:
+                bestres = ts_target
+                sota_target = configs['evaluation']['sota_target']['target']
+                if sota_target is None:
+                    sota_target = 'loss'
+                savepath = os.path.join(
+                    work_dir, f"Best_{sota_target}_epoch_{t+1}.pth")
                 AirFunc.save_model(epoch=t, model=model, optimizer=optimizer,
                                    loss_fn=loss_fn, scheduler=scheduler, path=savepath, dist_train=True)
-                AirFunc.save_model(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn, scheduler=scheduler, path=os.path.join(
-                    work_dir, f'{model_name}_Best_Performance.pth'), dist_train=True)
                 logger.log(
-                    f'Best Model Saved as {savepath}, Best Test Loss: {bestloss}, Current Epoch: {(t+1)}', show=False)
-            if (t+1) % inter == 0:
+                    f'Best Model Saved as {savepath},Best {sota_target}:{bestres}, Current Epoch: {t+1}', show=True)
+            if (t + 1) % inter == 0:
                 savepath = os.path.join(work_dir, f'Epoch_{t+1}.pth')
                 AirFunc.save_model(epoch=t, model=model, optimizer=optimizer,
                                    loss_fn=loss_fn, scheduler=scheduler, path=savepath, dist_train=True)
                 logger.log(
-                    f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=False)
-            epoch_time = time.time()-start_time
-            eta = AirFunc.format_time((epochs-1-t)*(time.time()-start_time))
-            mem_info = get_mem_info()
-            logger.log(
-                f"LR: {LRn}, Epoch: [{t+1}][{epochs}], Test Loss: {test_loss}, Train Loss: {train_loss}, Best Test Loss: {bestloss}, Time:{epoch_time}s, ETA: {eta}, Memory Left: {mem_info['mem_left']} Memory Used: {mem_info['mem_used']}", show=True)
-            log_info = dict(mode='train', lr=LRn, epoch=t+1, total_epoch=epochs, test_loss=test_loss,
-                            train_loss=train_loss, best_test_loss=bestloss, time=epoch_time, eta=eta, memory_left=mem_info['mem_left'], memory_used=mem_info['mem_used'])
+                    f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=True)
+            epoch_time = time.time() - start_time
+            eta = AirFunc.format_time((epochs - 1 - t) * epoch_time)
+            time_info = dict(time=epoch_time, eta=eta)
+            mem_info = AirFunc.get_mem_info(device)
+            loss_info = dict(mode='train', lr=LRn, epoch=t+1, total_epoch=epochs,
+                             test_loss=test_loss, train_loss=train_loss, sota=bestres)
+            log_info = {**loss_info, **time_info, **mem_info}
             json_logger.log(log_info)
-    return bestloss
+            logger.log(AirFunc.readable_dict(log_info, indent='', sep=','))
+            if (t+1) % eva_interval == 0:
+                tr_eva_info = dict(mode='tr_eval')
+                ts_eva_info = dict(mode='ts_eval')
+                tr_eva_info = {**tr_eva_info, **tr_eva_metrics}
+                ts_eva_info = {**ts_eva_info, **ts_eva_metrics}
+                json_logger.log(ts_eva_info)
+                json_logger.log(tr_eva_info)
+                logger.log(AirFunc.readable_dict(ts_eva_info))
+                logger.log(AirFunc.readable_dict(tr_eva_info))
+    return bestres
 
 
-def get_mem_info():
-    gpu_id = torch.cuda.current_device()
-    mem_total = torch.cuda.get_device_properties(gpu_id).total_memory
-    mem_cached = torch.cuda.memory_reserved(gpu_id)
-    mem_allocated = torch.cuda.memory_allocated(gpu_id)
-    return dict(mem_left=f"{(mem_total-mem_cached-mem_allocated)/1024**2:0.2f} MB", total_mem=f"{mem_total/1024**2:0.2f} MB", mem_used=f"{(mem_cached+mem_allocated)/1024**2:0.2f} MB")
+def tensorboard_plot(metrics: dict, epoch: int, writer, tag):
+    for key in metrics:
+        try:
+            writer.add_scalar(f'{tag}_{key}', metrics[key], global_step=epoch)
+        except:
+            pass
+
+
+def gather_score_label(score, label, world_size):
+    gathered_data = [None]*world_size
+    dist.all_gather_object(gathered_data, [score, label])
+    scores = []
+    labels = []
+    for data in gathered_data:
+        scores.append(data[0])
+        labels.append(data[1])
+    scores = np.concatenate(scores, axis=0)
+    labels = np.concatenate(labels, axis=0)
+    return scores, labels
+
+
+def evaluation(scores, labels, evaluation_command, best_target, loss):
+    metrics = evaluation_command['metrics']
+    mode = evaluation_command['sota_target']['mode']
+    target = evaluation_command['sota_target']['target']
+    eva_res = {}
+    for key in metrics:
+        eva_res[key] = metrics[key](scores, labels)
+    if target is not None and best_target is not None:
+        if mode == 'min':
+            if eva_res[target] < best_target:
+                best_target = eva_res[target]
+        elif mode == 'max':
+            if eva_res[target] > best_target:
+                best_target = eva_res[target]
+        return eva_res, best_target
+    elif target is not None and best_target is None:
+        return eva_res, eva_res[target]
+    elif target is None and best_target is not None:
+        if loss < best_target:
+            return eva_res, loss
+    elif target is None and best_target is None:
+        return eva_res, loss
 
 
 def train(device, dataloader, model, loss_fn, optimizer, scheduler):
     model.train()
     train_loss = 0
+    predictions = []
+    labels = []
     batchs = len(dataloader)
     for batch, (X, y) in enumerate(dataloader):
         X, y = X.to(device), y.to(device)
         '''Compute prediction error'''
         pred = model(X)
+        predictions.append(pred.detach().cpu().numpy())
+        labels.append(y.detach().cpu().numpy())
         loss = loss_fn(pred, y)
         '''Backpropagation'''
         optimizer.zero_grad()
@@ -227,21 +286,24 @@ def train(device, dataloader, model, loss_fn, optimizer, scheduler):
         optimizer.step()
         train_loss += loss.item()
     scheduler.step()
-    # scheduler.step(train_loss/batchs)
-    return train_loss/batchs
+    return train_loss/batchs, np.concatenate(predictions, axis=0), np.concatenate(labels, axis=0)
 
 
 def test(device, dataloader, model, loss_fn):
     num_batches = len(dataloader)
     model.eval()
     test_loss = 0
+    predictions = []
+    labels = []
     with torch.no_grad():
         for X, y in dataloader:
             X, y = X.to(device), y.to(device)
             pred = model(X)
+            predictions.append(pred.detach().cpu().numpy())
+            labels.append(y.detach().cpu().numpy())
             test_loss += loss_fn(pred, y).item()
     test_loss /= num_batches
-    return test_loss
+    return test_loss, np.concatenate(predictions, axis=0), np.concatenate(labels, axis=0)
 
 
 @click.command()

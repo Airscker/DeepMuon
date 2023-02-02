@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-02-02 11:12:03
+LastEditTime: 2023-02-02 16:41:41
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -178,10 +178,10 @@ class Config:
             if 'params' not in optimizer_info.keys():
                 optimizer_info['params'] = dict()
             if 'filepath' not in optimizer_info.keys() or not os.path.exists(optimizer_info['filepath']):
-                self.paras['optimizer'] = dict(bakcbone=internal_env[optimizer_info['backbone']],
+                self.paras['optimizer'] = dict(backbone=internal_env[optimizer_info['backbone']],
                                                params=optimizer_info['params'])
             else:
-                self.paras['optimizer'] = dict(bakcbone=getattr(import_module(optimizer_info['filepath']), optimizer_info['backbone']),
+                self.paras['optimizer'] = dict(backbone=getattr(import_module(optimizer_info['filepath']), optimizer_info['backbone']),
                                                params=optimizer_info['params'])
             scheduler_info = getattr(self.config, 'scheduler')
             if 'params' not in scheduler_info.keys():
@@ -225,6 +225,9 @@ class Config:
                 # evaluation_op['sota_target']['target'] = internal_env[evaluation_op['sota_target']['target']]
             self.paras['evaluation'] = dict(
                 interval=evaluation_op['interval'], metrics=eva_metrics, sota_target=evaluation_op['sota_target'])
+        else:
+            self.paras['evaluation'] = dict(
+                interval=1, metrics={}, sota_target=dict(mode='min', target=None))
 
     def __repr__(self) -> str:
         return readable_dict(self.paras)

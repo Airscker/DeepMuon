@@ -2,21 +2,32 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-02-02 15:05:52
+LastEditTime: 2023-02-02 16:03:54
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import os
-import matplotlib.pyplot as plt
-import numpy as np
 import shutil
 import importlib
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 import torch
 from torch import nn
 torch.set_default_tensor_type(torch.DoubleTensor)
+
+
+def get_mem_info(gpu_id=None):
+    if gpu_id is None:
+        gpu_id = torch.cuda.current_device()
+    mem_total = torch.cuda.get_device_properties(gpu_id).total_memory
+    mem_cached = torch.cuda.memory_reserved(gpu_id)
+    mem_allocated = torch.cuda.memory_allocated(gpu_id)
+    return dict(mem_left=f"{(mem_total-mem_cached-mem_allocated)/1024**2:0.2f} MB",
+                mem_used=f"{(mem_cached+mem_allocated)/1024**2:0.2f} MB",
+                total_mem=f"{mem_total/1024**2:0.2f} MB")
 
 
 def readable_dict(data: dict, i=0, show=False, indent='\t', sep='\n'):

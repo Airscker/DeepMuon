@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-27 19:51:21
 LastEditors: airscker
-LastEditTime: 2023-01-31 09:26:51
+LastEditTime: 2023-02-02 17:41:26
 Description:
     ## Dataset built for:
         - Video Swin-Transformer (VST) CMR Screening & Diagnose Model
@@ -91,49 +91,6 @@ def Resize(frames: np.ndarray, size=(240, 240)):
     return np.array(new_imgs)
 
 
-def transform_train(image):
-    angle = transforms.RandomRotation.get_params([-90, 90])
-    flip = False
-    cont = False
-    negative = False
-    if random.random() > 0.5:
-        flip = True
-    if random.random() > 0.5:
-        cont = True
-    if random.random() > 0.5:
-        negative = True
-    delta = torch.randn(1)
-    if negative:
-        delta = -delta
-    delta = delta / 10
-    for i in range(image.shape[0]):
-        img = Image.fromarray(
-            np.uint8(np.transpose(image[i, :, :, :], (1, 2, 0))))
-        if cont:
-            img = tf.adjust_contrast(img, 2)
-        if flip:
-            img = tf.hflip(img)
-        img = tf.rotate(img, angle)
-        img = tf.to_tensor(img)
-        img = tf.normalize(img, torch.mean(
-            img, (1, 2)).tolist(), torch.std(img, (1, 2)).tolist())
-        # img = tf.normalize(img, [0.27154714, 0.27154769, 0.27156396], [0.31989314, 0.31985731, 0.31968247])
-        image[i, :, :, :] = img + delta
-    return image
-
-
-def transform_test(image):
-    for i in range(image.shape[0]):
-        img = Image.fromarray(
-            np.uint8(np.transpose(image[i, :, :, :], (1, 2, 0))))
-        img = tf.to_tensor(img)
-        img = tf.normalize(img, torch.mean(
-            img, (1, 2)).tolist(), torch.std(img, (1, 2)).tolist())
-        # img = tf.normalize(img, [0.27089914, 0.27090737, 0.2709189], [0.32018263, 0.32015745, 0.31996976])
-        image[i, :, :, :] = img
-    return image
-
-
 class NIIDecodeV2(Dataset):
     """
     ## Load and decode Nifti dataset for Video Swin-Transformer/CNNLSTM CMR Diagnose/Screening Model
@@ -168,11 +125,13 @@ class NIIDecodeV2(Dataset):
                  mask_ann: str = None,
                  fusion=False,
                  modalities: list = [],
+                 model=None,
                  augment_pipeline: list = [dict(type='HistEqual'),
                                            dict(type='SingleNorm'),
                                            dict(type='Padding',
                                                 size=(120, 120)),
                                            dict(type='Resize', size=(240, 240))]):
+        self.model = model
         self.ann_file = ann_file
         self.mask_ann = mask_ann
         self.fusion = fusion
@@ -301,8 +260,19 @@ class NIIDecodeV2(Dataset):
         for mod in self.modalities:
             for augment in self.augment_pipeline:
                 results[mod] = env[augment['type']](
-                    results[mod], **augment.pop('type'))
+                    results[mod], **exclude_key(augment))
             # NTHWC -> NCTHW
             results[mod] = torch.from_numpy(np.moveaxis(results[mod], -1, 1))
         label = torch.LongTensor([self.nifti_info_list[index]['label']])
-        return results, label
+        if self.model != 'LSTM':
+            return results, label
+        else:
+            return results[self.modalities[0]], label
+
+
+def exclude_key(dictionary: dict, del_key: str = 'type'):
+    new_dict = {}
+    for key in dictionary.keys():
+        if key != del_key:
+            new_dict[key] = dictionary[key]
+    return new_dict
