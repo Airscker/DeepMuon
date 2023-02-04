@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-04 13:41:04
+LastEditTime: 2023-02-04 13:48:35
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -90,7 +90,7 @@ def main(config_info, msg=''):
     '''
     model: nn.Module = configs['model']['backbone'](
         **configs['model']['params'])
-    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model).to(device)
+    # model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model).to(device)
     epoch_now = 0
     if resume == '' and load == '':
         pass
