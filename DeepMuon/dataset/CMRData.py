@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-27 19:51:21
 LastEditors: airscker
-LastEditTime: 2023-02-02 20:13:15
+LastEditTime: 2023-02-04 13:35:45
 Description:
     ## Dataset built for:
         - Video Swin-Transformer (VST) CMR Screening & Diagnose Model
@@ -244,6 +244,7 @@ class NIIDecodeV2(Dataset):
 
     def __getitem__(self, index):
         results = {}
+        data = []
         if 'sax' in self.modalities:
             sax_fusion = self.__crop(
                 file_path=self.nifti_info_list[index]['sax'], mod='sax')
@@ -263,11 +264,12 @@ class NIIDecodeV2(Dataset):
                     results[mod], **exclude_key(augment))
             # NTHWC -> NCTHW
             results[mod] = torch.from_numpy(np.moveaxis(results[mod], -1, 1))
+            data.append(results[mod])
         label = torch.LongTensor([self.nifti_info_list[index]['label']])
-        if self.model != 'LSTM':
-            return results, label
+        if self.fusion:
+            return torch.Tensor(data), label
         else:
-            return results[self.modalities[0]], label
+            return data[0], label
 
 
 def exclude_key(dictionary: dict, del_key: str = 'type'):

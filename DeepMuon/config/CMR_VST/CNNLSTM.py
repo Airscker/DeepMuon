@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-31 09:01:02
 LastEditors: airscker
-LastEditTime: 2023-02-02 17:56:34
+LastEditTime: 2023-02-04 09:04:25
 Description: NULL
 
 Copyright (C) 2023 sby Airscker(Yufeng), All Rights Reserved.
@@ -59,7 +59,7 @@ evaluation = dict(metrics=['f1_score', 'confusion_matrix',
 optimizer
 '''
 optimizer = dict(backbone='SGD', params=dict(
-    lr=0.0001, momentum=0.9, nesterov=True))
+    lr=0.0001, momentum=0.9, nesterov=True, weight_decay=0.01))
 '''
 scheduler
 '''

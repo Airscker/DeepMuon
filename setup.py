@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-21 18:43:31
 LastEditors: airscker
-LastEditTime: 2022-12-28 17:05:27
+LastEditTime: 2023-02-03 10:54:52
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -82,6 +82,7 @@ setup(
                       'pynvml',
                       'psutil',
                       'GPUtil',
+                      'matplotlib',
                       'timm',
                       ],
     # Similar to `install_requires` above, these must be valid existing

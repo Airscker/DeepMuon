@@ -2,10 +2,10 @@
 Author: airscker
 Date: 2022-12-23 10:33:54
 LastEditors: airscker
-LastEditTime: 2023-01-28 11:00:07
+LastEditTime: 2023-02-04 13:43:06
 Description: NULL
 
-Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 import torch
 import torch.nn as nn
@@ -517,12 +517,12 @@ class SwinTransformer3D(nn.Module):
     def __init__(self,
                  pretrained=None,
                  pretrained2d=True,
-                 patch_size=(5, 2, 2),
+                 patch_size=(4, 4, 4),  # (4,4,4)
                  in_chans=3,
-                 embed_dim=12,  # 24,48,96...
+                 embed_dim=96,  # 24,48,96...
                  depths=[2, 2, 6, 2],
                  num_heads=[3, 6, 12, 24],
-                 window_size=(2, 1, 1),
+                 window_size=(2, 7, 7),  # (2,7,7)
                  mlp_ratio=4,
                  qkv_bias=True,
                  qk_scale=None,
@@ -587,7 +587,7 @@ class SwinTransformer3D(nn.Module):
 
         if self.frozen_stages >= 1:
             self.pos_drop.eval()
-            for i in range(0, self.frozen_stages):
+            for i in range(0, min(len(self.layers), self.frozen_stages)):
                 m = self.layers[i]
                 m.eval()
                 for param in m.parameters():
@@ -686,25 +686,19 @@ class SwinTransformer3D(nn.Module):
 
     def forward(self, x: torch.Tensor):
         """Forward function."""
-#        x = x[:, -1, :, :, :].unsqueeze(1)
-#        x = x.expand(-1, 3, -1, -1, -1)
-
         x = self.patch_embed(x)
-
         x = self.pos_drop(x)
-
         for layer in self.layers:
             x = layer(x.contiguous())
+        '''NCDHW->NDHWC'''
         x = torch.permute(x, (0, 2, 3, 4, 1))
-        # x = rearrange(x, 'n c d h w -> n d h w c')
         x = self.norm(x)
+        '''NDHWC->NCDHW'''
         x = torch.permute(x, (0, 4, 1, 2, 3))
-        # x = rearrange(x, 'n d h w c -> n c d h w')
-
         return x
 
     def train(self, mode=True):
-        #     """Convert the model into training mode while keep layers freezed."""
+        """Convert the model into training mode while keep layers freezed."""
         super(SwinTransformer3D, self).train(mode)
         self._freeze_stages()
 
@@ -730,3 +724,134 @@ class VST(nn.Module):
     def forward(self, x):
         x = self.mlp(self.flatten(self.vst(x)))
         return F.normalize(x)
+
+
+class screening_model(nn.Module):
+    def __init__(self,
+                 num_classes,
+                 mlp_in_channels=1024,
+                 mlp_dropout_ratio=0.5,
+                 patch_size=(2, 4, 4),
+                 embed_dim=128,
+                 depths=[2, 2, 18, 2],
+                 num_heads=[4, 8, 16, 32],
+                 window_size=(8, 7, 7),
+                 mlp_ratio=4.,
+                 qkv_bias=True,
+                 qk_scale=None,
+                 drop_rate=0.,
+                 attn_drop_rate=0.,
+                 drop_path_rate=0.2,
+                 patch_norm=True,
+                 ):
+        super().__init__()
+        self.vst = SwinTransformer3D(patch_size=patch_size,
+                                     embed_dim=embed_dim,
+                                     depths=depths,
+                                     num_heads=num_heads,
+                                     window_size=window_size,
+                                     mlp_ratio=mlp_ratio,
+                                     qkv_bias=qkv_bias,
+                                     qk_scale=qk_scale,
+                                     drop_rate=drop_rate,
+                                     attn_drop_rate=attn_drop_rate,
+                                     drop_path_rate=drop_path_rate,
+                                     patch_norm=patch_norm)
+        self.pre_mlp = nn.Sequential(
+            nn.AdaptiveAvgPool3d((1, 1, 1)),
+            nn.Dropout(mlp_dropout_ratio),
+        )
+        self.flatten = nn.Flatten()
+        self.linear = nn.Linear(mlp_in_channels, num_classes)
+
+    def forward(self, x: torch.Tensor, device):
+        '''x: NCTHW'''
+        x = x.to(device)
+        x = self.vst(x)
+        x = self.pre_mlp(x)
+        x = self.flatten(x)
+        x = self.linear(x)
+        return x
+
+
+class fusion_model(nn.Module):
+    def __init__(self,
+                 num_classes,
+                 mlp_in_channels=1024,
+                 mlp_dropout_ratio=0.5,
+                 freeze_vst=True,
+                 patch_size=(2, 4, 4),
+                 embed_dim=128,
+                 depths=[2, 2, 18, 2],
+                 num_heads=[4, 8, 16, 32],
+                 window_size=(8, 7, 7),
+                 mlp_ratio=4.,
+                 qkv_bias=True,
+                 qk_scale=None,
+                 drop_rate=0.,
+                 attn_drop_rate=0.,
+                 drop_path_rate=0.3,
+                 patch_norm=True,
+                 sax_weight=None,
+                 lax_weight=None,
+                 lge_weight=None
+                 ):
+        super().__init__()
+        weights = []
+        if sax_weight is not None:
+            weights.append(sax_weight)
+        if lax_weight is not None:
+            weights.append(lax_weight)
+        if lge_weight is not None:
+            weights.append(lge_weight)
+        mlp_num_mod = len(weights)
+        self.vst_backbones = nn.ModuleList([SwinTransformer3D(patch_size=patch_size,
+                                                              embed_dim=embed_dim,
+                                                              depths=depths,
+                                                              num_heads=num_heads,
+                                                              window_size=window_size,
+                                                              mlp_ratio=mlp_ratio,
+                                                              qkv_bias=qkv_bias,
+                                                              qk_scale=qk_scale,
+                                                              drop_rate=drop_rate,
+                                                              attn_drop_rate=attn_drop_rate,
+                                                              drop_path_rate=drop_path_rate,
+                                                              patch_norm=patch_norm) for _ in range(mlp_num_mod)])
+        self.init_weights(weights=weights)
+        self.freeze = freeze_vst
+        self.avgpool = nn.AdaptiveAvgPool3d((1, 1, 1))
+        self.dropout = nn.Dropout(mlp_dropout_ratio)
+        self.flatten = nn.Flatten()
+        self.linear = nn.Linear(mlp_in_channels*mlp_num_mod, num_classes)
+        self.freeze_vst()
+
+    def init_weights(self, weights):
+        for i in range(len(weights)):
+            try:
+                checkpoint = torch.load(weights[i], map_location='cpu')
+                self.vst_backbones[i].load_state_dict(checkpoint, strict=False)
+            except:
+                print(f'{weights[i]} load failed')
+
+    def forward(self, x, device):
+        assert len(x) == len(
+            self.vst_backbones), f'Multi modality input data types does not match the number of vst backbones; {len(self.vst_backbones)} types of data expected however {len(x)} given'
+        for i in range(len(x)):
+            x[i] = x[i].to(device)
+            x[i] = self.vst_backbones[i](x[i])
+            x[i] = self.avgpool(x[i])
+        x = torch.cat(x, dim=1)
+        x = self.dropout(x)
+        x = self.flatten(x)
+        x = self.linear(x)
+        return x
+
+    def freeze_vst(self):
+        if self.freeze:
+            self.vst_backbones.eval()
+            for params in self.vst_backbones.parameters():
+                params.requires_grad = False
+
+    def train(self, mode: bool = True):
+        super().train(mode)
+        self.freeze_vst()
