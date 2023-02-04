@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-28 11:34:38
 LastEditors: airscker
-LastEditTime: 2023-02-04 19:06:05
+LastEditTime: 2023-02-04 19:15:46
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -11,16 +11,17 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 Specify which model to be used, all models are stored in 'models'
 '''
-model = dict(backbone='screening_model', params=dict(num_classes=11))
+model = dict(backbone='fusion_model', params=dict(
+    num_classes=11, sax_weight='', lax_weight=''))
 '''
 Specify the dataset to load the data, all dataset are stored in 'dataset'
 '''
 train_dataset = dict(
     backbone='NIIDecodeV2',
-    params=dict(ann_file='/data/JoyceW/VST_fusion_dataset/CNNLSTM/test.txt',
+    params=dict(ann_file='/data/JoyceW/VST_fusion_dataset/CNNLSTM/test_fusion.txt',
                 mask_ann='/data/JoyceW/VST_fusion_dataset/workdir/mask_ann_map.pkl',
-                fusion=False,
-                modalities=['sax'],
+                fusion=True,
+                modalities=['sax', '4ch'],
                 frame_interval=5,
                 augment_pipeline=[dict(type='HistEqual'),
                                   dict(type='SingleNorm'),
@@ -28,10 +29,10 @@ train_dataset = dict(
                                   dict(type='Resize', size=(140, 140))]))
 test_dataset = dict(
     backbone='NIIDecodeV2',
-    params=dict(ann_file='/data/JoyceW/VST_fusion_dataset/CNNLSTM/test.txt',
+    params=dict(ann_file='/data/JoyceW/VST_fusion_dataset/CNNLSTM/test_fusion.txt',
                 mask_ann='/data/JoyceW/VST_fusion_dataset/workdir/mask_ann_map.pkl',
-                fusion=False,
-                modalities=['sax'],
+                fusion=True,
+                modalities=['sax', '4ch'],
                 frame_interval=5,
                 augment_pipeline=[dict(type='HistEqual'),
                                   dict(type='SingleNorm'),
@@ -41,7 +42,7 @@ test_dataset = dict(
 Specify the work_dir to save the training log and checkpoints
 '''
 work_config = dict(
-    work_dir='/data/JoyceW/VST_fusion_dataset/CNNLSTM/test', logfile='log.log')
+    work_dir='/data/JoyceW/VST_fusion_dataset/CNNLSTM/test_fusion', logfile='log.log')
 '''
 Specify the checkpoint configuration
 '''

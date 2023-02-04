@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-04 13:48:35
+LastEditTime: 2023-02-04 19:05:14
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -89,7 +89,7 @@ def main(config_info, msg=''):
     In the example shown above, `MLP3` <> `configs['model']['backbone']`, `model_parameters` <> `**configs['model']['params']`
     '''
     model: nn.Module = configs['model']['backbone'](
-        **configs['model']['params'])
+        **configs['model']['params']).to(device)
     # model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model).to(device)
     epoch_now = 0
     if resume == '' and load == '':
@@ -269,7 +269,7 @@ def evaluation(scores, labels, evaluation_command, best_target, loss):
         return eva_res, loss
 
 
-def train(device, dataloader, model, loss_fn, optimizer, scheduler, gradient_accumulation=1):
+def train(device, dataloader, model, loss_fn, optimizer, scheduler, gradient_accumulation=8):
     model.train()
     train_loss = 0
     predictions = []
@@ -277,7 +277,7 @@ def train(device, dataloader, model, loss_fn, optimizer, scheduler, gradient_acc
     batchs = len(dataloader)
     gradient_accumulation = min(batchs, gradient_accumulation)
     for i, (x, y) in enumerate(dataloader):
-        y = y.reshape(-1)
+        y = y.reshape(-1).to(device)
         pred = model(x, device)
         predictions.append(pred.detach().cpu().numpy())
         labels.append(y.detach().cpu().numpy())
@@ -300,7 +300,7 @@ def test(device, dataloader, model, loss_fn):
     labels = []
     with torch.no_grad():
         for i, (x, y) in enumerate(dataloader):
-            y = y.reshape(-1)
+            y = y.reshape(-1).to(device)
             pred = model(x, device)
             predictions.append(pred.detach().cpu().numpy())
             labels.append(y.detach().cpu().numpy())

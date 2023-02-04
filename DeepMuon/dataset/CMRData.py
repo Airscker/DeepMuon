@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-27 19:51:21
 LastEditors: airscker
-LastEditTime: 2023-02-04 13:35:45
+LastEditTime: 2023-02-04 19:05:33
 Description:
     ## Dataset built for:
         - Video Swin-Transformer (VST) CMR Screening & Diagnose Model
@@ -80,7 +80,7 @@ def Padding(frames: np.ndarray, size=(120, 120)):
         for i in range(img.shape[-1]):
             new_img[:, :, i] = np.pad(img[:, :, i], ((
                 pad_x1, pad_x2), (pad_y1, pad_y2)), 'constant', constant_values=(0, 0))
-            new_imgs.append(new_img)
+        new_imgs.append(new_img)
     return np.array(new_imgs)
 
 
@@ -126,12 +126,14 @@ class NIIDecodeV2(Dataset):
                  fusion=False,
                  modalities: list = [],
                  model=None,
+                 frame_interval=2,
                  augment_pipeline: list = [dict(type='HistEqual'),
                                            dict(type='SingleNorm'),
                                            dict(type='Padding',
                                                 size=(120, 120)),
                                            dict(type='Resize', size=(240, 240))]):
         self.model = model
+        self.frame_interval = frame_interval
         self.ann_file = ann_file
         self.mask_ann = mask_ann
         self.fusion = fusion
@@ -153,12 +155,12 @@ class NIIDecodeV2(Dataset):
         with open(self.mask_ann, 'rb')as f:
             self.data_mask_map = pkl.load(f)
         f.close()
-        all_num = len(self.data_mask_map)
-        for key in self.data_mask_map.keys():
-            if not os.path.exists(key):
-                self.data_mask_map.pop(key)
-        print(
-            f'{all_num} mask_ann hash mapping given, {len(self.data_mask_map)} maps available')
+        # all_num = len(self.data_mask_map)
+        # for key in self.data_mask_map.keys():
+        #     if not os.path.exists(key):
+        #         self.data_mask_map.pop(key)
+        # print(
+        #     f'{all_num} mask_ann hash mapping given, {len(self.data_mask_map)} maps available')
 
     def __load_annotations(self):
         """Load annotation file to get nifti data information."""
@@ -198,7 +200,9 @@ class NIIDecodeV2(Dataset):
                 file_path.replace('mid', 'up')))
             sax_down = sitk.GetArrayFromImage(sitk.ReadImage(
                 file_path.replace('mid', 'down')))
-
+            sax_mid = sax_mid[0:len(sax_mid):self.frame_interval]
+            sax_up = sax_up[0:len(sax_up):self.frame_interval]
+            sax_down = sax_down[0:len(sax_down):self.frame_interval]
             if self.mask_ann is not None:
                 crop_pos = self.data_mask_map[file_path]
                 sax_mid = self.clip_top_bottom(
@@ -218,6 +222,7 @@ class NIIDecodeV2(Dataset):
             return sax_fusion
         elif mod == '4ch' or mod == 'lge':
             data = sitk.GetArrayFromImage(sitk.ReadImage(file_path))
+            data = data[0:len(data):self.frame_interval]
             if self.mask_ann is not None:
                 crop_pos = self.data_mask_map[file_path]
                 data = self.clip_top_bottom(data[:, crop_pos[2]:crop_pos[3],
@@ -262,13 +267,22 @@ class NIIDecodeV2(Dataset):
             for augment in self.augment_pipeline:
                 results[mod] = env[augment['type']](
                     results[mod], **exclude_key(augment))
-            # NTHWC -> NCTHW
-            results[mod] = torch.from_numpy(np.moveaxis(results[mod], -1, 1))
+            if self.model != 'LSTM':
+                # THWC -> CTHW
+                results[mod] = torch.from_numpy(
+                    np.moveaxis(results[mod], -1, 0))
+            elif self.model == 'LSTM':
+                # THWC -> TCHW
+                results[mod] = torch.from_numpy(
+                    np.moveaxis(results[mod], -1, 1))
             data.append(results[mod])
         label = torch.LongTensor([self.nifti_info_list[index]['label']])
-        if self.fusion:
-            return torch.Tensor(data), label
-        else:
+        if self.model != 'LSTM':
+            if self.fusion:
+                return data, label
+            else:
+                return data[0], label
+        elif self.model == 'LSTM':
             return data[0], label
 
 

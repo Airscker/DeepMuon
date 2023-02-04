@@ -1,1 +1,1 @@
-CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 --master_port 22106 $(dirname "$0")/dist_train.py --config /home/dachuang2022/Yufeng/DeepMuon/config/Hailing/VST.py --msg /home/dachuang2022/Yufeng/LICENSE.txt
+CUDA_VISIBLE_DEVICES=0 python -m torch.distributed.launch --nproc_per_node=1 --master_port 22106 $(dirname "$0")/dist_train_vst.py --config /data/JoyceW/VST_fusion_dataset/CNNLSTM/DeepMuon/config/CMR_VST/VST.py --msg /data/JoyceW/VST_fusion_dataset/CNNLSTM/LICENSE.txt

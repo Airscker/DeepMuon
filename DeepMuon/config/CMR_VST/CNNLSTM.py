@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-31 09:01:02
 LastEditors: airscker
-LastEditTime: 2023-02-04 09:04:25
+LastEditTime: 2023-02-04 19:40:19
 Description: NULL
 
 Copyright (C) 2023 sby Airscker(Yufeng), All Rights Reserved.
@@ -18,7 +18,7 @@ Specify the dataset to load the data, all dataset are stored in 'dataset'
 '''
 train_dataset = dict(
     backbone='NIIDecodeV2',
-    params=dict(ann_file='/data/JoyceW/VST_fusion_dataset/CNNLSTM/sax_cine_1.826_11cls_test.txt',
+    params=dict(ann_file='/data/JoyceW/VST_fusion_dataset/CNNLSTM/test.txt',
                 mask_ann='/data/JoyceW/VST_fusion_dataset/workdir/mask_ann_map.pkl',
                 fusion=False,
                 modalities=['sax'],
@@ -29,7 +29,7 @@ train_dataset = dict(
                                   dict(type='Resize', size=(90, 90))]))
 test_dataset = dict(
     backbone='NIIDecodeV2',
-    params=dict(ann_file='/data/JoyceW/VST_fusion_dataset/CNNLSTM/sax_cine_1.826_11cls_test.txt',
+    params=dict(ann_file='/data/JoyceW/VST_fusion_dataset/CNNLSTM/test.txt',
                 mask_ann='/data/JoyceW/VST_fusion_dataset/workdir/mask_ann_map.pkl',
                 fusion=False,
                 modalities=['sax'],
