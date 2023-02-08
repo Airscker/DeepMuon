@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-07 21:35:54
 LastEditors: airscker
-LastEditTime: 2022-11-26 12:29:53
+LastEditTime: 2023-02-08 17:24:08
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -15,11 +15,10 @@ import DeepMuon
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dist', action='store_true')
-    parser.add_argument("--gpus", nargs='+', default=0)
+    parser.add_argument('-d', '--dist', action='store_true')
+    parser.add_argument('-g', '--gpus', nargs='+', default=0)
     parser.add_argument('-p', '--port', default=22911)
-    parser.add_argument(
-        '-c', '--config', default='/home/dachuang2022/Yufeng/DeepMuon/config/Hailing/CSPP.py')
+    parser.add_argument('-c', '--config', default='')
     parser.add_argument('-t', '--train', default='dist_train.py')
     args = parser.parse_args()
     pkg_path = DeepMuon.__path__[0]

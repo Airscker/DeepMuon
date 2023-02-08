@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-02 20:33:59
+LastEditTime: 2023-02-08 20:56:15
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -89,7 +89,8 @@ def main(config_info, msg=''):
     In the example shown above, `MLP3` <> `configs['model']['backbone']`, `model_parameters` <> `**configs['model']['params']`
     '''
     model: nn.Module = configs['model']['backbone'](
-        **configs['model']['params']).to(device)
+        **configs['model']['params'])
+    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model).to(device)
     epoch_now = 0
     if resume == '' and load == '':
         pass
@@ -150,6 +151,10 @@ def main(config_info, msg=''):
     bestres = None
     bar = range(epoch_now, epochs)
     eva_interval = configs['evaluation']['interval']
+    best_checkpoint = ''
+    sota_target = configs['evaluation']['sota_target']['target']
+    if sota_target is None:
+        sota_target = 'loss'
     for t in bar:
         start_time = time.time()
         train_dataloader.sampler.set_epoch(t)
@@ -164,38 +169,41 @@ def main(config_info, msg=''):
         loss_values = torch.tensor([trloss, tsloss], device=device)
         dist.barrier()
         dist.all_reduce(loss_values, op=torch.distributed.ReduceOp.SUM)
-        tr_score_val, tr_label_val = gather_score_label(
-            tr_score, tr_label, local_world_size)
-        ts_score_val, ts_label_val = gather_score_label(
-            ts_score, ts_label, local_world_size)
+        if (t+1) % eva_interval == 0 and sota_target != 'loss':
+            tr_score_val, tr_label_val = gather_score_label(
+                tr_score, tr_label, local_world_size)
+            ts_score_val, ts_label_val = gather_score_label(
+                ts_score, ts_label, local_world_size)
+        else:
+            tr_score_val, tr_label_val = None, None
+            ts_score_val, ts_label_val = None, None
         loss_values = loss_values/float(local_world_size)
         if local_rank == 0:
-            train_loss = loss_values[0].item()/local_world_size
-            test_loss = loss_values[1].item()/local_world_size
+            train_loss = loss_values[0].item()
+            test_loss = loss_values[1].item()
             LRn = optimizer.state_dict()['param_groups'][0]['lr']
             ts_eva_metrics, ts_target = evaluation(
-                ts_score_val, ts_label_val, configs['evaluation'], bestres, tsloss)
+                ts_score_val, ts_label_val, configs['evaluation'], bestres, test_loss)
             tr_eva_metrics, tr_target = evaluation(
                 tr_score_val, tr_label_val, configs['evaluation'], bestres, 0)
             '''Add tensorboard scalar curves'''
             writer.add_scalar('test loss', test_loss, global_step=t + 1)
             writer.add_scalar('train loss', train_loss, global_step=t + 1)
             writer.add_scalar('learning rate', LRn, global_step=t + 1)
-            if (t+1) % eva_interval == 0:
+            if (t+1) % eva_interval == 0 and sota_target != 'loss':
                 tensorboard_plot(tr_eva_metrics, t+1, writer, 'train')
                 tensorboard_plot(ts_eva_metrics, t+1, writer, 'test')
             '''Save best model accoeding to the value of sota target'''
             if ts_target != bestres:
                 bestres = ts_target
-                sota_target = configs['evaluation']['sota_target']['target']
-                if sota_target is None:
-                    sota_target = 'loss'
-                savepath = os.path.join(
+                if os.path.exists(best_checkpoint):
+                    os.remove(best_checkpoint)
+                best_checkpoint = os.path.join(
                     work_dir, f"Best_{sota_target}_epoch_{t+1}.pth")
                 AirFunc.save_model(epoch=t, model=model, optimizer=optimizer,
-                                   loss_fn=loss_fn, scheduler=scheduler, path=savepath, dist_train=True)
+                                   loss_fn=loss_fn, scheduler=scheduler, path=best_checkpoint, dist_train=True)
                 logger.log(
-                    f'Best Model Saved as {savepath},Best {sota_target}:{bestres}, Current Epoch: {t+1}', show=True)
+                    f'Best Model Saved as {best_checkpoint},Best {sota_target}:{bestres}, Current Epoch: {t+1}', show=True)
             if (t + 1) % inter == 0:
                 savepath = os.path.join(work_dir, f'Epoch_{t+1}.pth')
                 AirFunc.save_model(epoch=t, model=model, optimizer=optimizer,
@@ -211,7 +219,7 @@ def main(config_info, msg=''):
             log_info = {**loss_info, **time_info, **mem_info}
             json_logger.log(log_info)
             logger.log(AirFunc.readable_dict(log_info, indent='', sep=','))
-            if (t+1) % eva_interval == 0:
+            if (t+1) % eva_interval == 0 and sota_target != 'loss':
                 tr_eva_info = dict(mode='tr_eval')
                 ts_eva_info = dict(mode='ts_eval')
                 tr_eva_info = {**tr_eva_info, **tr_eva_metrics}
@@ -250,7 +258,10 @@ def evaluation(scores, labels, evaluation_command, best_target, loss):
     target = evaluation_command['sota_target']['target']
     eva_res = {}
     for key in metrics:
-        eva_res[key] = metrics[key](scores, labels)
+        try:
+            eva_res[key] = metrics[key](scores, labels)
+        except:
+            pass
     if target is not None and best_target is not None:
         if mode == 'min':
             if eva_res[target] < best_target:
@@ -264,28 +275,33 @@ def evaluation(scores, labels, evaluation_command, best_target, loss):
     elif target is None and best_target is not None:
         if loss < best_target:
             return eva_res, loss
+        else:
+            return eva_res, best_target
     elif target is None and best_target is None:
         return eva_res, loss
 
 
-def train(device, dataloader, model, loss_fn, optimizer, scheduler):
+def train(device, dataloader, model, loss_fn, optimizer, scheduler, gradient_accumulation=8):
     model.train()
     train_loss = 0
     predictions = []
     labels = []
     batchs = len(dataloader)
-    for batch, (X, y) in enumerate(dataloader):
-        X, y = X.to(device), y.to(device)
+    gradient_accumulation = min(batchs, gradient_accumulation)
+    for i, (x, y) in enumerate(dataloader):
+        x, y = x.to(device), y.to(device)
         '''Compute prediction error'''
-        pred = model(X)
+        pred = model(x)
         predictions.append(pred.detach().cpu().numpy())
         labels.append(y.detach().cpu().numpy())
         loss = loss_fn(pred, y)
-        '''Backpropagation'''
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
         train_loss += loss.item()
+        loss = loss/gradient_accumulation
+        '''Backpropagation'''
+        loss.backward()
+        if (i+1) % gradient_accumulation == 0:
+            optimizer.step()
+            optimizer.zero_grad()
     scheduler.step()
     return train_loss/batchs, np.concatenate(predictions, axis=0), np.concatenate(labels, axis=0)
 
@@ -297,9 +313,9 @@ def test(device, dataloader, model, loss_fn):
     predictions = []
     labels = []
     with torch.no_grad():
-        for X, y in dataloader:
-            X, y = X.to(device), y.to(device)
-            pred = model(X)
+        for x, y in dataloader:
+            x, y = x.to(device), y.to(device)
+            pred = model(x)
             predictions.append(pred.detach().cpu().numpy())
             labels.append(y.detach().cpu().numpy())
             test_loss += loss_fn(pred, y).item()

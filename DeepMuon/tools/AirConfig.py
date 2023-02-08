@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-02-04 09:05:05
+LastEditTime: 2023-02-08 17:20:42
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -22,7 +22,7 @@ from torch.nn.modules.loss import *
 
 class Config:
     """
-    ## Load Training Configuration from Python File stored in Folder 'config'
+    ## Load Training Configuration from Python File
     ### Args:
         - configpath: The path of the config file, must be in 'config' folder
     ### Attributions:
@@ -45,17 +45,13 @@ class Config:
     >>> model = dict(backbone='VST', params=dict(n_classes=11, input_shape=(3, 130, 130), seq_dropout=0.1))
     >>> train_dataset = dict(backbone='NIIDecodeV2',params=dict(ann_file=None,mask_ann=None,fusion=False,modalities=[],
                                                                 augment_pipeline=[dict(type='HistEqual'),
-                                                                                dict(
-                                                                                    type='SingleNorm'),
-                                                                                dict(
-                                                                                    type='Padding', size=(120, 120)),
+                                                                                dict(type='SingleNorm'),
+                                                                                dict(type='Padding', size=(120, 120)),
                                                                                 dict(type='Resize', size=(130, 130))]))
     >>> test_dataset = dict(backbone='NIIDecodeV2',params=dict(ann_file=None,mask_ann=None,fusion=False,modalities=[],
                                                                 augment_pipeline=[dict(type='HistEqual'),
-                                                                                dict(
-                                                                                    type='SingleNorm'),
-                                                                                dict(
-                                                                                    type='Padding', size=(120, 120)),
+                                                                                dict(type='SingleNorm'),
+                                                                                dict(type='Padding', size=(120, 120)),
                                                                                 dict(type='Resize', size=(130, 130))]))
     >>> work_config = dict(work_dir='./VST_1', logfile='log.log')
     >>> checkpoint_config = dict(load_from='', resume_from='', save_inter=50)
