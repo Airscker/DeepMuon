@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-12-27 16:37:52
 LastEditors: airscker
-LastEditTime: 2023-01-23 09:43:37
+LastEditTime: 2023-02-09 09:57:40
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -134,7 +134,7 @@ class UNet_VAE2(nn.Module):
     def train(self, mode: bool = True):
         super().train(mode)
         # self.freeze_resmax()
-        self.freeze_unet()
+        # self.freeze_unet()
 
     def forward(self, x: torch.Tensor):
         x = self.unet(x)

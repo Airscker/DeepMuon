@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-27 19:51:21
 LastEditors: airscker
-LastEditTime: 2023-02-04 19:45:01
+LastEditTime: 2023-02-08 21:41:36
 Description:
     ## Dataset built for:
         - Video Swin-Transformer (VST) CMR Screening & Diagnose Model
@@ -173,7 +173,7 @@ class NIIDecodeV2(Dataset):
                     data_info[self.modalities[j]] = ann_info[i].split(' ')[j]
                     if not os.path.exists(data_info[self.modalities[j]]):
                         warnings.warn(
-                            f"Line {j+1} at {self.ann_file} -> {data_info[self.modalities[j]]} doesn't exists")
+                            f"Line {i+1} at {self.ann_file} -> {data_info[self.modalities[j]]} doesn't exists")
                         continue
                 data_info['label'] = int(ann_info[i].split(' ')[-1])
                 nifti_info_list.append(data_info)
@@ -181,7 +181,7 @@ class NIIDecodeV2(Dataset):
                 data_info[self.modalities[0]] = ann_info[i].split(' ')[0]
                 if not os.path.exists(data_info[self.modalities[0]]):
                     warnings.warn(
-                        f"Line {j+1} at {self.ann_file} -> {data_info[self.modalities[0]]} doesn't exists")
+                        f"Line {i+1} at {self.ann_file} -> {data_info[self.modalities[0]]} doesn't exists")
                     continue
                 data_info['label'] = int(ann_info[i].split(' ')[-1])
                 nifti_info_list.append(data_info)
@@ -261,8 +261,11 @@ class NIIDecodeV2(Dataset):
         env = globals()
         for mod in self.modalities:
             for augment in self.augment_pipeline:
-                results[mod] = env[augment['type']](
-                    results[mod], **exclude_key(augment))
+                try:
+                    results[mod] = env[augment['type']](
+                        results[mod], **exclude_key(augment))
+                except:
+                    pass
             if self.model != 'LSTM':
                 # THWC -> CTHW
                 results[mod] = torch.from_numpy(

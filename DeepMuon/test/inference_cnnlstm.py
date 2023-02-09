@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-02-02 18:30:43
 LastEditors: airscker
-LastEditTime: 2023-02-02 19:01:43
+LastEditTime: 2023-02-09 17:46:12
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -86,12 +86,12 @@ def main(config_info, msg=''):
     '''
     model: nn.Module = configs['model']['backbone'](
         **configs['model']['params'])
-    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model).to(device)
+
     checkpoint = resume if resume != '' else load
     epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = AirFunc.load_model(
         path=checkpoint, device=device)
-    model.load_state_dict(model_c, False)
-    model.to(device)
+    model = model.load_state_dict(model_c, False)
+    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model).to(device)
     logger.log(f'Model loaded from {checkpoint}')
     '''
     Initialize loss/optimizer/scheduler
@@ -122,6 +122,8 @@ def main(config_info, msg=''):
     start_time = time.time()
     tsloss, ts_score_val, ts_label_val = test(
         device, test_dataloader, model, loss_fn)
+    np.save(os.path.join(work_dir, 'scores.npy'), np.array(ts_score_val))
+    np.save(os.path.join(work_dir, 'True_Value.npy'), np.array(ts_label_val))
     ts_eva_metrics, ts_target = evaluation(
         ts_score_val, ts_label_val, configs['evaluation'], None, None)
     epoch_time = time.time() - start_time
@@ -158,6 +160,8 @@ def evaluation(scores, labels, evaluation_command, best_target, loss):
     elif target is None and best_target is not None:
         if loss < best_target:
             return eva_res, loss
+        else:
+            return eva_res, best_target
     elif target is None and best_target is None:
         return eva_res, loss
 
@@ -198,8 +202,7 @@ def run(config, msg):
     if train_config.paras['gpu_config']['distributed'] == True:
         warnings.warn(
             'Distributed Training is not supported during model inference')
-    else:
-        print('Single GPU Training is not supported!')
+    main(config_info=train_config, msg=msg)
 
 
 if __name__ == '__main__':
