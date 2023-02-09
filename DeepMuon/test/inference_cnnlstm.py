@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-02-02 18:30:43
 LastEditors: airscker
-LastEditTime: 2023-02-09 17:46:12
+LastEditTime: 2023-02-09 17:52:17
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -122,8 +122,8 @@ def main(config_info, msg=''):
     start_time = time.time()
     tsloss, ts_score_val, ts_label_val = test(
         device, test_dataloader, model, loss_fn)
-    np.save(os.path.join(work_dir, 'scores.npy'), np.array(ts_score_val))
-    np.save(os.path.join(work_dir, 'True_Value.npy'), np.array(ts_label_val))
+    np.save(os.path.join(work_dir, 'Scores.npy'), np.array(ts_score_val))
+    np.save(os.path.join(work_dir, 'Labels.npy'), np.array(ts_label_val))
     ts_eva_metrics, ts_target = evaluation(
         ts_score_val, ts_label_val, configs['evaluation'], None, None)
     epoch_time = time.time() - start_time
