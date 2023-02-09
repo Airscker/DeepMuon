@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-02-02 18:30:43
 LastEditors: airscker
-LastEditTime: 2023-02-09 17:52:17
+LastEditTime: 2023-02-09 20:16:36
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -90,8 +90,8 @@ def main(config_info, msg=''):
     checkpoint = resume if resume != '' else load
     epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = AirFunc.load_model(
         path=checkpoint, device=device)
-    model = model.load_state_dict(model_c, False)
-    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model).to(device)
+    model.load_state_dict(model_c, False)
+    model.to(device)
     logger.log(f'Model loaded from {checkpoint}')
     '''
     Initialize loss/optimizer/scheduler
@@ -181,10 +181,10 @@ def test(device, dataloader, model, loss_fn):
             if isinstance(x, list):
                 x = [torch.autograd.Variable(x_).cuda(
                     device, non_blocking=True) for x_ in x]
-                h0 = model.module.init_hidden(x[0].size(0))
+                h0 = model.init_hidden(x[0].size(0))
             else:
                 x = torch.autograd.Variable(x).cuda(device, non_blocking=True)
-                h0 = model.module.init_hidden(x.size(0))
+                h0 = model.init_hidden(x.size(0))
             y = torch.autograd.Variable(y).cuda(device, non_blocking=True)
             pred = model(x, h0)
             predictions.append(pred.detach().cpu().numpy())

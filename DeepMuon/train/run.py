@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-07 21:35:54
 LastEditors: airscker
-LastEditTime: 2023-02-08 21:08:34
+LastEditTime: 2023-02-09 18:37:05
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -16,7 +16,8 @@ import DeepMuon
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-g', '--gpus', nargs='+', default=0)
-    parser.add_argument('-p', '--port', default=22911)
+    parser.add_argument('-p',
+                        '--port', default=22911)
     parser.add_argument('-c', '--config', default='')
     parser.add_argument('-t', '--train', default='dist_train.py')
     args = parser.parse_args()
