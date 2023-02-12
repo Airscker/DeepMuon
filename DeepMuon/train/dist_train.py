@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-12 11:24:39
+LastEditTime: 2023-02-12 12:17:25
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -389,7 +389,6 @@ def test(device, dataloader, model, loss_fn):
 @click.option('--test', default='', help='Specify the path of checkpoint used to test the model performance, if nothing given the test mode will be disabled')
 def run(config, test):
     train_config = Config(configpath=config)
-    # if train_config.paras['gpu_config']['distributed'] == True:
     if not os.path.exists(test) and test != '':
         test = None
         print(f"checkpoint {test} cannot be found, test mode is disabled!")

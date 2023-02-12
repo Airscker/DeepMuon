@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-08 20:53:49
+LastEditTime: 2023-02-12 12:16:34
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -11,7 +11,9 @@ import time
 import os
 import click
 import numpy as np
+import functools
 
+import DeepMuon
 from DeepMuon.tools.AirConfig import Config
 import DeepMuon.tools.AirFunc as AirFunc
 import DeepMuon.tools.AirLogger as AirLogger
@@ -21,14 +23,19 @@ from torch import nn
 import torch.distributed as dist
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
+from torch.distributed.fsdp import FullyShardedDataParallel as FSDP, FullStateDictConfig, StateDictType
+from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.tensorboard import SummaryWriter
 torch.set_default_tensor_type(torch.DoubleTensor)
 torch.backends.cudnn.benchmark = True
 torch.manual_seed(3407)
 
+pkg_path = DeepMuon.__path__[0]
+msg = os.path.join(pkg_path.split('DeepMuon')[0], 'LICENSE.txt')
 
-def main(config_info, msg=''):
+
+def main(config_info, test_path=None):
     '''Initialize the basic training configuration'''
     configs = config_info.paras
     batch_size = configs['hyperpara']['batch_size']
@@ -37,8 +44,12 @@ def main(config_info, msg=''):
     test_data = configs['test_dataset']['params']
     work_dir = configs['work_config']['work_dir']
     log = configs['work_config']['logfile']
+    if test_path is not None:
+        log = 'test_log.log'
     resume = configs['checkpoint_config']['resume_from']
     load = configs['checkpoint_config']['load_from']
+    if test_path is not None:
+        load = test_path
     inter = configs['checkpoint_config']['save_inter']
     '''Initialize Distributed Training'''
     group = torch.distributed.init_process_group(backend="nccl")
@@ -68,20 +79,24 @@ def main(config_info, msg=''):
             msg = f.read()
         logger.log(msg)
         logger.log(config_info)
+        if test_path is not None:
+            logger.log(
+                f"Test mode enabled, model will be tested upon checkpoint {test_path}")
     '''
     Load datasets
     eg. train_dataset=PandaxDataset(IMG_XY_path=train_data)
         test_dataset=PandaxDataset(IMG_XY_path=test_data)
     In the example shown above, `configs['train_dataset']['backbone']` <> `PandaxDataset`, `IMG_XY_path=train_data` <> `**train_data`
     '''
-    train_dataset = configs['train_dataset']['backbone'](**train_data)
     test_dataset = configs['test_dataset']['backbone'](**test_data)
-    train_sampler = DistributedSampler(train_dataset)
     test_sampler = DistributedSampler(test_dataset)
-    train_dataloader = DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, sampler=train_sampler)
     test_dataloader = DataLoader(
         test_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, sampler=test_sampler)
+    if test_path is None:
+        train_dataset = configs['train_dataset']['backbone'](**train_data)
+        train_sampler = DistributedSampler(train_dataset)
+        train_dataloader = DataLoader(
+            train_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, sampler=train_sampler)
     '''
     Create Model and optimizer/loss/scheduler
     You can change the name of net as any you want just make sure the model structure is the same one
@@ -89,8 +104,8 @@ def main(config_info, msg=''):
     In the example shown above, `MLP3` <> `configs['model']['backbone']`, `model_parameters` <> `**configs['model']['params']`
     '''
     model: nn.Module = configs['model']['backbone'](
-        **configs['model']['params'])
-    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model).to(device)
+        **configs['model']['params']).to(device)
+    # model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model).to(device)
     epoch_now = 0
     if resume == '' and load == '':
         pass
@@ -119,8 +134,18 @@ def main(config_info, msg=''):
         # writer.add_graph(model, torch.randn(
         #     configs['hyperpara']['inputshape']).to(device))
     '''Model Parallel'''
-    model = DistributedDataParallel(model, device_ids=[
-                                    local_rank], output_device=local_rank, find_unused_parameters=False)
+    if configs['fsdp_parallel']['enabled']:
+        auto_wrap_policy = functools.partial(
+            size_based_auto_wrap_policy, min_num_params=configs['fsdp_parallel']['min_num_params']
+        )
+        model = FSDP(model, auto_wrap_policy=auto_wrap_policy)
+        ddp_training = False
+        print('FSDP enabled')
+    else:
+        model = DistributedDataParallel(model, device_ids=[
+            local_rank], output_device=local_rank, find_unused_parameters=False)
+        ddp_training = True
+        print('DDP enabled')
     '''
     Initialize loss/optimizer/scheduler
     eg. loss_fn=nn.MSELoss()
@@ -134,20 +159,36 @@ def main(config_info, msg=''):
         `torch.optim.lr_scheduler.ReduceLROnPlateau` <> `configs['scheduler']['backbone']`, `mode='min', factor=0.5, patience=100` <> `**configs['scheduler']['params']`
     '''
     loss_fn = configs['loss_fn']['backbone'](**configs['loss_fn']['params'])
-    optimizer = configs['optimizer']['backbone'](
-        model.parameters(), **configs['optimizer']['params'])
-    scheduler = configs['scheduler']['backbone'](
-        optimizer, **configs['scheduler']['params'])
+    if test_path is None:
+        optimizer = configs['optimizer']['backbone'](
+            model.parameters(), **configs['optimizer']['params'])
+        scheduler = configs['scheduler']['backbone'](
+            optimizer, **configs['scheduler']['params'])
     '''Log the information of the model'''
     if local_rank == 0:
         # flops, params = get_model_complexity_info(model,(1,17,17),as_strings=True,print_per_layer_stat=False, verbose=True)
         # logger.log(f'GFLOPs: {flops}, Number of Parameters: {params}')
         logger.log(f'Model Architecture:\n{model}')
         logger.log(f'Loss Function: {loss_fn}')
-        logger.log(f'Optimizer:\n{optimizer}')
-        logger.log(
-            f'Scheduler: {scheduler.__class__.__name__}:\n\t{scheduler.state_dict()}')
-    '''Start training'''
+        if test_path is None:
+            logger.log(f'Optimizer:\n{optimizer}')
+            logger.log(
+                f'Scheduler: {scheduler.__class__.__name__}:\n\t{scheduler.state_dict()}')
+    '''Start testing, only if test_path!=None'''
+    if test_path is not None:
+        _, ts_score, ts_label = test(
+            device, test_dataloader, model, loss_fn)
+        dist.barrier()
+        ts_score_val, ts_label_val = gather_score_label(
+            ts_score, ts_label, local_world_size)
+        ts_eva_metrics, _ = evaluation(
+            ts_score_val, ts_label_val, configs['evaluation'], 0, 0)
+        ts_eva_info = dict(mode='ts_eval')
+        ts_eva_info = {**ts_eva_info, **ts_eva_metrics}
+        logger.log(AirFunc.readable_dict(ts_eva_info))
+        json_logger.log(ts_eva_info)
+        return 0
+    '''Start training, only if test_path==None'''
     bestres = None
     bar = range(epoch_now, epochs)
     eva_interval = configs['evaluation']['interval']
@@ -200,14 +241,16 @@ def main(config_info, msg=''):
                     os.remove(best_checkpoint)
                 best_checkpoint = os.path.join(
                     work_dir, f"Best_{sota_target}_epoch_{t+1}.pth")
-                AirFunc.save_model(epoch=t, model=model, optimizer=optimizer,
-                                   loss_fn=loss_fn, scheduler=scheduler, path=best_checkpoint, dist_train=True)
+                dist.barrier()
+                ddp_fsdp_model_save(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn,
+                                    scheduler=scheduler, path=best_checkpoint, dist_train=ddp_training)
                 logger.log(
                     f'Best Model Saved as {best_checkpoint},Best {sota_target}:{bestres}, Current Epoch: {t+1}', show=True)
             if (t + 1) % inter == 0:
                 savepath = os.path.join(work_dir, f'Epoch_{t+1}.pth')
-                AirFunc.save_model(epoch=t, model=model, optimizer=optimizer,
-                                   loss_fn=loss_fn, scheduler=scheduler, path=savepath, dist_train=True)
+                dist.barrier()
+                ddp_fsdp_model_save(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn,
+                                    scheduler=scheduler, path=savepath, dist_train=ddp_training)
                 logger.log(
                     f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=True)
             epoch_time = time.time() - start_time
@@ -229,6 +272,24 @@ def main(config_info, msg=''):
                 logger.log(AirFunc.readable_dict(ts_eva_info))
                 logger.log(AirFunc.readable_dict(tr_eva_info))
     return bestres
+
+
+def ddp_fsdp_model_save(epoch=0, model=None, optimizer=None,
+                        loss_fn=None, scheduler=None, path=None, ddp_training=True):
+    if ddp_training:
+        AirFunc.save_model(epoch=epoch, model=model, optimizer=optimizer,
+                           loss_fn=loss_fn, scheduler=scheduler, path=path, dist_train=ddp_training)
+    else:
+        save_policy = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)
+        with FSDP.state_dict_type(model, StateDictType.FULL_STATE_DICT, save_policy):
+            cpu_state = model.state_dict()
+        torch.save({
+            'epoch': epoch,
+            'model': cpu_state,
+            'optimizer': optimizer.state_dict(),
+            'loss_fn': loss_fn.state_dict(),
+            'scheduler': scheduler.state_dict(),
+        }, path)
 
 
 def tensorboard_plot(metrics: dict, epoch: int, writer, tag):
@@ -324,14 +385,17 @@ def test(device, dataloader, model, loss_fn):
 
 
 @click.command()
-@click.option('--config', default='/home/dachuang2022/Yufeng/DeepMuon/config/Hailing/MLP3_3D.py')
-@click.option('--msg', default='')
-def run(config, msg):
+@click.option('--config', default='', help='Specify the path of configuartion file')
+@click.option('--test', default='', help='Specify the path of checkpoint used to test the model performance, if nothing given the test mode will be disabled')
+def run(config, test):
     train_config = Config(configpath=config)
-    if train_config.paras['gpu_config']['distributed'] == True:
-        main(train_config, msg)
-    else:
-        print('Single GPU Training is not supported!')
+    if not os.path.exists(test) and test != '':
+        test = None
+        print(f"checkpoint {test} cannot be found, test mode is disabled!")
+        return 0
+    elif test == '':
+        test = None
+    main(train_config, test)
 
 
 if __name__ == '__main__':
