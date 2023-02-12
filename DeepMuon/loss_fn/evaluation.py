@@ -2,13 +2,14 @@
 Author: airscker
 Date: 2023-01-31 09:28:41
 LastEditors: airscker
-LastEditTime: 2023-01-31 16:32:02
+LastEditTime: 2023-02-12 14:33:00
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import numpy as np
 from sklearn.metrics import f1_score as f1
+from sklearn.metrics import roc_curve, auc
 
 
 def f1_score(scores, label):
@@ -112,6 +113,16 @@ def top_k_accuracy(scores, labels, topk=(1, )):
         topk_acc_score = match_array.sum() / match_array.shape[0]
         res.append(topk_acc_score)
     return res
+
+
+def auroc(scores, label):
+    scores = np.array(scores)
+    cls_auroc = []
+    for i in range(scores.shape[1]):
+        fpr, tpr, thresholds = roc_curve(label, scores, pos_label=i)
+        roc_auc = auc(fpr, tpr)
+        cls_auroc.append(roc_auc)
+    return np.array(cls_auroc)
 
 
 def mmit_mean_average_precision(scores, labels):
