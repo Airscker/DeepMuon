@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-02-08 17:20:42
+LastEditTime: 2023-02-12 10:25:28
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -28,18 +28,18 @@ class Config:
     ### Attributions:
         - paras: The parameters in config file, dtype: dict
             - must have:
-                `model,
-                train_dataset,
-                test_dataset,
-                work_config,
-                checkpoint_config,
-                loss_fn,
-                hyperpara,
-                optimizer,
-                scheduler,
-                gpu_config`
+                `model`,
+                `train_dataset`,
+                `test_dataset`,
+                `work_config`,
+                `checkpoint_config`,
+                `loss_fn`,
+                `hyperpara`,
+                `optimizer`,
+                `scheduler`
             - optional:
-                `evaluation`
+                `evaluation`,
+                `model_parallel`
     ### Example:
 
     >>> model = dict(backbone='VST', params=dict(n_classes=11, input_shape=(3, 130, 130), seq_dropout=0.1))
@@ -60,7 +60,7 @@ class Config:
     >>> optimizer = dict(backbone='SGD', params=dict(lr=0.0001, momentum=0.9, nesterov=True))
     >>> scheduler = dict(backbone='CosineAnnealingLR', params=dict(T_max=10))
     >>> hyperpara = dict(epochs=2000, batch_size=7500, inputshape=[1, 3, 40, 10, 10])
-    >>> gpu_config = dict(distributed=True, gpuid=0)
+    >>> fsdp_parallel=dict(enabled=True,min_num_params=1e6)
     """
 
     def __init__(self, configpath: str):
@@ -74,8 +74,7 @@ class Config:
                       'hyperpara': None,
                       'optimizer': None,
                       'scheduler': None,
-                      'lr_config': None,
-                      'gpu_config': None}
+                      'lr_config': None, }
         self.config = import_module(configpath)
         self.config_keys = dir(self.config)
         self.configpath = configpath
@@ -199,8 +198,25 @@ class Config:
         self.paras['hyperpara'] = self.config.hyperpara
         self.paras['work_config'] = self.config.work_config
         self.paras['checkpoint_config'] = self.config.checkpoint_config
-        self.paras['gpu_config'] = self.config.gpu_config
         self.paras['config'] = dict(path=self.configpath)
+        if 'gpu_config' in self.config_keys:
+            warnings.warn(
+                "'gpu_config' was deprecated, please do not use it anymore")
+        if 'fsdp_parallel' in self.config_keys:
+            fsdp_op = getattr(self.config, 'fsdp_parallel')
+            if 'enabled' not in fsdp_op.keys():
+                fsdp_op['enabled'] = False
+                fsdp_op['min_num_params'] = 0
+                warnings.warn(
+                    f"keyword 'enabled' not epcified in fsdp_parallel, set fsdp_parallel.enabled as False and fsdp_parallel.min_num_params as 0")
+            if 'min_num_params' not in fsdp_op.keys():
+                fsdp_op['enabled'] = False
+                fsdp_op['min_num_params'] = 0
+                warnings.warn(
+                    f"keyword 'min_num_params' not epcified in fsdp_parallel, set fsdp_parallel.enabled as False and fsdp_parallel.min_num_params as 0")
+            self.paras['fsdp_parallel'] = fsdp_op
+        else:
+            self.paras['fsdp_parallel'] = dict(enabled=False, min_num_params=0)
         if 'evaluation' in self.config_keys:
             evaluation_op = getattr(self.config, 'evaluation')
             if 'interval' not in evaluation_op.keys():

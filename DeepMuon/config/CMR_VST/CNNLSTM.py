@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-31 09:01:02
 LastEditors: airscker
-LastEditTime: 2023-02-08 21:38:09
+LastEditTime: 2023-02-12 10:22:17
 Description: NULL
 
 Copyright (C) 2023 sby Airscker(Yufeng), All Rights Reserved.
@@ -74,7 +74,4 @@ scheduler = dict(backbone='CosineAnnealingLR', params=dict(T_max=10))
 Specify the Hyperparameters to be used
 '''
 hyperpara = dict(epochs=100, batch_size=1, inputshape=[1, 3, 40, 10, 10])
-'''
-Specify the GPU config and DDP
-'''
-gpu_config = dict(distributed=True, gpuid=0)
+fsdp_parallel = dict(enabled=True, min_num_params=1e6)
