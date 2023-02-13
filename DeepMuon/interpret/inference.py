@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-12 11:55:29
+LastEditTime: 2023-02-13 19:17:30
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -18,7 +18,7 @@ from DeepMuon.tools.AirConfig import Config
 import DeepMuon.tools.AirFunc as AirFunc
 import DeepMuon.tools.AirLogger as AirLogger
 from DeepMuon.tools.model_info import model_para
-from DeepMuon.test.analysis import loss_dist, data_analysis
+from DeepMuon.interpret.analysis import loss_dist, data_analysis
 from DeepMuon.loss_fn.evaluation import confusion_matrix
 
 import torch

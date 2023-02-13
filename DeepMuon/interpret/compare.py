@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-05 21:51:59
 LastEditors: airscker
-LastEditTime: 2022-11-26 12:20:17
+LastEditTime: 2023-02-13 19:18:05
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import click
 
 from DeepMuon.tools.AirFunc import *
-from DeepMuon.test.analysis import *
+from DeepMuon.interpret.analysis import *
 
 
 def loss_com(work_dirs, output='', max=0.2, num=0):
