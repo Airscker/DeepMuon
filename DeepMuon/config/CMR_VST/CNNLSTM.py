@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-31 09:01:02
 LastEditors: airscker
-LastEditTime: 2023-02-15 16:17:58
+LastEditTime: 2023-02-15 17:24:10
 Description: NULL
 
 Copyright (C) 2023 sby Airscker(Yufeng), All Rights Reserved.
@@ -12,7 +12,7 @@ Copyright (C) 2023 sby Airscker(Yufeng), All Rights Reserved.
 Specify which model to be used, all models are stored in 'models'
 '''
 model = dict(backbone='Dense4012FrameRNN', params=dict(
-    n_classes=2, input_shape=(3, 90, 90), seq_dropout=0.1, pretrained=False))
+    n_classes=2, input_shape=(3, 128, 128), seq_dropout=0.1, pretrained=False))
 '''
 Specify the dataset to load the data, all dataset are stored in 'dataset'
 '''
@@ -26,7 +26,7 @@ train_dataset = dict(
                 augment_pipeline=[dict(type='HistEqual'),
                                   dict(type='SingleNorm'),
                                   dict(type='Padding', size=(210, 210)),
-                                  dict(type='Resize', size=(64, 64)),
+                                  dict(type='Resize', size=(128, 128)),
                                   dict(type='Random_rotate',
                                        range=30, ratio=0.3),
                                   ]))
@@ -40,7 +40,7 @@ test_dataset = dict(
                 augment_pipeline=[dict(type='HistEqual'),
                                   dict(type='SingleNorm'),
                                   dict(type='Padding', size=(210, 210)),
-                                  dict(type='Resize', size=(64, 64)),
+                                  dict(type='Resize', size=(128, 128)),
                                   dict(type='Random_rotate',
                                        range=30, ratio=0.3),
                                   ]))
