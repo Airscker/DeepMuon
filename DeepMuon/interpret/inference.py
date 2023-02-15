@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-13 19:17:30
+LastEditTime: 2023-02-15 19:51:46
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -24,7 +24,7 @@ from DeepMuon.loss_fn.evaluation import confusion_matrix
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
-# from torchvision.models.feature_extraction import get_graph_node_names, create_feature_extractor
+from torchvision.models.feature_extraction import get_graph_node_names, create_feature_extractor
 from ptflops import get_model_complexity_info
 from torchinfo import summary
 from torch.utils.tensorboard import SummaryWriter
@@ -175,66 +175,66 @@ def infer(workdir, device, dataloader, model, loss_fn, logger: AirLogger.LOGT, t
     return test_loss, pred_value, real_value, loss_map
 
 
-# def neuron_infer(device, dataloader, model: nn.Module, loss_fn, work_dir: str, index=0):
-#     """
-#     The neuron_infer function is used to infer the neuron values of a given model.
-#     It takes in the following parameters:
-#         - device: The torch device on which the computations will be run. This is typically set to cuda if you have a GPU available, otherwise it should be set to cpu.
-#         - dataloader: A DataLoader object that can load your test dataset batch by batch (for example, ImageFolder from torchvision). It should return pairs of images and labels for each iteration.
-#         - model: The PyTorch neural network model that we want to infer neurons for (in this case
+def neuron_infer(device, dataloader, model: nn.Module, loss_fn, work_dir: str, index=0):
+    """
+    The neuron_infer function is used to infer the neuron values of a given model.
+    It takes in the following parameters:
+        - device: The torch device on which the computations will be run. This is typically set to cuda if you have a GPU available, otherwise it should be set to cpu.
+        - dataloader: A DataLoader object that can load your test dataset batch by batch (for example, ImageFolder from torchvision). It should return pairs of images and labels for each iteration.
+        - model: The PyTorch neural network model that we want to infer neurons for (in this case
 
-#     :param device: Specify the device to use
-#     :param dataloader: Load the data
-#     :param model:nn.Module: Specify the model to be profiled
-#     :param loss_fn: Calculate the loss of the model
-#     :param work_dir:str: Specify the directory where the log file and neuron
-#     :param index=0: Specify the index of the data in the dataset
-#     :return: The loss value, the predicted value and the real value of a data point
-#     """
-#     num_batches = len(dataloader)
-#     model.eval()
-#     num = 1
-#     neuron_log = os.path.join(work_dir, 'neuron')
-#     logger = LOGT(log_dir=neuron_log, logfile='neuron.log', new=True)
-#     with torch.no_grad():
-#         for X, y in dataloader:
-#             if num-1 == index:
-#                 start_time = time.time()
-#                 X, y = X.to(device), y.to(device)
-#                 with torch.autograd.profiler.profile(enabled=True, use_cuda=True, record_shapes=True, profile_memory=True) as prof_ana:
-#                     pred = model(X)
-#                 table = prof_ana.table()
-#                 logger.log(f'Model architecture: \n{model}\n\n')
-#                 logger.log(table, show=False)
-#                 prof_ana.export_chrome_trace(
-#                     os.path.join(neuron_log, 'model_profile.json'))
-#                 logger.log('\nModel Parameters:')
-#                 for name, param in model.named_parameters():
-#                     logger.log(
-#                         f"Layer: {name} | Size: {param.size()} | Values : {param} \n", show=False)
+    :param device: Specify the device to use
+    :param dataloader: Load the data
+    :param model:nn.Module: Specify the model to be profiled
+    :param loss_fn: Calculate the loss of the model
+    :param work_dir:str: Specify the directory where the log file and neuron
+    :param index=0: Specify the index of the data in the dataset
+    :return: The loss value, the predicted value and the real value of a data point
+    """
+    num_batches = len(dataloader)
+    model.eval()
+    num = 1
+    neuron_log = os.path.join(work_dir, 'neuron')
+    logger = LOGT(log_dir=neuron_log, logfile='neuron.log', new=True)
+    with torch.no_grad():
+        for X, y in dataloader:
+            if num-1 == index:
+                start_time = time.time()
+                X, y = X.to(device), y.to(device)
+                with torch.autograd.profiler.profile(enabled=True, use_cuda=True, record_shapes=True, profile_memory=True) as prof_ana:
+                    pred = model(X)
+                table = prof_ana.table()
+                logger.log(f'Model architecture: \n{model}\n\n')
+                logger.log(table, show=False)
+                prof_ana.export_chrome_trace(
+                    os.path.join(neuron_log, 'model_profile.json'))
+                logger.log('\nModel Parameters:')
+                for name, param in model.named_parameters():
+                    logger.log(
+                        f"Layer: {name} | Size: {param.size()} | Values : {param} \n", show=False)
 
-#                 '''Trace Feature Map'''
-#                 logger.log(
-#                     f'\nFeature map of data with index {index} in the dataset\n', show=False)
-#                 nodes, _ = get_graph_node_names(model)
-#                 fx = create_feature_extractor(model, return_nodes=nodes)
-#                 fms = fx(X)
-#                 for key in fms.keys():
-#                     logger.log(
-#                         f'Feature: {key}\nValue: \n{fms[key]}\n', show=False)
-#                 with open(os.path.join(neuron_log, 'FX.pkl'), 'wb')as f:
-#                     pkl.dumps(fms)
+                '''Trace Feature Map'''
+                logger.log(
+                    f'\nFeature map of data with index {index} in the dataset\n', show=False)
+                nodes, _ = get_graph_node_names(model)
+                fx = create_feature_extractor(model, return_nodes=nodes)
+                fms = fx(X)
+                for key in fms.keys():
+                    logger.log(
+                        f'Feature: {key}\nValue: \n{fms[key]}\n', show=False)
+                with open(os.path.join(neuron_log, 'FX.pkl'), 'wb')as f:
+                    pkl.dumps(fms)
 
-#                 loss_value = loss_fn(pred, y).item()
-#                 test_loss = loss_value
-#                 pred_value = pred.cpu().numpy()[0]
-#                 real_value = y.cpu().numpy()[0]
-#                 now_time = time.time()
-#                 logger.log(
-#                     f'{index} Loss: {loss_value}, Predicted: {pred_value}, Real: {real_value}, Time: {now_time-start_time}s')
-#                 break
-#             num += 1
-#     return test_loss, pred_value, real_value
+                loss_value = loss_fn(pred, y).item()
+                test_loss = loss_value
+                pred_value = pred.cpu().numpy()[0]
+                real_value = y.cpu().numpy()[0]
+                now_time = time.time()
+                logger.log(
+                    f'{index} Loss: {loss_value}, Predicted: {pred_value}, Real: {real_value}, Time: {now_time-start_time}s')
+                break
+            num += 1
+    return test_loss, pred_value, real_value
 
 
 @click.command()
