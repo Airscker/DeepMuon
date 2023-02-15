@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-21 18:43:31
 LastEditors: airscker
-LastEditTime: 2023-02-03 10:54:52
+LastEditTime: 2023-02-15 14:38:26
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -112,9 +112,9 @@ setup(
     entry_points={  # Optional
         "console_scripts": [
             "Dmuon_train=DeepMuon.train.run:main",
-            "Dmuon_infer=DeepMuon.test.inference:run",
-            'Dmuon_ana=DeepMuon.test.analysis:run',
-            'Dmuon_com=DeepMuon.test.compare:run',
+            # "Dmuon_infer=DeepMuon.test.inference:run",
+            # 'Dmuon_ana=DeepMuon.test.analysis:run',
+            # 'Dmuon_com=DeepMuon.test.compare:run',
         ],
     },
     # List additional URLs that are relevant to your project as a dict.

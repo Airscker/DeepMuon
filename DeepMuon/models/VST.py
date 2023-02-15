@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-12-23 10:33:54
 LastEditors: airscker
-LastEditTime: 2023-02-04 19:36:12
+LastEditTime: 2023-02-14 12:27:13
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -764,7 +764,7 @@ class screening_model(nn.Module):
         self.flatten = nn.Flatten()
         self.linear = nn.Linear(mlp_in_channels, num_classes)
 
-    def forward(self, x: torch.Tensor, device):
+    def forward(self, x: torch.Tensor, device='cpu'):
         '''x: NCTHW'''
         x = x.to(device)
         x = self.vst(x)
@@ -833,7 +833,7 @@ class fusion_model(nn.Module):
             except:
                 print(f'{weights[i]} load failed')
 
-    def forward(self, x, device):
+    def forward(self, x, device='cpu'):
         assert len(x) == len(
             self.vst_backbones), f'Multi modality input data types does not match the number of vst backbones; {len(self.vst_backbones)} types of data expected however {len(x)} given'
         for i in range(len(x)):

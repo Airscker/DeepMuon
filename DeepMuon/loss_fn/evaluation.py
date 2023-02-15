@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-31 09:28:41
 LastEditors: airscker
-LastEditTime: 2023-02-12 14:33:00
+LastEditTime: 2023-02-15 17:07:00
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -115,7 +115,7 @@ def top_k_accuracy(scores, labels, topk=(1, )):
     return res
 
 
-def auroc(scores, label):
+def aucroc(scores, label):
     scores = np.array(scores)
     cls_auroc = []
     for i in range(scores.shape[1]):

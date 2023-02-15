@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-12 17:51:13
+LastEditTime: 2023-02-15 17:03:13
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -36,6 +36,7 @@ msg = os.path.join(pkg_path.split('DeepMuon')[0], 'LICENSE.txt')
 
 
 def main(config_info, test_path=None):
+    global msg
     '''Initialize the basic training configuration'''
     configs = config_info.paras
     batch_size = configs['hyperpara']['batch_size']
@@ -173,7 +174,7 @@ def main(config_info, test_path=None):
         if test_path is None:
             logger.log(f'Optimizer:\n{optimizer}')
             logger.log(
-                f'Scheduler: {scheduler.__class__.__name__}:\n\t{scheduler.state_dict()}')
+                f'Scheduler: \n\t{scheduler.__class__.__name__}:\n\t{AirFunc.readable_dict(scheduler.state_dict())}')
     '''Start testing, only if test_path!=None'''
     if test_path is not None:
         _, ts_score, ts_label = test(
@@ -185,8 +186,9 @@ def main(config_info, test_path=None):
             ts_score_val, ts_label_val, configs['evaluation'], 0, 0)
         ts_eva_info = dict(mode='ts_eval')
         ts_eva_info = {**ts_eva_info, **ts_eva_metrics}
-        logger.log(AirFunc.readable_dict(ts_eva_info))
-        json_logger.log(ts_eva_info)
+        if local_rank == 0:
+            logger.log(AirFunc.readable_dict(ts_eva_info))
+            json_logger.log(ts_eva_info)
         return 0
     '''Start training, only if test_path==None'''
     bestres = None
@@ -243,14 +245,14 @@ def main(config_info, test_path=None):
                     work_dir, f"Best_{sota_target}_epoch_{t+1}.pth")
                 dist.barrier()
                 ddp_fsdp_model_save(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn,
-                                    scheduler=scheduler, path=best_checkpoint, dist_train=ddp_training)
+                                    scheduler=scheduler, path=best_checkpoint, ddp_training=ddp_training)
                 logger.log(
                     f'Best Model Saved as {best_checkpoint},Best {sota_target}:{bestres}, Current Epoch: {t+1}', show=True)
             if (t + 1) % inter == 0:
                 savepath = os.path.join(work_dir, f'Epoch_{t+1}.pth')
                 dist.barrier()
                 ddp_fsdp_model_save(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn,
-                                    scheduler=scheduler, path=savepath, dist_train=ddp_training)
+                                    scheduler=scheduler, path=savepath, ddp_training=ddp_training)
                 logger.log(
                     f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=True)
             epoch_time = time.time() - start_time
