@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-27 19:51:21
 LastEditors: airscker
-LastEditTime: 2023-02-16 18:56:02
+LastEditTime: 2023-02-16 19:17:12
 Description:
     ## Dataset built for:
         - Video Swin-Transformer (VST) CMR Screening & Diagnose Model
@@ -18,11 +18,20 @@ import pickle as pkl
 import SimpleITK as sitk
 from skimage import exposure
 
-from DeepMuon.tools.AirFunc import exclude_key
-
 import torch
 from torch.utils.data import Dataset
 torch.set_default_tensor_type(torch.DoubleTensor)
+
+
+def exclude_key(dictionary: dict, del_key: str = 'type'):
+    '''
+    Delete key-value map from dictionary
+    '''
+    new_dict = {}
+    for key in dictionary.keys():
+        if key != del_key:
+            new_dict[key] = dictionary[key]
+    return new_dict
 
 
 def Batch_norm(frames: np.ndarray, mean, std):

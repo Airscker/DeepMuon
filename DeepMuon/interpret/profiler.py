@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-02-15 19:56:03
 LastEditors: airscker
-LastEditTime: 2023-02-16 16:54:45
+LastEditTime: 2023-02-16 19:10:34
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -16,6 +16,7 @@ from torch import nn
 
 
 def model_profile(input, model, workdir):
+    ''''''
     if not os.path.exists(workdir):
         os.makedirs(workdir)
         warnings.warn(
