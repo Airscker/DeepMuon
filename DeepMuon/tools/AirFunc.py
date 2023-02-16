@@ -2,10 +2,10 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-02-02 16:03:54
+LastEditTime: 2023-02-16 19:01:53
 Description: NULL
 
-Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 import os
 import shutil
@@ -19,7 +19,30 @@ from torch import nn
 torch.set_default_tensor_type(torch.DoubleTensor)
 
 
+def exclude_key(dictionary: dict, del_key: str = 'type'):
+    '''
+    Delete key-value map from dictionary
+    '''
+    new_dict = {}
+    for key in dictionary.keys():
+        if key != del_key:
+            new_dict[key] = dictionary[key]
+    return new_dict
+
+
 def get_mem_info(gpu_id=None):
+    '''
+    ## Get the memory information of specified GPU
+
+    ### Args:
+        - gpu_id: the id of GPU
+
+    ### Return:
+        - dict:
+            - mem_left: the memory unused(in MB format)
+            - mem_used: the meory used(in MB format)
+            - total_mem: the total memory of GPU(in MB format)
+    '''
     if gpu_id is None:
         gpu_id = torch.cuda.current_device()
     mem_total = torch.cuda.get_device_properties(gpu_id).total_memory
@@ -32,12 +55,17 @@ def get_mem_info(gpu_id=None):
 
 def readable_dict(data: dict, i=0, show=False, indent='\t', sep='\n'):
     """
-    The print_dict function prints a dictionary in a more readable format.
-    It is intended to be used for debugging purposes.
+    ## Convert a dictionary to a more readable format.
 
-    :param data: Pass the data to be printed
-    :param i: Control the indentation of the output
-    :return: A string represent the dictionary
+    ### Args:
+        - data: Pass the data to be printed
+        - i: Control the indentation of the output
+        - show: Whether to print out the mesage in console
+        - indent: the indent letter used to convert dictionary
+        - spe: the seperation letter used to seperate dict elements
+
+    ### Return:
+        - A string represent the dictionary
     """
     info = ''
     for key in data:
@@ -54,13 +82,14 @@ def readable_dict(data: dict, i=0, show=False, indent='\t', sep='\n'):
 
 def unpack_json_log(log_path: str, start_from: int = 0) -> list:
     """
-    The unpack_json_log function takes a log file path as an argument and returns a list of dictionaries.
-    Each dictionary corresponds to one line in the log file, with keys corresponding to the JSON fields 
-    in each line. The function also removes the first line from this list, which contains a description of 
-    the JSON fields.
+    ## Unpack data in json log file
 
-    :param log_path:str: Specify the path of the log file
-    :return: A list of dictionaries
+    ### Args:
+        - log_path: the path of logfile
+        - start_from: the index of line to start with
+
+    ### Return:
+        - list(dict()): the list of extracted data dictionaries
     """
     with open(log_path, 'r')as f:
         ori_data = f.readlines()
@@ -77,6 +106,16 @@ def unpack_json_log(log_path: str, start_from: int = 0) -> list:
 
 
 def load_json_log(log_file: str, start_from: int = 0) -> np.ndarray:
+    '''
+    ## Load json data from json logfile
+
+    ### Args:
+        - log_file: the path of json logfile
+        - start_from: the index of line to start with
+
+    ### Return:
+        - dict(list()):
+    '''
     assert log_file.endswith(
         '.json'), f"log_file must be json file, however, {log_file} given"
     assert os.path.exists(
@@ -84,24 +123,24 @@ def load_json_log(log_file: str, start_from: int = 0) -> np.ndarray:
     json_log = unpack_json_log(log_file, start_from)
     log_info = {}
     for i in range(len(json_log)):
-        if json_log[i]['mode'] == 'train':
-            epoch = json_log[i]['epoch']
-            test_loss = json_log[i]['test_loss']
-            train_loss = json_log[i]['train_loss']
-            best_test_loss = json_log[i]['best_test_loss']
-            lr = json_log[i]['lr']
-            log_info[epoch] = [lr, test_loss, train_loss, best_test_loss]
-    return np.array(list(log_info.values()))
+        if json_log[i]['mode'] in log_info.keys():
+            log_info[json_log[i]['mode']].append(
+                list(exclude_key(json_log[i], del_key='mode').values()))
+        else:
+            log_info[json_log[i]['mode']] = [
+                list(exclude_key(json_log[i], del_key='mode').values())]
+    return log_info
 
 
 def load_log(log_file: str) -> np.ndarray:
-    """Loads the training log from the given log file .
+    """
+    ## Loads the training log from the given log file .
 
-    Args:
-        log_file ([type]): The path of the log file.
+    ### Args:
+        - log_file ([type]): The path of the log file.
 
-    Return:
-        [epoch:[lr,tsl,trl,btsl]]
+    ### Return:
+        - np.array: loaded training results, with shape [epoch:[lr,tsl,trl,btsl]]
 
     """
     assert os.path.exists(
@@ -124,6 +163,15 @@ def load_log(log_file: str) -> np.ndarray:
 
 
 def import_module(module_path: str):
+    '''
+    ## Import python module according to the file path
+
+    ### Args:
+        - module_path: the path of the module to be imported
+
+    ### Return:
+        - the imported module
+    '''
     # assert '/' in module_path,f'Do not use standard windows path"\\", but {module_path} is given'
     assert module_path.endswith(
         '.py'), f'Config file must be a python file but {module_path} is given'
@@ -136,42 +184,18 @@ def import_module(module_path: str):
     return module
 
 
-def hist_plot(data, inter=20, xlabel='The number of events'):
-    data = np.array(data)
-    plt.figure(figsize=(15, 8))
-    plt.xlabel(xlabel)
-    plt.ylabel('Frequency Count')
-    plt.title(f'Total number of events: {len(data)}\
-        \nMAX/MIN: [{np.max(data)}][{np.min(data)}]\
-        \nAverage Value: {np.mean(data)}\
-        \nWidth of bin: {inter}')
-    bins = list(np.arange(np.min(data)-inter, np.max(data)+inter, inter))
-    plt.xticks(bins)
-    n, bins, _ = plt.hist(data, rwidth=0.9, bins=bins)
-    for i in range(len(n)):
-        plt.text(bins[i], n[i]*1.02, round(n[i], 6),
-                 fontsize=12, horizontalalignment="left")
-    plt.show()
-    return 0
-
-
 def plot_hist_2nd(data, title='x', bins=15, sigma=3, save='', show=False):
     """
-    The plot_hist_2nd function plots a histogram of the data provided. 
+    ## Plots a histogram of the data provided.
     It also includes lines to represent the mean and +/- 3 standard deviations.
-    The function takes in 4 parameters: 
-        1) data - The list of numbers that will be plotted as a histogram
-        2) title - The title for the plot
-        3) bins - The number of bins to use for the histogram (default is 15).
-        4) sigma - How many standard deviations away from mean should be highlighted (default is 3).
 
-    :param data: Plot the histogram
-    :param title='x': Set the title of the plot
-    :param bins=15: Set the number of bins in the histogram
-    :param sigma=3: Set the sigma range of the distribution
-    :param save='': Save the plot as a jpg
-    :param show=False: Save the plot without showing it
-    :return: The n, bins, patchs from the plt
+    ### Args:
+        - data: The list of numbers that will be plotted as a histogram
+        - title: The title for the plot
+        - bins: The number of bins to use for the histogram (default is 15).
+        - sigma: How many standard deviations away from mean should be highlighted (default is 3).
+        - save: The path to save the ploted image, if '' given, saving action will be canceled
+        - show: Whether to show the ploted image within console
     """
     plt.figure(figsize=(20, 8))
     plt.title(f'Distribution of {title} Total Number: {len(data)}\
@@ -206,20 +230,19 @@ def plot_hist_2nd(data, title='x', bins=15, sigma=3, save='', show=False):
 
 def plot_curve(data, title='Curve', axis_label=['Epoch', 'Loss'], data_label=['Curve1'], save='', mod='min', show=False):
     """
-    The plot_curve function plots a single or multiple curves on the same plot.
+    ## Plots a single or multiple curves on the same plot.
     The function takes in a list of data and labels for each curve to be plotted.
-    The axis labels are optional, but if provided they will be used as x-axis label and y-axis label respectively. 
-    If no axis labels are provided, then the default values &quot;Epoch&quot; and &quot;Loss&quot; will be used instead.
+    The axis labels are optional, but if provided they will be used as x-axis label and y-axis label respectively.
+    If no axis labels are provided, then the default values `Epoch` and `Loss&quot` will be used instead.
 
-    :param data: Plot the data, it can be a list of numpy array or a single numpy array
-    :param title='Curve': Set the title of the plot
-    :param axis_label=['Epoch': Set the label of the x-axis
-    :param 'Loss']: Set the title of the graph
-    :param data_label=['Curve1']: Label the curve in the plot
-    :param save='': Save the plot to a file
-    :param mod='min': findout the max/min value
-    :param show=False: Save the plot as an image file
-    :return: Nothing, it just plots the curve on the current figure
+    ### Args:
+        - data: Plot the data, it can be a list of numpy array or a single numpy array
+        - title: Set the title of the plot
+        - axis_label: Set the labels of the every axis
+        - data_label: Labels of the curves
+        - save: The path to save the ploted image, if '' given, saving action will be canceled
+        - mod: plot the max/min value
+        - show: Whether to show the ploted image within console
     """
     # data=np.array(data)
     plt.figure(figsize=(20, 10))
@@ -267,15 +290,17 @@ def format_time(second):
 
 
 def save_model(epoch: int, model: nn.Module, optimizer, loss_fn, scheduler, path, dist_train=False):
-    """Save a model to disk, Only their state_dict()
-    Args:
-        epoch\n
-        model\n
-        optimizer\n
-        loss_fn\n
-        scheduler\n
-        path\n
-        dist_train\n
+    """
+    ## Save a model to disk, Only their state_dict()
+
+    ### Args:
+        - epoch
+        - model
+        - optimizer
+        - loss_fn
+        - scheduler
+        - path
+        - dist_train
     """
     torch.save({
         'epoch': epoch,
@@ -284,19 +309,21 @@ def save_model(epoch: int, model: nn.Module, optimizer, loss_fn, scheduler, path
         'loss_fn': loss_fn.state_dict(),
         'scheduler': scheduler.state_dict(),
     }, path)
-    return 0
 
 
 def load_model(path: str, device: torch.device):
-    """Loads the model and optimizer parameters from a previously saved checkpoint file .
-    Args:
-        path: The checkpoint path
-    Returns:
-        epoch: last trained epoch\n
-        model_dic\n
-        optimizer_dic\n
-        scheduler_dic\n
-        loss_fn_dic\n
+    """
+    ## Loads the model and optimizer parameters from a previously saved checkpoint file.
+
+    ### Args:
+        - path: The checkpoint path
+
+    ### Returns:
+        - epoch: last trained epoch
+        - model_dic
+        - optimizer_dic
+        - scheduler_dic
+        - loss_fn_dic
     """
     checkpoint = torch.load(path, map_location=device)
     model_dic = checkpoint['model']
@@ -311,13 +338,14 @@ def load_model(path: str, device: torch.device):
 
 
 def del_pycache(path='./'):
-    """Delete all the python cache files in a directory
+    """
+    ## Delete all the python cache files in a directory
 
-    Args:
-        path (str, optional): the root path of workspace. Defaults to './'.
+    ### Args:
+        - path: the root path of workspace. Defaults to './'.
 
-    Returns:
-        cache: the list of all deleted cache folders' path
+    ### Returns:
+        - the list of all deleted cache folders' path
     """
     cache = []
     for root, dirs, files in os.walk(path):

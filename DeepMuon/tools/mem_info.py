@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-11-26 23:18:08
 LastEditors: airscker
-LastEditTime: 2022-12-26 21:52:37
+LastEditTime: 2023-02-16 18:06:54
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -14,11 +14,13 @@ import psutil
 
 
 def get_gpu_info():
-    """Get information about all GPUs .
-    Returns:
-        gpu_para: [gpu.id,gpu.memoryTotal,gpu.memoryUsed,gpu.memoryUtil]
-        info: gpu info iin HTML format
-        pids: list of pids on gpus
+    """
+    ## Get information about all GPUs .
+
+    ### Returns:
+        - gpu_para: [gpu.id,gpu.memoryTotal,gpu.memoryUsed,gpu.memoryUtil]
+        - info: gpu info iin HTML format
+        - pids: list of pids on gpus
     """
     pynvml.nvmlInit()
     Gpus = GPUtil.getGPUs()
@@ -44,13 +46,16 @@ def get_gpu_info():
 
 def pid_info(pid):
     """
-    The pid_info function returns a list of the following values:
-    - pid_info[0] = process name
-    - pid_info[2] = number of threads
-    - pid_info[3] = status (running, idle, etc.)
+    ## The pid_info function returns a list of the following values:
 
-    :param pid: Specify the process id
-    :return: A list of information about the process
+    ### Args:
+        - pid: Specify the process id
+            - pid_info[0] = process name
+            - pid_info[2] = number of threads
+            - pid_info[3] = status (running, idle, etc.)
+
+    ### Return: 
+        - A list of information about the process
     """
 
     pid_info = []
@@ -61,11 +66,14 @@ def pid_info(pid):
 
 
 def html_addrow(msg_list: list):
-    """convert a list of messages into a HTML row
-    Args:
-        msg_list
-    Returns:
-        message in HTML format
+    """
+    ## Convert a list of messages into a HTML row
+
+    ### Args:
+        - msg_list: the list of messages to be converted
+
+    ### Returns:
+        - message in HTML format
     """
     msg_row = '''<tr>'''
     for i in range(len(msg_list)):
@@ -75,12 +83,15 @@ def html_addrow(msg_list: list):
 
 
 def get_cpu_info():
-    ''' :return:
-    memtotal: 总内存
-    memfree: 空闲内存
-    memused: Linux: total - free,已使用内存
-    mempercent: 已使用内存占比
-    cpu: 各个CPU使用占比
+    '''
+    ## Get information of CPU
+
+    ### Return:
+        - memtotal: the total size of RAM
+        - memfree: the size of unused RAM 
+        - memused: the size of used RAM
+        - mempercent: the percent of used RAM compared to total RAM
+        - cpu: the percent used of every CPU
     '''
     mem = psutil.virtual_memory()
     memtotal = mem.total

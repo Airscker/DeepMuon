@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-08-26 21:23:01
 LastEditors: airscker
-LastEditTime: 2023-02-02 18:08:38
+LastEditTime: 2023-02-16 18:02:43
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -16,13 +16,10 @@ class LOGT(object):
     """
     ## Initialize the logger .
 
-        Args:
-            log_dir: The path to save the log file. Defaults to './'.
-            logfile: The name of the log file. Defaults to be log.log'.
-            json_mod: Wether record data into dict type json file.
-            new: Whether to override the existed log file
-        Return:
-            The path of the log file
+    ### Args:
+        - log_dir: The path to save the log file. Defaults to './'.
+        - logfile: The name of the log file. Defaults to be log.log'.
+        - new: Whether to override the existed log file
     """
 
     def __init__(self, log_dir='./', logfile='log.log', new=False):
@@ -35,22 +32,30 @@ class LOGT(object):
             os.remove(self.logfile)
 
     def log(self, message: str, show=True):
-        """write a message to the logfile
+        """
+        ## write a message to the logfile
 
-        Args:
-            message: the message to be saved
-            show : show the message in the terminal. Defaults to be True.
-
+        ### Args:
+            - message: the message to be saved
+            - show : show the message in the terminal. Defaults to be True.
         """
         if show == True:
             print(message)
         with open(self.logfile, 'a+')as log:
             log.write(f'{message}\n')
         log.close()
-        return self.logfile
 
 
 class LOGJ(object):
+    """
+    ## Initialize the json logger to record data by json files.
+
+    ### Args:
+        - log_dir: The path to save the log file. Defaults to './'.
+        - logfile: The name of the log file. Defaults to be log.log'.
+        - new: Whether to override the existed log file
+    """
+
     def __init__(self, log_dir='./', logfile='log.log.json', new=False) -> None:
         assert logfile.endswith(
             '.json'), f"logfile must be json file. However, {logfile} given"
@@ -62,8 +67,10 @@ class LOGJ(object):
 
     def log(self, message=dict):
         """
-        Write the message to the logfile.
-        @param message - the message to be written to the logfile.
+        ## Write the data to the json logfile.
+
+        ### Args:
+            - message: the data to be written to the logfile. Must be dictionary format.
         """
         for key in message.keys():
             value = message[key]

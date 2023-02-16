@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-17 18:11:14
 LastEditors: airscker
-LastEditTime: 2023-01-18 09:58:47
+LastEditTime: 2023-02-16 19:08:58
 Description: Datasets Built for Hailing TRIDENT Project
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -20,11 +20,14 @@ torch.set_default_tensor_type(torch.DoubleTensor)
 
 @numba.jit
 def pattern_data_1T(event, shape=(10, 10, 40, 3)):
-    """## Convert the Original Hailing Data into Pattern Image with specified shape
-    - Args:
+    """
+    ## Convert the Original Hailing Data into Pattern Image with specified shape
+
+    ### Args:
         - event: Single Hailing original data
         - shape: The shape of the pattern data. Defaults to (10,10,40,3) for 1TeV data, or (10,10,50,3) for 10TeV data
-    - Returns:
+
+    ### Returns:
         - Converted Pattern Image with specified shape, dtype: nparray
     """
     pattern = np.zeros(shape)
@@ -36,10 +39,14 @@ def pattern_data_1T(event, shape=(10, 10, 40, 3)):
 
 def Rotate90(image, label):
     """
-    Rotate the image 90 degrees clockwise and return the rotated image and label.
-    @param image - the image to rotate.
-    @param label - the label to rotate.
-    @returns the rotated image and label.
+    ## Rotate the 3D image along Z axis by 90 degrees and return the rotated image and label.
+
+    ### Args:
+        - image: the image to rotate.
+        - label: the label to rotate.
+
+    ### Return:
+        - the rotated image and label.
     """
     image = np.transpose(np.array(image), (1, 0, 2, 3))
     image = image[::-1, ...]
@@ -49,10 +56,14 @@ def Rotate90(image, label):
 
 def Rotate180(image, label):
     """
-    Rotate the image 180 degrees. Also rotate the label 180 degrees.
-    @param image - the image to rotate.
-    @param label - the label to rotate.
-    @returns the rotated image and label.
+    ## Rotate the 3D image along Z axis by 180 degrees and return the rotated image and label.
+
+    ### Args:
+        - image: the image to rotate.
+        - label: the label to rotate.
+
+    ### Return:
+        - the rotated image and label.
     """
     image = np.array(image)
     image = image[::-1, ::-1, :, :]
@@ -62,10 +73,14 @@ def Rotate180(image, label):
 
 def Flip(image, label):
     """
-    Flip the image and label.
-    @param image - the image to flip
-    @param label - the label to flip
-    @returns the flipped image and label
+    ## Flip the 3D image' Z axis and return the rotated image and label.
+
+    ### Args:
+        - image: the image to rotate.
+        - label: the label to rotate.
+
+    ### Return:
+        - the flipped image and label.
     """
     image = np.array(image)
     image = image[:, :, ::-1, :]
@@ -78,15 +93,19 @@ def Same(image, label):
 
 
 class HailingDataset_DirectV3(Dataset):
+    '''
+    ## Dataset Built for Loading the Preprocessed Hailing 1TeV/10TeV Data, origial data shape: [10,10,40/50,3]
+
+    ### Args: 
+        - datapath: The datapth of the preprocessed Hailing data, default to be './Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl'
+
+    ### Output:
+        - Pattern Image, shape: [3,40/50,10,10], dtype: nparray -> torch.tensor
+        - Position-Direction, shape: [3,], dtype: nparray -> torch.tensor, info: [px,py,pz]
+    '''
+
     def __init__(self, datapath='./Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl', augment=False):
-        '''
-        ## Dataset Built for Loading the Preprocessed Hailing 1TeV/10TeV Data, origial data shape: [10,10,40/50,3]
-        - Args: 
-            - datapath: The datapth of the preprocessed Hailing data, default to be './Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl'
-        - Output:
-            - Pattern Image, shape: [3,40/50,10,10], dtype: nparray -> torch.tensor
-            - Position-Direction, shape: [3,], dtype: nparray -> torch.tensor, info: [px,py,pz]
-        '''
+
         self.datapath = datapath
         self.origin_data = None
         self.pattern_imgs = []
@@ -123,15 +142,19 @@ class HailingDataset_DirectV3(Dataset):
 
 
 class HailingDataset_Direct2(Dataset):
+    '''
+    ## Dataset Built for Loading the Preprocessed Hailing 1TeV/10TeV Data, origial data shape: [10,10,40/50,3]
+
+    ### Args: 
+        - datapath: The datapth of the preprocessed Hailing data, default to be './Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl'
+
+    ### Output:
+        - Pattern Image, shape: [3,10,10,40/50], dtype: nparray -> torch.tensor
+        - Position-Direction, shape: [3,], dtype: nparray -> torch.tensor, info: [px,py,pz]
+    '''
+
     def __init__(self, datapath='./Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl', augment=False):
-        '''
-        ## Dataset Built for Loading the Preprocessed Hailing 1TeV/10TeV Data, origial data shape: [10,10,40/50,3]
-        - Args: 
-            - datapath: The datapth of the preprocessed Hailing data, default to be './Hailing-Muon/data/1TeV/Hailing_1TeV_train_data.pkl'
-        - Output:
-            - Pattern Image, shape: [3,10,10,40/50], dtype: nparray -> torch.tensor
-            - Position-Direction, shape: [3,], dtype: nparray -> torch.tensor, info: [px,py,pz]
-        '''
+
         self.datapath = datapath
         self.origin_data = None
         self.pattern_imgs = []
@@ -168,13 +191,17 @@ class HailingDataset_Direct2(Dataset):
 
 
 class HailingData_Init:
+    """
+    ## Convert the Original Hailing Data into a list of Pattern Images(dtype: nparray -> torch.tensor) as well as Position-Direction(dtype: nparray -> torch.tensor)
+
+    ### Args:
+        - datapath: The data path of the original Hailing data. Defaults to './Hailing-Muon/data/1TeV/validate_norm.pkl'.
+        - output: The output path of the converted Hailing pattern image data: [description]. Defaults to 'Hailing_1TeV_val_data.pkl'.
+        - shape: The shape of the Hailing pattern image data. Defaults to (10,10,40,3) for 1TeV data and (10,10,50,3) for 10TeV data available.
+    """
+
     def __init__(self, datapath='./Hailing-Muon/data/1TeV/validate_norm.pkl', output='Hailing_1TeV_val_data.pkl', shape=(10, 10, 40, 3)):
-        """## Convert the Original Hailing Data into a list of Pattern Images(dtype: nparray -> torch.tensor) as well as Position-Direction(dtype: nparray -> torch.tensor)
-        - Args:
-            - datapath: The data path of the original Hailing data. Defaults to './Hailing-Muon/data/1TeV/validate_norm.pkl'.
-            - output: The output path of the converted Hailing pattern image data: [description]. Defaults to 'Hailing_1TeV_val_data.pkl'.
-            - shape: The shape of the Hailing pattern image data. Defaults to (10,10,40,3) for 1TeV data and (10,10,50,3) for 10TeV data available.
-        """
+
         self.datapath = datapath
         self.origin_data = None
         self.output = output
@@ -199,9 +226,3 @@ class HailingData_Init:
             pkl.dump(newdata, f)
         f.close()
         print(f'file saved as {self.output}')
-
-
-# data=HailingData_Init(datapath='../Hailing-Muon/data/1TeV/validate_norm.pkl',output='../Hailing-Muon/data/1TeV/Hailing_1TeV_val_data_1k.pkl')
-# data = HailingData_Init(datapath='/Users/airskcer/Library/CloudStorage/OneDrive-USTC/Muon/Hailing-Muon/data/1TeV/train_norm.pkl',
-#                         output='/Users/airskcer/Library/CloudStorage/OneDrive-USTC/Muon/Hailing-Muon/data/1TeV/1tev_Resample_80k.pkl')
-# HailingDataset_Direct()

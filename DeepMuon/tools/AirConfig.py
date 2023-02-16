@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-02-12 10:25:28
+LastEditTime: 2023-02-16 18:00:03
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -23,8 +23,10 @@ from torch.nn.modules.loss import *
 class Config:
     """
     ## Load Training Configuration from Python File
+
     ### Args:
         - configpath: The path of the config file, must be in 'config' folder
+
     ### Attributions:
         - paras: The parameters in config file, dtype: dict
             - must have:
@@ -40,6 +42,7 @@ class Config:
             - optional:
                 `evaluation`,
                 `model_parallel`
+
     ### Example:
 
     >>> model = dict(backbone='VST', params=dict(n_classes=11, input_shape=(3, 130, 130), seq_dropout=0.1))

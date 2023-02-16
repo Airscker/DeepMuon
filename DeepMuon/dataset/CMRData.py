@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-27 19:51:21
 LastEditors: airscker
-LastEditTime: 2023-02-08 21:41:36
+LastEditTime: 2023-02-16 18:56:02
 Description:
     ## Dataset built for:
         - Video Swin-Transformer (VST) CMR Screening & Diagnose Model
@@ -18,12 +18,38 @@ import pickle as pkl
 import SimpleITK as sitk
 from skimage import exposure
 
+from DeepMuon.tools.AirFunc import exclude_key
+
 import torch
 from torch.utils.data import Dataset
 torch.set_default_tensor_type(torch.DoubleTensor)
 
 
+def Batch_norm(frames: np.ndarray, mean, std):
+    """
+    ## Normalize nifti data by specified mean value and std value
+
+    ### Args:
+        - frames: the numpy array data of nifti file, input shape should be `THWC`
+        - mean: the mean value
+        - std: the standard derivate value
+
+    ### Return:
+        - the nifti data augmented
+    """
+    return (frames-mean)/std
+
+
 def HistEqual(frames: np.ndarray):
+    """
+    ## Histogram equalization for multi-frames nifti data
+
+    ### Args:
+        - frames: the numpy array data of nifti file, input shape should be `THWC`
+
+    ### Return:
+        - the nifti data augmented
+    """
     for i in range(len(frames)):
         img = frames[i]
         for j in range(img.shape[-1]):
@@ -33,10 +59,30 @@ def HistEqual(frames: np.ndarray):
 
 
 def SingleNorm(frames: np.ndarray):
+    """
+    ## Normalize nifti data by `(data-mean(data))/std(data)`
+
+    ### Args:
+        - frames: the numpy array data of nifti file, input shape should be `THWC`
+
+    ### Return:
+        - the nifti data augmented
+    """
     return (frames-np.mean(frames))/np.std(frames)
 
 
 def Random_rotate(frames: np.ndarray, range=30, ratio=0.3):
+    """
+    ## Rotate given nifti data in XY dimension within epecified rotation range with specified probability
+
+    ### Args:
+        - frames: the numpy array data of nifti file, input shape should be `THWC`
+        - range: the range where rotation is allowed
+        - ratio: the probability of rotation
+
+    ### Return:
+        - the nifti data augmented
+    """
     if np.random.rand() < ratio:
         rows, cols = frames.shape[1:3]
         Matrix = cv2.getRotationMatrix2D(
@@ -48,6 +94,18 @@ def Random_rotate(frames: np.ndarray, range=30, ratio=0.3):
 
 
 def Random_Gamma_Bright(frames: np.ndarray, ratio=0.5, low=0.4, high=1):
+    """
+    ## Adjust the brightness of nifti data within specified range with spcified probability
+
+    ### Args:
+        - frames: the numpy array data of nifti file, input shape should be `THWC`
+        - ratio: the probability of adjustment
+        - low: the minimal allowed brightness ratio compared to the oringinal data
+        - high: the maximal allowed brightness ratio compared to the oringinal data
+
+    ### Return:
+        - the nifti data augmented
+    """
     if np.random.rand() < ratio:
         for i in range(len(frames)):
             frames[i] = exposure.adjust_gamma(
@@ -56,6 +114,16 @@ def Random_Gamma_Bright(frames: np.ndarray, ratio=0.5, low=0.4, high=1):
 
 
 def Padding(frames: np.ndarray, size=(120, 120)):
+    """
+    ## Pad nifti data ROI with zero value to specified XY dimension size
+
+    ### Args:
+        - frames: the numpy array data of nifti file, input shape should be `THWC`
+        - size: the size of the padding target, missed voxel data will be supplemented by zero and the oversized part will be deleted
+
+    ### Return:
+        - the nifti data augmented
+    """
     new_imgs = []
     for img in frames:
         x = img.shape[0]
@@ -81,6 +149,16 @@ def Padding(frames: np.ndarray, size=(120, 120)):
 
 
 def Resize(frames: np.ndarray, size=(240, 240)):
+    """
+    ## Resize nifti data to specfied XY dimension size
+
+    ### Args:
+        - frames: the numpy array data of nifti file, input shape should be `THWC`
+        - size: the XY dimension size of the ultimate data
+
+    ### Return:
+        - the nifti data augmented
+    """
     new_imgs = []
     for img in frames:
         new_imgs.append(cv2.resize(img, size))
@@ -113,6 +191,8 @@ class NIIDecodeV2(Dataset):
         - fusion: Whether to train fusion model
         - modalities: The list of modality of datasets, avilable modalitiesare `sax`,`4ch`,`lge`.
             - eg. `modalities=['sax','4ch']`
+        - model: Whether build dataset for `LSTM`, if not, just ignore this parameter otherwise set it as `LSTM`
+        - frame_interval: The interval of frames used to resample cinema nifti data
         - augment_pipeline: The list of augmentation function names as well as their parameters.
             - eg. `augment_pipeline = [dict(type='HistEqual'),dict(type='SingleNorm'),dict(type='Padding',size=(120, 120)),dict(type='Resize', size=(240, 240))]`
     """
@@ -151,12 +231,8 @@ class NIIDecodeV2(Dataset):
         with open(self.mask_ann, 'rb')as f:
             self.data_mask_map = pkl.load(f)
         f.close()
-        # all_num = len(self.data_mask_map)
-        # for key in self.data_mask_map.keys():
-        #     if not os.path.exists(key):
-        #         self.data_mask_map.pop(key)
-        # print(
-        #     f'{all_num} mask_ann hash mapping given, {len(self.data_mask_map)} maps available')
+        print(
+            f'To improve the performance of {self.__class__.__name__}, we deprecated ROI & Datapath checking pipeline. Please make sure the content of Datapth-ROI hash maps is correct before you start training models')
 
     def __load_annotations(self):
         """Load annotation file to get nifti data information."""
@@ -188,6 +264,14 @@ class NIIDecodeV2(Dataset):
         return nifti_info_list
 
     def __crop(self, file_path: str, mod: str):
+        '''
+        Pipeline:
+            - Read nfiti data according to annotation file
+            - Resample numpy array of nifti data by specified frame interval(just for cinema data)
+            - Crop ROI(If `mask_ann` given)
+            - Clip top/bottom 0.1% voxel values
+            - Concatenate three layers for short axis cinema nifti data / Repeat single layer three times for four chamber cinema data or LGE data
+        '''
         if not file_path.endswith('.nii.gz'):
             file_path += '.nii.gz'
         if mod == 'sax':
@@ -218,7 +302,8 @@ class NIIDecodeV2(Dataset):
             return sax_fusion
         elif mod == '4ch' or mod == 'lge':
             data = sitk.GetArrayFromImage(sitk.ReadImage(file_path))
-            data = data[0:len(data):self.frame_interval]
+            if mod != 'lge':
+                data = data[0:len(data):self.frame_interval]
             if self.mask_ann is not None:
                 crop_pos = self.data_mask_map[file_path]
                 data = self.clip_top_bottom(data[:, crop_pos[2]:crop_pos[3],
@@ -229,9 +314,11 @@ class NIIDecodeV2(Dataset):
             return rgbdata
 
     def norm_range(self, data):
+        '''Normalize voxel data values within 0~255 integer range'''
         return np.uint8(255.0*(data-np.min(data))/(np.max(data)-np.min(data)))
 
     def clip_top_bottom(self, data: np.ndarray, scale=0.001):
+        '''Clip top/bottom voxel values with specific proportion'''
         arr = np.sort(data.flatten())
         size = len(arr)
         min_value = arr[int(scale * size)]
@@ -283,11 +370,3 @@ class NIIDecodeV2(Dataset):
                 return data[0], label
         elif self.model == 'LSTM':
             return data[0], label
-
-
-def exclude_key(dictionary: dict, del_key: str = 'type'):
-    new_dict = {}
-    for key in dictionary.keys():
-        if key != del_key:
-            new_dict[key] = dictionary[key]
-    return new_dict

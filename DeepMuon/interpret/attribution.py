@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-02-13 19:20:47
 LastEditors: airscker
-LastEditTime: 2023-02-15 18:23:52
+LastEditTime: 2023-02-16 16:44:57
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from captum.attr import IntegratedGradients, LayerConductance, NeuronConductance
 
 
-def DataAttr(input, baseline, model):
+def DataAttr(model: nn.Module, input, baseline):
     ig = IntegratedGradients(model)
     attr_array = []
     delta_array = []
