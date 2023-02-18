@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-18 12:47:38
+LastEditTime: 2023-02-18 14:51:24
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -423,7 +423,7 @@ def run(config, test):
     elif test == '':
         test = None
     '''CNNLSTM do not support FSDP'''
-    main(train_config, None)
+    main(train_config, test)
 
 
 if __name__ == '__main__':
