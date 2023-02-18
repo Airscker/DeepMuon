@@ -368,7 +368,7 @@ def train(device, dataloader, model, loss_fn, optimizer, scheduler, gradient_acc
         loss = loss/gradient_accumulation
         '''Backpropagation'''
         loss.backward()
-        if (i+1) % gradient_accumulation == 0:
+        if (i+1) % gradient_accumulation == 0 or i+1==batchs:
             optimizer.step()
             optimizer.zero_grad()
     scheduler.step()

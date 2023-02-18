@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-18 12:10:45
+LastEditTime: 2023-02-18 15:19:23
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -368,7 +368,7 @@ def train(device, dataloader, model, loss_fn, optimizer, scheduler, gradient_acc
         loss = loss/gradient_accumulation
         '''Backpropagation'''
         loss.backward()
-        if (i+1) % gradient_accumulation == 0:
+        if (i+1) % gradient_accumulation == 0 or i+1==batchs:
             optimizer.step()
             optimizer.zero_grad()
     scheduler.step()
