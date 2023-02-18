@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-31 09:01:02
 LastEditors: airscker
-LastEditTime: 2023-02-15 17:24:10
+LastEditTime: 2023-02-18 13:13:01
 Description: NULL
 
 Copyright (C) 2023 sby Airscker(Yufeng), All Rights Reserved.
@@ -48,12 +48,12 @@ test_dataset = dict(
 Specify the work_dir to save the training log and checkpoints
 '''
 work_config = dict(
-    work_dir='/data/JoyceW/VST_fusion_dataset/CNNLSTM/workdir/4ch_bin_1.826', logfile='log.log')
+    work_dir='/data/JoyceW/VST_fusion_dataset/DM_workdir/CNNLSTM/4ch_bin_1.826', logfile='log.log')
 '''
 Specify the checkpoint configuration
 '''
 checkpoint_config = dict(
-    load_from='', resume_from='', save_inter=500)
+    load_from='', resume_from='', save_inter=50)
 '''
 Specify the customized loss function to be used, if no customized loss function specified, nn.MSELoss() will be used
 '''

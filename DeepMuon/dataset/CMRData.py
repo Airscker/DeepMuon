@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-27 19:51:21
 LastEditors: airscker
-LastEditTime: 2023-02-16 19:17:12
+LastEditTime: 2023-02-18 12:55:07
 Description:
     ## Dataset built for:
         - Video Swin-Transformer (VST) CMR Screening & Diagnose Model
@@ -80,7 +80,7 @@ def SingleNorm(frames: np.ndarray):
     return (frames-np.mean(frames))/np.std(frames)
 
 
-def Random_rotate(frames: np.ndarray, range=30, ratio=0.3):
+def Random_rotate(frames: np.ndarray, range=180, ratio=0.3):
     """
     ## Rotate given nifti data in XY dimension within epecified rotation range with specified probability
 
@@ -120,6 +120,20 @@ def Random_Gamma_Bright(frames: np.ndarray, ratio=0.5, low=0.4, high=1):
             frames[i] = exposure.adjust_gamma(
                 frames[i], np.random.uniform(low, high))
     return frames
+
+def AddRandomNumber(frames: np.ndarray, range=0.1):
+    """
+    ## Adjust the brightness of nifti data within specified range with spcified probability
+
+    ### Args:
+        - frames: the numpy array data of nifti file, input shape should be `THWC`
+        - range: the range of the noise value
+    
+    ### Return:
+        - the nifti data augmented
+    """
+    noise=(2*np.random.rand(frames.shape)-1)*range
+    return frames+noise
 
 
 def Padding(frames: np.ndarray, size=(120, 120)):

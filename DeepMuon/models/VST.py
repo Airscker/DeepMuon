@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-12-23 10:33:54
 LastEditors: airscker
-LastEditTime: 2023-02-14 12:27:13
+LastEditTime: 2023-02-18 12:33:27
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -830,8 +830,9 @@ class fusion_model(nn.Module):
             try:
                 checkpoint = torch.load(weights[i], map_location='cpu')
                 self.vst_backbones[i].load_state_dict(checkpoint, strict=False)
+                print(f'{weights[i]} loaded successfully')
             except:
-                print(f'{weights[i]} load failed')
+                print(f'{weights[i]} loading fail')
 
     def forward(self, x, device='cpu'):
         assert len(x) == len(

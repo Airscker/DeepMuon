@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-15 17:01:29
+LastEditTime: 2023-02-18 12:10:45
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -113,7 +113,10 @@ def main(config_info, test_path=None):
     elif resume != '':
         epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = AirFunc.load_model(
             path=resume, device=device)
-        model.load_state_dict(model_c, False)
+        try:
+            model.load_state_dict(model_c, False)
+        except:
+            pass
         model.to(device)
         epoch_now = epoch_c + 1
         if local_rank == 0:
@@ -121,7 +124,10 @@ def main(config_info, test_path=None):
     elif load != '':
         epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = AirFunc.load_model(
             path=load, device=device)
-        model.load_state_dict(model_c, False)
+        try:
+            model.load_state_dict(model_c, False)
+        except:
+            pass
         model.to(device)
         epoch_now = 0
         if local_rank == 0:
@@ -153,7 +159,7 @@ def main(config_info, test_path=None):
         optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9, nesterov=True)
         optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.1, betas=(0.9, 0.999))
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=100)
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=10)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=10, eta_min=0)
     In the example shown above:
         `nn.MSELoss` <> `configs['loss_fn']['backbone']`, `loss_function parameters` <> `**configs['loss_fn']['params']`
         `torch.optim.SGD` <> `configs['optimizer']['backbone']`, `lr=0.001, momentum=0.9, nesterov=True` <> `**configs['optimizer']['params']`
@@ -273,7 +279,7 @@ def main(config_info, test_path=None):
                 json_logger.log(tr_eva_info)
                 logger.log(AirFunc.readable_dict(ts_eva_info))
                 logger.log(AirFunc.readable_dict(tr_eva_info))
-    return bestres
+    return 0
 
 
 def ddp_fsdp_model_save(epoch=0, model=None, optimizer=None,
