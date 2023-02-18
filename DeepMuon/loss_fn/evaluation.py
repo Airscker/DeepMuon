@@ -9,7 +9,6 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 import numpy as np
 from sklearn.metrics import f1_score as f1
-from sklearn.metrics import roc_curve, auc
 
 
 def f1_score(scores, label):
@@ -126,27 +125,6 @@ def top_k_accuracy(scores, labels, topk=(1, )):
         topk_acc_score = match_array.sum() / match_array.shape[0]
         res.append(topk_acc_score)
     return res
-
-
-def aucroc(scores, label):
-    '''
-    ## Compute auc-roc values of discrimitive task for every class
-
-    ### Args:
-        - scores (list[np.ndarray]): Prediction scores of different classes for each sample.
-        - labels (list[np.ndarray]): Ground truth many-hot vector for each sample.
-
-    ### Return:
-        - np.array([float]): aucroc values of every class
-
-    '''
-    scores = np.array(scores)
-    cls_auroc = []
-    for i in range(scores.shape[0]):
-        fpr, tpr, thresholds = roc_curve(label, scores, pos_label=i)
-        roc_auc = auc(fpr, tpr)
-        cls_auroc.append(roc_auc)
-    return np.array(cls_auroc)
 
 
 def mmit_mean_average_precision(scores, labels):

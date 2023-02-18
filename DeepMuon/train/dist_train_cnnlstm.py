@@ -180,7 +180,7 @@ def main(config_info, test_path=None):
         if test_path is None:
             logger.log(f'Optimizer:\n{optimizer}')
             logger.log(
-                f'Scheduler: \n\t{scheduler.__class__.__name__}:\n\t{AirFunc.readable_dict(scheduler.state_dict())}')
+                f'Scheduler: \n\t{scheduler.__class__.__name__}:\n\t{scheduler.state_dict()}')
     '''Start testing, only if test_path!=None'''
     if test_path is not None:
         _, ts_score, ts_label = test(
@@ -249,14 +249,14 @@ def main(config_info, test_path=None):
                     os.remove(best_checkpoint)
                 best_checkpoint = os.path.join(
                     work_dir, f"Best_{sota_target}_epoch_{t+1}.pth")
-                dist.barrier()
+                # dist.barrier()
                 ddp_fsdp_model_save(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn,
                                     scheduler=scheduler, path=best_checkpoint, ddp_training=ddp_training)
                 logger.log(
                     f'Best Model Saved as {best_checkpoint},Best {sota_target}:{bestres}, Current Epoch: {t+1}', show=True)
             if (t + 1) % inter == 0:
                 savepath = os.path.join(work_dir, f'Epoch_{t+1}.pth')
-                dist.barrier()
+                # dist.barrier()
                 ddp_fsdp_model_save(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn,
                                     scheduler=scheduler, path=savepath, ddp_training=ddp_training)
                 logger.log(
@@ -275,10 +275,10 @@ def main(config_info, test_path=None):
                 ts_eva_info = dict(mode='ts_eval')
                 tr_eva_info = {**tr_eva_info, **tr_eva_metrics}
                 ts_eva_info = {**ts_eva_info, **ts_eva_metrics}
-                json_logger.log(ts_eva_info)
                 json_logger.log(tr_eva_info)
-                logger.log(AirFunc.readable_dict(ts_eva_info))
+                json_logger.log(ts_eva_info)
                 logger.log(AirFunc.readable_dict(tr_eva_info))
+                logger.log(AirFunc.readable_dict(ts_eva_info))
     return 0
 
 
