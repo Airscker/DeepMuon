@@ -28,7 +28,7 @@ from torchvision.models.feature_extraction import get_graph_node_names, create_f
 from ptflops import get_model_complexity_info
 from torchinfo import summary
 from torch.utils.tensorboard import SummaryWriter
-torch.set_default_tensor_type(torch.DoubleTensor)
+torch.set_default_tensor_type(torch.FloatTensor)
 torch.backends.cudnn.benchmark = True
 torch.set_printoptions(profile='full')
 

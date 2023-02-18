@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-17 21:01:46
 LastEditors: airscker
-LastEditTime: 2023-02-16 17:42:59
+LastEditTime: 2023-02-18 15:37:32
 Description: Dataset Built for Pandax4T-III Pattern Relocalization Project
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -12,7 +12,7 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import Dataset
 import pickle as pkl
-torch.set_default_tensor_type(torch.DoubleTensor)
+torch.set_default_tensor_type(torch.FloatTensor)
 
 
 def PatternData2Img(data):

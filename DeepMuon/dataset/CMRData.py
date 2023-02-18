@@ -20,7 +20,7 @@ from skimage import exposure
 
 import torch
 from torch.utils.data import Dataset
-torch.set_default_tensor_type(torch.DoubleTensor)
+torch.set_default_tensor_type(torch.FloatTensor)
 
 
 def exclude_key(dictionary: dict, del_key: str = 'type'):
@@ -379,11 +379,11 @@ class NIIDecodeV2(Dataset):
             if self.model != 'LSTM':
                 # THWC -> CTHW
                 results[mod] = torch.from_numpy(
-                    np.moveaxis(results[mod], -1, 0))
+                    np.moveaxis(results[mod], -1, 0)).type(torch.FloatTensor)
             elif self.model == 'LSTM':
                 # THWC -> TCHW
                 results[mod] = torch.from_numpy(
-                    np.moveaxis(results[mod], -1, 1))
+                    np.moveaxis(results[mod], -1, 1)).type(torch.FloatTensor)
             data.append(results[mod])
         label = torch.LongTensor([self.nifti_info_list[index]['label']])
         if self.model != 'LSTM':

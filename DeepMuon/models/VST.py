@@ -14,7 +14,7 @@ import numpy as np
 from timm.models.layers import DropPath, trunc_normal_
 from functools import reduce, lru_cache
 from operator import mul
-torch.set_default_tensor_type(torch.DoubleTensor)
+torch.set_default_tensor_type(torch.FloatTensor)
 
 
 class Mlp(nn.Module):

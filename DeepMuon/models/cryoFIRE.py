@@ -10,7 +10,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-torch.set_default_tensor_type(torch.DoubleTensor)
+torch.set_default_tensor_type(torch.FloatTensor)
 
 
 class CRYOFIRE_encoder(nn.Module):

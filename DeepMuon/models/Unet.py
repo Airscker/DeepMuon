@@ -12,7 +12,7 @@ import torch.nn as nn
 from monai.networks.nets import UNet
 import torch.nn.functional as F
 from monai.networks.blocks.convolutions import ResidualUnit
-torch.set_default_tensor_type(torch.DoubleTensor)
+torch.set_default_tensor_type(torch.FloatTensor)
 
 
 class ResMax_base(nn.Module):

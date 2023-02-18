@@ -27,7 +27,7 @@ from torch.distributed.fsdp import FullyShardedDataParallel as FSDP, FullStateDi
 from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.tensorboard import SummaryWriter
-torch.set_default_tensor_type(torch.DoubleTensor)
+torch.set_default_tensor_type(torch.FloatTensor)
 torch.backends.cudnn.benchmark = True
 torch.manual_seed(3407)
 
