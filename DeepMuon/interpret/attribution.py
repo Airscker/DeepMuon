@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-02-13 19:20:47
 LastEditors: airscker
-LastEditTime: 2023-02-20 00:48:08
+LastEditTime: 2023-02-20 01:15:42
 Description: Get data/neuron/layer attributions
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -14,7 +14,45 @@ from torch import nn
 import numpy as np
 from DeepMuon.tools.AirFunc import check_device
 from typing import Union,Tuple,Callable
-from captum.attr import IntegratedGradients, NeuronConductance, LayerConductance
+from captum.attr import IntegratedGradients, NeuronConductance, LayerConductance, GuidedGradCam
+
+
+def GradCAM(model: nn.Module,module:nn.Module, input:torch.Tensor, label_dim: int, device:Union[int,str,torch.device]='cpu'):
+    '''
+    ## Get data attribution using GuidedGradCAM method
+        To get more details about GuidedGradCAM algorithm, please refer to https://arxiv.org/abs/1610.02391
+    
+    ### Args:
+        - model: The model to be interpreted
+        - module: For which GradCAM attributions are computed.
+        - input: The input data of model, make sure its `requires_grad` property is set as `True`
+        - label_dim: The dimension of model's output, eg. binary classification task's dimension is 2
+        - device: the GPU to be used to inference the model
+    
+    ### Return: np.ndarray
+        - attr_array: np.ndarray, contains all attribution for every target
+            Element-wise product of (upsampled) GradCAM and Guided Backprop attributions.
+            Attributions will be the same size as the provided inputs, with each value providing the attribution of the corresponding input index.
+            If the GradCAM attributions cannot be upsampled to the shape of a given input tensor, None is returned in the corresponding index position.
+
+     ### Tips:
+        - module: The module given here should be one of the layers of the model
+            eg. We can specify `module=model.conv1`
+    '''
+    device=check_device(device)
+    model.to(device)
+    module.to(device)
+    input.requires_grad=True
+    input=input.to(device)
+    guided_gc = GuidedGradCam(model, module)
+    attr_array = []
+    for i in range(label_dim):
+        attr_array.append(guided_gc.attribute(input, i).detach().cpu().numpy())
+    try:
+        torch.cuda.empty_cache()
+    except:
+        pass
+    return np.array(attr_array)
 
 
 def DataAttr(model: nn.Module, input:torch.Tensor, label_dim: int, device:Union[int,str,torch.device]='cpu'):

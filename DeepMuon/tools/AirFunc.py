@@ -22,6 +22,7 @@ torch.set_default_tensor_type(torch.FloatTensor)
 
 
 def check_device(device:Union[int,str,torch.device]):
+    '''check the cuda/cpu device specified'''
     if not torch.cuda.is_available():
         warnings.warn(f"CUDA is not available, device is replaced as 'cpu'")
         device='cpu'
