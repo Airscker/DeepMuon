@@ -15,7 +15,7 @@ import torch
 from torch import nn
 
 
-def model_profile(input, model, workdir):
+def model_profile(model, input, workdir):
     ''''''
     if not os.path.exists(workdir):
         os.makedirs(workdir)
