@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-12-23 10:33:54
 LastEditors: airscker
-LastEditTime: 2023-02-18 12:33:27
+LastEditTime: 2023-02-19 23:57:09
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -763,10 +763,8 @@ class screening_model(nn.Module):
         )
         self.flatten = nn.Flatten()
         self.linear = nn.Linear(mlp_in_channels, num_classes)
-
-    def forward(self, x: torch.Tensor, device='cpu'):
+    def forward(self, x: torch.Tensor):
         '''x: NCTHW'''
-        x = x.to(device)
         x = self.vst(x)
         x = self.pre_mlp(x)
         x = self.flatten(x)
@@ -834,14 +832,16 @@ class fusion_model(nn.Module):
             except:
                 print(f'{weights[i]} loading fail')
 
-    def forward(self, x, device='cpu'):
-        assert len(x) == len(
-            self.vst_backbones), f'Multi modality input data types does not match the number of vst backbones; {len(self.vst_backbones)} types of data expected however {len(x)} given'
-        for i in range(len(x)):
-            x[i] = x[i].to(device)
-            x[i] = self.vst_backbones[i](x[i])
-            x[i] = self.avgpool(x[i])
-        x = torch.cat(x, dim=1)
+    def forward(self, x):
+        '''x: NMCTHW'''
+        assert x.shape[1] == len(
+            self.vst_backbones), f'Multi modality input data types does not match the number of vst backbones; {len(self.vst_backbones)} types of data expected however {x.shape[1]} given'
+        x=torch.permute(x,(1,0,2,3,4,5))
+        features=[]
+        for i in range(x.shape[0]):
+            features.append(self.avgpool(self.vst_backbones[i](x[i])).unsqueeze(0))
+        features=torch.cat(features,dim=0)
+        x=torch.permute(features,(1,0,2,3,4,5))
         x = self.dropout(x)
         x = self.flatten(x)
         x = self.linear(x)

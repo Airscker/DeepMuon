@@ -1,1 +1,0 @@
-python $(dirname "$0")/inference.py --config /home/dachuang2022/Yufeng/DeepMuon/config/Hailing/RESMAX.py --ana True -n 10 -t 0.2

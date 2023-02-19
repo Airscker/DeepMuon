@@ -2,20 +2,25 @@
 Author: airscker
 Date: 2023-02-15 20:13:01
 LastEditors: airscker
-LastEditTime: 2023-02-19 14:06:35
-Description: NULL
+LastEditTime: 2023-02-20 00:44:43
+Description: Trace the data flow within the model
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
+import torch
+import warnings
+from typing import Union
 from torch import nn
+from DeepMuon.tools.AirFunc import check_device
 
 class Neuron_Flow:
     '''
     ## Trace the data flow of model's neurons
 
     ### Args:
-        - model: the model to be traced, please put it on CPU, the tracing mechanism will be done under the evaluation mode
-        - input_data: the input data of the model, please put it on CPU
+        - model: the model to be traced, the tracing mechanism will be done under the evaluation mode
+        - input_data: the input data of the model
+        - device: the GPU to be used to inference the model
 
     ### Some Properties:
         - hooks: `dict(module_id = forward_hook)`
@@ -59,10 +64,11 @@ class Neuron_Flow:
                 output[0]: torch.Size([11])
                 output[1]: torch.Size([11])
     '''
-    def __init__(self,model:nn.Module,input_data):
-        self.model=model
+    def __init__(self,model:nn.Module,input_data:torch.Tensor,device:Union[int,str,torch.device]='cpu'):
+        self.device=check_device(device)
+        self.model=model.to(self.device)
         self.model.eval()
-        self.input=input_data
+        self.input=input_data.to(self.device)
         self.hooks={}
         self.neuron_info={}
         self.trace()
@@ -97,10 +103,14 @@ class Neuron_Flow:
             - Clean hooks registered
         '''
         if input_data is not None:
-            self.input=input_data
+            self.input=input_data.to(self.device)
         self.__apply_hooks()
         self.model(self.input)
         self.__clean_hooks()
+        try:
+            torch.cuda.empty_cache()
+        except:
+            pass
     def __repr__(self) -> str:
         info=''
         for module_id in self.neuron_info.keys():

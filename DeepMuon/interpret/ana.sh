@@ -1,1 +1,0 @@
-python $(dirname "$0")/analysis.py --thres 0.005 --sigma 3 --config /home/dachuang2022/Yufeng/DeepMuon/config/Hailing/unet.py --fold=0.8

@@ -2,8 +2,8 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-02-16 18:00:03
-Description: NULL
+LastEditTime: 2023-02-19 21:59:58
+Description: Import configuration file and prepare configurations for experiments
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
@@ -12,6 +12,7 @@ import os
 import warnings
 import shutil
 from DeepMuon.loss_fn import *
+from DeepMuon.interpret import *
 from DeepMuon.models import *
 from DeepMuon.dataset import *
 from DeepMuon.tools.AirFunc import import_module, readable_dict
@@ -25,7 +26,7 @@ class Config:
     ## Load Training Configuration from Python File
 
     ### Args:
-        - configpath: The path of the config file, must be in 'config' folder
+        - configpath: The path of the config file
 
     ### Attributions:
         - paras: The parameters in config file, dtype: dict

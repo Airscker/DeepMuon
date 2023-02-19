@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-18 14:32:31
+LastEditTime: 2023-02-19 22:27:55
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -117,7 +117,6 @@ def main(config_info, test_path=None):
             model.load_state_dict(model_c, False)
         except:
             pass
-        model.to(device)
         epoch_now = epoch_c + 1
         if local_rank == 0:
             logger.log(f'Model Resumed from {resume}, Epoch now: {epoch_now}')
@@ -128,13 +127,11 @@ def main(config_info, test_path=None):
             model.load_state_dict(model_c, False)
         except:
             pass
-        model.to(device)
         epoch_now = 0
         if local_rank == 0:
             logger.log(
                 f'Pretrained Model Loaded from {load}, Epoch now: {epoch_now}')
     epochs += epoch_now
-    model_name = model._get_name()
     '''save model architecture before model parallel'''
     if local_rank == 0:
         writer = SummaryWriter(os.path.join(work_dir, 'LOG'))
@@ -147,12 +144,10 @@ def main(config_info, test_path=None):
         )
         model = FSDP(model, auto_wrap_policy=auto_wrap_policy)
         ddp_training = False
-        print('FSDP enabled')
     else:
         model = DistributedDataParallel(model, device_ids=[
             local_rank], output_device=local_rank, find_unused_parameters=False)
         ddp_training = True
-        print('DDP enabled')
     '''
     Initialize loss/optimizer/scheduler
     eg. loss_fn=nn.MSELoss()

@@ -40,10 +40,12 @@ loss_fn = None
 '''
 hyperpara = dict(epochs=100, batch_size=80000, inputshape=[1, 1, 17, 17])
 '''
-## Specify the lr as well as its config, the lr will be optimized using torch.optim.lr_scheduler.ReduceLROnPlateau()
+optimizer
 '''
-lr_config = dict(init=0.0001, patience=100)
+optimizer = dict(backbone='SGD', params=dict(
+    lr=0.0001, momentum=0.9, nesterov=True))
 '''
-## Specify the GPU config and DDP
+scheduler
 '''
-gpu_config = dict(distributed=True, gpuid=0)
+scheduler = dict(backbone='CosineAnnealingLR', params=dict(T_max=10))
+fsdp_parallel = dict(enabled=False, min_num_params=1e6)

@@ -10,13 +10,70 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 import os
 import shutil
 import importlib
+import warnings
 import numpy as np
+from typing import Union
 import matplotlib.pyplot as plt
 
 
 import torch
 from torch import nn
 torch.set_default_tensor_type(torch.FloatTensor)
+
+
+def check_device(device:Union[int,str,torch.device]):
+    if not torch.cuda.is_available():
+        warnings.warn(f"CUDA is not available, device is replaced as 'cpu'")
+        device='cpu'
+    elif isinstance(device,int):
+        if device+1>torch.cuda.device_count():
+            warnings.warn(f"Only {torch.cuda.device_count()} devices available, however cuda:{device} is specified. We will use cuda:{torch.cuda.device_count()-1} instead")
+        device=torch.device(min(device,torch.cuda.device_count()-1))
+    elif isinstance(device,torch.device):
+        if device.index+1>torch.cuda.device_count():
+            warnings.warn(f"Only {torch.cuda.device_count()} devices available, however {device} is specified. We will use cuda:{torch.cuda.device_count()-1} instead")
+            device=torch.device(torch.cuda.device_count()-1)
+    return device
+
+def plot_3d(img,save='',show=False,title='',norm=False):
+    """
+    ## Plot the 3D image of the given image.
+
+    ### Args:
+        - img: the image data to plot
+        - save: the path to save the image
+        - show: whether to show the image
+        - title: the title of the image
+        - norm: whether to normalize the image
+    """
+    x=[]
+    y=[]
+    z=[]
+    num=[]
+    img=np.array(img)
+    if norm:
+        img=(img-np.min(img))/(np.max(img)-np.min(img))
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            for k in range(img.shape[2]):
+                if img[i][j][k]!=0:
+                    x.append(i)
+                    y.append(j)
+                    z.append(k)
+                    num.append(img[i][j][k])
+    fig=plt.figure(figsize=(15,15))
+    plt.title(title)
+    ax=plt.axes(projection='3d')
+    ax.scatter3D(x,y,z,c=num,cmap='jet')
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+    if save!='':
+        plt.savefig(save,dpi=600)
+    if show:
+        plt.show()
+    plt.clf()
+    return 0
 
 
 def exclude_key(dictionary: dict, del_key: str = 'type'):

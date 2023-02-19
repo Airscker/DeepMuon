@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-27 19:51:21
 LastEditors: airscker
-LastEditTime: 2023-02-18 12:55:07
+LastEditTime: 2023-02-20 00:02:27
 Description:
     ## Dataset built for:
         - Video Swin-Transformer (VST) CMR Screening & Diagnose Model
@@ -388,7 +388,9 @@ class NIIDecodeV2(Dataset):
         label = torch.LongTensor([self.nifti_info_list[index]['label']])
         if self.model != 'LSTM':
             if self.fusion:
-                return data, label
+                for i in range(len(data)):
+                    data[i]=data[i].unsqueeze(0)
+                return torch.cat(data,dim=0), label
             else:
                 return data[0], label
         elif self.model == 'LSTM':
