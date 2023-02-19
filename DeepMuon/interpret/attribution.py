@@ -9,7 +9,6 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 
 import torch
-import warnings
 from torch import nn
 import numpy as np
 from DeepMuon.tools.AirFunc import check_device
