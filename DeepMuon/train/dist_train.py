@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-19 22:27:55
+LastEditTime: 2023-02-20 13:44:38
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -51,6 +51,7 @@ def main(config_info, test_path=None):
     load = configs['checkpoint_config']['load_from']
     if test_path is not None:
         load = test_path
+        resume=''
     inter = configs['checkpoint_config']['save_inter']
     '''Initialize Distributed Training'''
     group = torch.distributed.init_process_group(backend="nccl")

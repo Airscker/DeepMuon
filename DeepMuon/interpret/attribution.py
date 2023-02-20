@@ -39,6 +39,7 @@ def GradCAM(model: nn.Module,module:nn.Module, input:torch.Tensor, label_dim: in
             eg. We can specify `module=model.conv1`
     '''
     device=check_device(device)
+    model.eval()
     model.to(device)
     module.to(device)
     input.requires_grad=True
@@ -72,6 +73,7 @@ def DataAttr(model: nn.Module, input:torch.Tensor, label_dim: int, device:Union[
         - convergence: list[bool], contains all deltas' convergency for every target
     '''
     device=check_device(device)
+    model.eval()
     model.to(device)
     input.requires_grad=True
     input=input.to(device)
@@ -115,6 +117,8 @@ def NeuronAttr(model:nn.Module,module:nn.Module,input:torch.Tensor,neuron_index:
             For this example, we choose the index (4,1,2) to computes neuron gradient for neuron with index (4,1,2).
     '''
     device=check_device(device)
+    model.eval()
+    module.eval()
     model.to(device)
     module.to(device)
     input.requires_grad=True
@@ -155,6 +159,8 @@ def LayerAttr(model: nn.Module,module:nn.Module, input:torch.Tensor, label_dim: 
     '''
     
     device=check_device(device)
+    model.eval()
+    module.eval()
     model.to(device)
     module.to(device)
     input.requires_grad=True

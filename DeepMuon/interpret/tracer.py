@@ -8,7 +8,6 @@ Description: Trace the data flow within the model
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 import torch
-import warnings
 from typing import Union
 from torch import nn
 from DeepMuon.tools.AirFunc import check_device

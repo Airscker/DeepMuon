@@ -51,6 +51,7 @@ def main(config_info, test_path=None):
     load = configs['checkpoint_config']['load_from']
     if test_path is not None:
         load = test_path
+        resume=''
     inter = configs['checkpoint_config']['save_inter']
     '''Initialize Distributed Training'''
     group = torch.distributed.init_process_group(backend="nccl")
