@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-02-16 19:01:53
+LastEditTime: 2023-02-22 19:06:48
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -230,12 +230,9 @@ def import_module(module_path: str):
     ### Return:
         - the imported module
     '''
-    # assert '/' in module_path,f'Do not use standard windows path"\\", but {module_path} is given'
-    assert module_path.endswith(
-        '.py'), f'Config file must be a python file but {module_path} is given'
-    total_path = os.path.join(os.getcwd(), module_path.replace('./', ''))
-    assert os.path.exists(
-        total_path), f'Configuration file {total_path} does not exist. Please check the path again'
+    assert module_path.endswith('.py'), f'Config file must be a python file but {module_path} is given'
+    total_path=os.path.abspath(module_path)
+    assert os.path.exists(total_path), f'Configuration file {total_path} does not exist. Please check the path again'
     module_spec = importlib.util.spec_from_file_location('', total_path)
     module = importlib.util.module_from_spec(module_spec)
     module_spec.loader.exec_module(module)

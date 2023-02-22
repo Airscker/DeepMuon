@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-20 17:48:29
+LastEditTime: 2023-02-23 00:56:23
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -12,6 +12,7 @@ import os
 import click
 import numpy as np
 import functools
+from typing import Union
 
 import DeepMuon
 from DeepMuon.tools.AirConfig import Config
@@ -21,6 +22,8 @@ import DeepMuon.interpret.attribution as Attr
 
 import torch
 from torch import nn
+from torch.cuda.amp.grad_scaler import GradScaler
+from torch.cuda.amp.autocast_mode import autocast
 import torch.distributed as dist
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
@@ -47,9 +50,13 @@ def main(config_info, test_path=None):
     work_dir = configs['work_config']['work_dir']
     log = configs['work_config']['logfile']
     if test_path is not None:
-        log = 'test_log.log'
+        log = 'test_'+log
     resume = configs['checkpoint_config']['resume_from']
     load = configs['checkpoint_config']['load_from']
+    fp16=configs['optimize_config']['fp16']
+    grad_scalar=GradScaler(enabled=fp16)
+    grad_clip=configs['optimize_config']['grad_clip']
+    grad_acc=configs['optimize_config']['grad_acc']
     if test_path is not None:
         load = test_path
         resume=''
@@ -198,17 +205,15 @@ def main(config_info, test_path=None):
         return 0
     '''Start training, only if test_path==None'''
     bestres = None
-    bar = range(epoch_now, epochs)
     eva_interval = configs['evaluation']['interval']
     best_checkpoint = ''
     sota_target = configs['evaluation']['sota_target']['target']
     if sota_target is None:
         sota_target = 'loss'
-    for t in bar:
+    for t in range(epoch_now, epochs):
         start_time = time.time()
         train_dataloader.sampler.set_epoch(t)
-        trloss, tr_score, tr_label = train(
-            device, train_dataloader, model, loss_fn, optimizer, scheduler)
+        trloss, tr_score, tr_label = train(device=device,dataloader=train_dataloader,model=model,loss_fn=loss_fn,optimizer=optimizer,scheduler=scheduler,gradient_accumulation=grad_acc,grad_clip=grad_clip,fp16=fp16,grad_scalar=grad_scalar)
         tsloss, ts_score, ts_label = test(
             device, test_dataloader, model, loss_fn)
         '''
@@ -371,7 +376,25 @@ def evaluation(scores, labels, evaluation_command, best_target, loss):
         return eva_res, loss
 
 
-def train(device, dataloader, model, loss_fn, optimizer, scheduler, gradient_accumulation=8):
+def train(device:Union[int,str,torch.device],
+        dataloader:DataLoader,
+        model:nn.Module,
+        loss_fn=None,
+        optimizer=None,
+        scheduler=None,
+        gradient_accumulation:int=8,
+        grad_clip:float=None,
+        fp16:bool=False,
+        grad_scalar:GradScaler=None):
+    '''
+    ## Train model and refrensh its gradients & parameters
+
+    ### Tips:
+        - Gradient accumulation: Gradient accumulation steps
+        - Mixed precision: Mixed precision training is allowed
+        - Gradient resacle: Only available when mixed precision training is enabled, to avoid the gradient exploration/annihilation bring by fp16
+        - Gradient clip: Only available when mixed precision training is DISABLED
+    '''
     model.train()
     train_loss = 0
     predictions = []
@@ -381,21 +404,28 @@ def train(device, dataloader, model, loss_fn, optimizer, scheduler, gradient_acc
     for i, (x, y) in enumerate(dataloader):
         x=x.to(device)
         y = y.reshape(-1).to(device)
-        '''Compute prediction error'''
-        pred = model(x)
+        with autocast(enabled=fp16):
+            if (i+1)%gradient_accumulation!=0 and i+1<batchs:
+                with model.no_sync():
+                    pred = model(x)
+                    loss = loss_fn(pred, y)
+                    loss = loss/gradient_accumulation
+                    grad_scalar.scale(loss).backward()
+            elif (i+1) % gradient_accumulation == 0 or i+1==batchs:
+                pred = model(x)
+                loss = loss_fn(pred, y)
+                loss = loss/gradient_accumulation
+                if grad_clip is not None and fp16==False:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(),grad_clip)
+                grad_scalar.scale(loss).backward()
+                grad_scalar.step(optimizer)
+                grad_scalar.update()
+                optimizer.zero_grad()
         predictions.append(pred.detach().cpu().numpy())
         labels.append(y.detach().cpu().numpy())
-        loss = loss_fn(pred, y)
-        train_loss += loss.item()
-        loss = loss/gradient_accumulation
-        '''Backpropagation'''
-        loss.backward()
-        if (i+1) % gradient_accumulation == 0 or i+1==batchs:
-            optimizer.step()
-            optimizer.zero_grad()
+        train_loss += loss.item()*gradient_accumulation
     scheduler.step()
     return train_loss/batchs, np.concatenate(predictions, axis=0), np.concatenate(labels, axis=0)
-
 
 def test(device, dataloader, model, loss_fn):
     num_batches = len(dataloader)

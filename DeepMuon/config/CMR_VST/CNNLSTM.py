@@ -47,8 +47,7 @@ test_dataset = dict(
 '''
 Specify the work_dir to save the training log and checkpoints
 '''
-work_config = dict(
-    work_dir='/data/JoyceW/VST_fusion_dataset/DM_workdir/CNNLSTM/4ch_bin_1.826', logfile='log.log')
+work_config = dict(work_dir='/data/JoyceW/VST_fusion_dataset/DM_workdir/CNNLSTM/4ch_bin_1.826')
 '''
 Specify the checkpoint configuration
 '''
@@ -69,9 +68,10 @@ optimizer = dict(backbone='SGD', params=dict(
 '''
 scheduler
 '''
-scheduler = dict(backbone='CosineAnnealingLR', params=dict(T_max=10))
+scheduler = dict(backbone='CosineAnnealingLR', params=dict(T_max=10,eta_min=1e-5))
 '''
 Specify the Hyperparameters to be used
 '''
 hyperpara = dict(epochs=100, batch_size=1, inputshape=[1, 3, 40, 10, 10])
 fsdp_parallel = dict(enabled=False, min_num_params=1e6)
+optimize_config=dict(fp16=True,grad_acc=8,grad_clip=1)

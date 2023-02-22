@@ -46,8 +46,7 @@ test_dataset = dict(
 '''
 Specify the work_dir to save the training log and checkpoints
 '''
-work_config = dict(
-    work_dir='/data/JoyceW/VST_fusion_dataset/DM_workdir/test_fusion', logfile='log.log')
+work_config = dict(work_dir='/data/JoyceW/VST_fusion_dataset/DM_workdir/test_fusion')
 '''
 Specify the checkpoint configuration
 '''

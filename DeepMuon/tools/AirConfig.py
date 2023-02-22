@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-02-19 21:59:58
+LastEditTime: 2023-02-22 19:03:24
 Description: Import configuration file and prepare configurations for experiments
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -11,6 +11,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 import os
 import warnings
 import shutil
+import time
 from DeepMuon.loss_fn import *
 from DeepMuon.interpret import *
 from DeepMuon.models import *
@@ -201,8 +202,25 @@ class Config:
                                                params=scheduler_info['params'])
         self.paras['hyperpara'] = self.config.hyperpara
         self.paras['work_config'] = self.config.work_config
+        if 'logfile' not in self.paras['work_config'].keys():
+            current_time=time.strftime("%Y-%m-%d-%H.%M.%S", time.localtime(time.time()))
+            self.paras['work_config']['logfile']=f"{current_time}.log"
         self.paras['checkpoint_config'] = self.config.checkpoint_config
         self.paras['config'] = dict(path=self.configpath)
+        if 'optimize_config' not in self.config_keys:
+            self.paras['optimize_config']=dict(fp16=False,grad_acc=1,grad_clip=False)
+        else:
+            optim_config=getattr(self.config,'optimize_config')
+            if 'fp16' not in optim_config.keys():
+                optim_config['fp16']=False
+            if 'grad_acc' not in optim_config.keys():
+                optim_config['grad_acc']=1
+            if 'grad_clip' not in optim_config.keys():
+                optim_config['grad_clip']=None
+            if optim_config['fp16'] and optim_config['grad_clip'] is not None:
+                warnings.warn('Gradient clip is only available when mixed precision training is disabled, grad_clip is set as None to avoid mistakes')
+                optim_config['grad_clip']=None
+            self.paras['optimize_config']=optim_config
         if 'gpu_config' in self.config_keys:
             warnings.warn(
                 "'gpu_config' was deprecated, please do not use it anymore")

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 22:24:05
 LastEditors: airscker
-LastEditTime: 2023-01-18 09:33:46
+LastEditTime: 2023-02-22 19:10:34
 Description: Configuration of Pandax4T-III MLP3 Model
 
 Copyright (C) 2022 by Airscker(Yufeng), All Rights Reserved.
@@ -47,5 +47,5 @@ optimizer = dict(backbone='SGD', params=dict(
 '''
 scheduler
 '''
-scheduler = dict(backbone='CosineAnnealingLR', params=dict(T_max=10))
+scheduler = dict(backbone='CosineAnnealingLR', params=dict(T_max=10,eta_min=1e-5))
 fsdp_parallel = dict(enabled=False, min_num_params=1e6)

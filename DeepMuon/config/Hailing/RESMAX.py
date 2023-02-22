@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 22:24:05
 LastEditors: airscker
-LastEditTime: 2023-02-15 16:57:11
+LastEditTime: 2023-02-23 00:10:02
 Description: Configuration of Hailing 1TeV MLP3_3D_Direct Model
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -22,13 +22,11 @@ test_dataset = dict(backbone='HailingDataset_Direct2', params=dict(
 '''
 ## Specify the work_dir to save the training log and checkpoints
 '''
-work_config = dict(
-    work_dir='/data/Airscker/VST3/Hailing-Muon/work_dir/1TeV/ResMax_01', logfile='log.log')
+work_config = dict(work_dir='/data/Airscker/VST3/Hailing-Muon/work_dir/1TeV/ResMax_01')
 '''
 ## Specify the checkpoint configuration
 '''
 # checkpoint_config=dict(load_from='',resume_from='/data/Airscker/VST3/Hailing-Muon/work_dir/1TeV/CSPP_3/Best_Performance.pth',save_inter=500)
-# checkpoint_config=dict(load_from='',resume_from='',save_inter=500)
 checkpoint_config = dict(load_from='', resume_from='', save_inter=500)
 
 '''
@@ -48,8 +46,9 @@ optimizer = dict(backbone='AdamW', params=dict(
 '''
 scheduler
 '''
-scheduler = dict(backbone='CosineAnnealingLR', params=dict(T_max=10))
+scheduler = dict(backbone='CosineAnnealingLR', params=dict(T_max=10,eta_min=1e-5))
 '''
 ## Specify the GPU config and DDP
 '''
 fsdp_parallel = dict(enabled=False, min_num_params=1e4)
+optimize_config=dict(fp16=True,grad_acc=8,grad_clip=1)
