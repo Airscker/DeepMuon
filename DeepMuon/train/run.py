@@ -30,7 +30,10 @@ def main():
     if not args.train.endswith('.py'):
         args.train += '.py'
     file = os.path.join(pkg_path, 'train', args.train)
-    command = f'CUDA_VISIBLE_DEVICES={env} torchrun --nproc_per_node={len(args.gpus)} --master_port {args.port} {file} --config {args.config} --test {args.test}'
+    if args.test=='':
+        command = f'CUDA_VISIBLE_DEVICES={env} torchrun --nproc_per_node={len(args.gpus)} --master_port {args.port} {file} --config {args.config}'
+    else:
+        command = f'CUDA_VISIBLE_DEVICES={env} torchrun --nproc_per_node={len(args.gpus)} --master_port {args.port} {file} --config {args.config} --test {args.test}'
     os.system(command)
     # print(command)
 
