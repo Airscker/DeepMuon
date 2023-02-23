@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-23 12:28:44
+LastEditTime: 2023-02-23 14:37:44
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -28,9 +28,8 @@ from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.tensorboard import SummaryWriter
-torch.set_default_tensor_type(torch.FloatTensor)
 torch.backends.cudnn.benchmark = True
-torch.manual_seed(3407)
+# torch.manual_seed(3407)
 
 try:
     from torch.distributed.fsdp import FullyShardedDataParallel as FSDP, FullStateDictConfig, StateDictType
@@ -254,7 +253,7 @@ def main(config_info, test_path=None):
                 tensorboard_plot(tr_eva_metrics, t+1, writer, 'train')
                 tensorboard_plot(ts_eva_metrics, t+1, writer, 'test')
             '''Save best model accoeding to the value of sota target'''
-            if ts_target != bestres:
+            if ts_target != bestres and not np.isnan(ts_target):
                 bestres = ts_target
                 if os.path.exists(best_checkpoint):
                     os.remove(best_checkpoint)
@@ -399,18 +398,18 @@ def train(device: Union[int, str, torch.device],
             h0 = model.module.init_hidden(x.size(0))
         y = torch.autograd.Variable(y).cuda(device, non_blocking=True)
         with autocast(enabled=fp16):
-            if (i+1) % gradient_accumulation != 0 and i+1 < batchs:
+            if (i+1) % gradient_accumulation != 0:
                 with model.no_sync():
-                    pred = model(x, h0)
+                    pred = model(x,h0)
                     loss = loss_fn(pred, y)
                     loss = loss/gradient_accumulation
                     grad_scalar.scale(loss).backward()
-            elif (i+1) % gradient_accumulation == 0 or i+1 == batchs:
-                pred = model(x, h0)
+            elif (i+1) % gradient_accumulation == 0:
+                pred = model(x,h0)
                 loss = loss_fn(pred, y)
                 loss = loss/gradient_accumulation
-                if grad_clip is not None and fp16 == False:
-                    torch.nn.utils.clip_grad_norm_(
+                if grad_clip is not None:
+                    torch.nn.utils.clip_grad_value_(
                         model.parameters(), grad_clip)
                 grad_scalar.scale(loss).backward()
                 grad_scalar.step(optimizer)

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-02-22 19:03:24
+LastEditTime: 2023-02-23 19:54:48
 Description: Import configuration file and prepare configurations for experiments
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -218,10 +218,6 @@ class Config:
             if 'grad_acc' not in optim_config.keys():
                 optim_config['grad_acc'] = 1
             if 'grad_clip' not in optim_config.keys():
-                optim_config['grad_clip'] = None
-            if optim_config['fp16'] and optim_config['grad_clip'] is not None:
-                warnings.warn(
-                    'Gradient clip is only available when mixed precision training is disabled, grad_clip is set as None to avoid mistakes')
                 optim_config['grad_clip'] = None
             self.paras['optimize_config'] = optim_config
         if 'gpu_config' in self.config_keys:

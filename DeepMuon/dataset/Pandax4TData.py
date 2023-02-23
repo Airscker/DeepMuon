@@ -12,7 +12,6 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import Dataset
 import pickle as pkl
-torch.set_default_tensor_type(torch.FloatTensor)
 
 
 def PatternData2Img(data):

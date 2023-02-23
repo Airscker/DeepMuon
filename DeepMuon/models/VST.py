@@ -14,7 +14,6 @@ import numpy as np
 from timm.models.layers import DropPath, trunc_normal_
 from functools import reduce, lru_cache
 from operator import mul
-torch.set_default_tensor_type(torch.FloatTensor)
 
 
 class Mlp(nn.Module):
@@ -763,6 +762,7 @@ class screening_model(nn.Module):
         )
         self.flatten = nn.Flatten()
         self.linear = nn.Linear(mlp_in_channels, num_classes)
+
     def forward(self, x: torch.Tensor):
         '''x: NCTHW'''
         x = self.vst(x)
@@ -836,12 +836,13 @@ class fusion_model(nn.Module):
         '''x: NMCTHW'''
         assert x.shape[1] == len(
             self.vst_backbones), f'Multi modality input data types does not match the number of vst backbones; {len(self.vst_backbones)} types of data expected however {x.shape[1]} given'
-        x=torch.permute(x,(1,0,2,3,4,5))
-        features=[]
+        x = torch.permute(x, (1, 0, 2, 3, 4, 5))
+        features = []
         for i in range(x.shape[0]):
-            features.append(self.avgpool(self.vst_backbones[i](x[i])).unsqueeze(0))
-        features=torch.cat(features,dim=0)
-        x=torch.permute(features,(1,0,2,3,4,5))
+            features.append(self.avgpool(
+                self.vst_backbones[i](x[i])).unsqueeze(0))
+        features = torch.cat(features, dim=0)
+        x = torch.permute(features, (1, 0, 2, 3, 4, 5))
         x = self.dropout(x)
         x = self.flatten(x)
         x = self.linear(x)

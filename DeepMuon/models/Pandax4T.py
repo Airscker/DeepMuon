@@ -13,7 +13,6 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 
 from torch import nn
 import torch
-torch.set_default_tensor_type(torch.FloatTensor)
 
 
 class MLP3(nn.Module):

@@ -22,7 +22,8 @@ test_dataset = dict(backbone='HailingDataset_Direct2', params=dict(
 '''
 ## Specify the work_dir to save the training log and checkpoints
 '''
-work_config = dict(work_dir='/data/Airscker/VST3/Hailing-Muon/work_dir/1TeV/ResMax_01')
+work_config = dict(
+    work_dir='/data/Airscker/VST3/Hailing-Muon/work_dir/1TeV/ResMax_01')
 '''
 ## Specify the checkpoint configuration
 '''
@@ -47,9 +48,10 @@ optimizer = dict(backbone='AdamW', params=dict(
 scheduler
 '''
 # scheduler = dict(backbone='CosineAnnealingLR', params=dict(T_max=10,eta_min=1e-5))
-scheduler=dict(backbone='ReduceLROnPlateau',params=dict(mode='min', factor=0.5, patience=100))
+scheduler = dict(backbone='ReduceLROnPlateau', params=dict(
+    mode='min', factor=0.5, patience=100))
 '''
 ## Specify the GPU config and DDP
 '''
 fsdp_parallel = dict(enabled=False, min_num_params=1e4)
-optimize_config=dict(fp16=True,grad_acc=8,grad_clip=1)
+optimize_config = dict(fp16=True, grad_acc=8, grad_clip=0.01)

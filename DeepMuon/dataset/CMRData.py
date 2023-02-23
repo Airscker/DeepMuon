@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-27 19:51:21
 LastEditors: airscker
-LastEditTime: 2023-02-20 00:02:27
+LastEditTime: 2023-02-23 20:08:14
 Description:
     ## Dataset built for:
         - Video Swin-Transformer (VST) CMR Screening & Diagnose Model
@@ -20,7 +20,6 @@ from skimage import exposure
 
 import torch
 from torch.utils.data import Dataset
-torch.set_default_tensor_type(torch.FloatTensor)
 
 
 def exclude_key(dictionary: dict, del_key: str = 'type'):

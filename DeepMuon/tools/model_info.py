@@ -10,7 +10,6 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 import torch
 from ptflops import get_model_complexity_info
 from torchinfo import summary
-torch.set_default_tensor_type(torch.FloatTensor)
 
 
 def model_para(model, datasize: list, depth=3, gpu=0, show=False):

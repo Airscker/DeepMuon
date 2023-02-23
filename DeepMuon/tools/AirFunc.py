@@ -18,7 +18,6 @@ import matplotlib.pyplot as plt
 
 import torch
 from torch import nn
-torch.set_default_tensor_type(torch.FloatTensor)
 
 
 def check_device(device: Union[int, str, torch.device]):

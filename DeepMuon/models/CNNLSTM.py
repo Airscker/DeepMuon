@@ -18,7 +18,6 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 
 
-torch.set_default_tensor_type(torch.FloatTensor)
 densenet_40_12_bc_weights_path = os.path.join(
     os.path.dirname(__file__), "pretrained_densenet_4012BC.pth.tar")
 

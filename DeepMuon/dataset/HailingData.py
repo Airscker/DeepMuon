@@ -15,7 +15,6 @@ import numba
 
 import torch
 from torch.utils.data import Dataset
-torch.set_default_tensor_type(torch.FloatTensor)
 
 
 @numba.jit

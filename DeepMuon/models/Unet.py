@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-12-27 16:37:52
 LastEditors: airscker
-LastEditTime: 2023-02-09 09:57:40
+LastEditTime: 2023-02-23 15:27:05
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -12,7 +12,6 @@ import torch.nn as nn
 from monai.networks.nets import UNet
 import torch.nn.functional as F
 from monai.networks.blocks.convolutions import ResidualUnit
-torch.set_default_tensor_type(torch.FloatTensor)
 
 
 class ResMax_base(nn.Module):
@@ -139,4 +138,4 @@ class UNet_VAE2(nn.Module):
     def forward(self, x: torch.Tensor):
         x = self.unet(x)
         x = self.mlp(self.pool(x))
-        return x
+        return F.normalize(x)

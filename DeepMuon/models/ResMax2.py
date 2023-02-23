@@ -11,7 +11,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from monai.networks.blocks.convolutions import ResidualUnit
-torch.set_default_tensor_type(torch.FloatTensor)
 
 
 class ResMax2(nn.Module):
