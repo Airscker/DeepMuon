@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-02-13 19:20:47
 LastEditors: airscker
-LastEditTime: 2023-02-20 01:15:42
+LastEditTime: 2023-02-23 11:08:00
 Description: Get data/neuron/layer attributions
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -34,7 +34,7 @@ def GradCAM(model: nn.Module,module:nn.Module, input:torch.Tensor, label_dim: in
             Attributions will be the same size as the provided inputs, with each value providing the attribution of the corresponding input index.
             If the GradCAM attributions cannot be upsampled to the shape of a given input tensor, None is returned in the corresponding index position.
 
-     ### Tips:
+    ### Tips:
         - module: The module given here should be one of the layers of the model
             eg. We can specify `module=model.conv1`
     '''
@@ -153,7 +153,7 @@ def LayerAttr(model: nn.Module,module:nn.Module, input:torch.Tensor, label_dim: 
         - delta_array: np.nparray, contains all convergence delta values for every target
         - convergence: list[bool], contains all deltas' convergency for every target
 
-     ### Tips:
+    ### Tips:
         - module: The module given here should be one of the layers of the model, and the neuron we are interested in is contained within this layer.
             eg. We can specify `module=model.conv1`
     '''

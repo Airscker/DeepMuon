@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-23 00:55:28
+LastEditTime: 2023-02-23 12:22:03
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -26,13 +26,18 @@ from torch.cuda.amp.autocast_mode import autocast
 import torch.distributed as dist
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
-from torch.distributed.fsdp import FullyShardedDataParallel as FSDP, FullStateDictConfig, StateDictType
-from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.tensorboard import SummaryWriter
 torch.set_default_tensor_type(torch.FloatTensor)
 torch.backends.cudnn.benchmark = True
 torch.manual_seed(3407)
+
+try:
+    from torch.distributed.fsdp import FullyShardedDataParallel as FSDP, FullStateDictConfig, StateDictType
+    from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy
+    fsdp_env=True
+except:
+    fsdp_env=False
 
 pkg_path = DeepMuon.__path__[0]
 msg = os.path.join(pkg_path.split('DeepMuon')[0], 'LICENSE.txt')
@@ -40,6 +45,7 @@ msg = os.path.join(pkg_path.split('DeepMuon')[0], 'LICENSE.txt')
 
 def main(config_info, test_path=None):
     global msg
+    global fsdp_env
     '''Initialize the basic training configuration'''
     configs = config_info.paras
     batch_size = configs['hyperpara']['batch_size']
@@ -146,7 +152,7 @@ def main(config_info, test_path=None):
         # writer.add_graph(model, torch.randn(
         #     configs['hyperpara']['inputshape']).to(device))
     '''Model Parallel'''
-    if configs['fsdp_parallel']['enabled']:
+    if configs['fsdp_parallel']['enabled'] and fsdp_env:
         auto_wrap_policy = functools.partial(
             size_based_auto_wrap_policy, min_num_params=configs['fsdp_parallel']['min_num_params']
         )
@@ -156,6 +162,8 @@ def main(config_info, test_path=None):
         model = DistributedDataParallel(model, device_ids=[
             local_rank], output_device=local_rank, find_unused_parameters=False)
         ddp_training = True
+        if fsdp_env and local_rank==0:
+            logger.log(f'WARN: FSDP is not supported at current edition of torch: {torch.__version__}, we have switched to DDP to avoid mistakes')
     '''
     Initialize loss/optimizer/scheduler
     eg. loss_fn=nn.MSELoss()
