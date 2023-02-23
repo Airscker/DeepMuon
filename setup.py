@@ -66,7 +66,7 @@ setup(
     python_requires=">=3.6, <4",
     # This field lists other packages that your project depends on to run.
     # Any package you put here will be installed by pip when your project is
-    # installed, so they must be valid existing projects.
+    # installed, so they must be valid existing projects.s
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/discussions/install-requires-vs-requirements/
@@ -84,6 +84,9 @@ setup(
                       'GPUtil',
                       'matplotlib',
                       'timm',
+                      'SimpleITK',
+                      'sklearn',
+                      'scikit-image'
                       ],
     # Similar to `install_requires` above, these must be valid existing
     # projects.

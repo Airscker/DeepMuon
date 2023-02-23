@@ -35,9 +35,9 @@ torch.manual_seed(3407)
 try:
     from torch.distributed.fsdp import FullyShardedDataParallel as FSDP, FullStateDictConfig, StateDictType
     from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy
-    fsdp_env=True
+    fsdp_env = True
 except:
-    fsdp_env=False
+    fsdp_env = False
 
 pkg_path = DeepMuon.__path__[0]
 msg = os.path.join(pkg_path.split('DeepMuon')[0], 'LICENSE.txt')
@@ -58,13 +58,13 @@ def main(config_info, test_path=None):
         log = 'test_'+log
     resume = configs['checkpoint_config']['resume_from']
     load = configs['checkpoint_config']['load_from']
-    fp16=configs['optimize_config']['fp16']
-    grad_scalar=GradScaler(enabled=fp16)
-    grad_clip=configs['optimize_config']['grad_clip']
-    grad_acc=configs['optimize_config']['grad_acc']
+    fp16 = configs['optimize_config']['fp16']
+    grad_scalar = GradScaler(enabled=fp16)
+    grad_clip = configs['optimize_config']['grad_clip']
+    grad_acc = configs['optimize_config']['grad_acc']
     if test_path is not None:
         load = test_path
-        resume=''
+        resume = ''
     inter = configs['checkpoint_config']['save_inter']
     '''Initialize Distributed Training'''
     group = torch.distributed.init_process_group(backend="nccl")
@@ -162,8 +162,9 @@ def main(config_info, test_path=None):
         model = DistributedDataParallel(model, device_ids=[
             local_rank], output_device=local_rank, find_unused_parameters=False)
         ddp_training = True
-        if fsdp_env and local_rank==0:
-            logger.log(f'WARN: FSDP is not supported at current edition of torch: {torch.__version__}, we have switched to DDP to avoid mistakes')
+        if fsdp_env and local_rank == 0:
+            logger.log(
+                f'WARN: FSDP is not supported at current edition of torch: {torch.__version__}, we have switched to DDP to avoid mistakes')
     '''
     Initialize loss/optimizer/scheduler
     eg. loss_fn=nn.MSELoss()
@@ -217,7 +218,8 @@ def main(config_info, test_path=None):
     for t in range(epoch_now, epochs):
         start_time = time.time()
         train_dataloader.sampler.set_epoch(t)
-        trloss, tr_score, tr_label = train(device=device,dataloader=train_dataloader,model=model,loss_fn=loss_fn,optimizer=optimizer,scheduler=scheduler,gradient_accumulation=grad_acc,grad_clip=grad_clip,fp16=fp16,grad_scalar=grad_scalar)
+        trloss, tr_score, tr_label = train(device=device, dataloader=train_dataloader, model=model, loss_fn=loss_fn, optimizer=optimizer,
+                                           scheduler=scheduler, gradient_accumulation=grad_acc, grad_clip=grad_clip, fp16=fp16, grad_scalar=grad_scalar)
         tsloss, ts_score, ts_label = test(
             device, test_dataloader, model, loss_fn)
         '''
@@ -359,16 +361,16 @@ def evaluation(scores, labels, evaluation_command, best_target, loss):
         return eva_res, loss
 
 
-def train(device:Union[int,str,torch.device],
-        dataloader:DataLoader,
-        model:nn.Module,
-        loss_fn=None,
-        optimizer=None,
-        scheduler=None,
-        gradient_accumulation:int=8,
-        grad_clip:float=None,
-        fp16:bool=False,
-        grad_scalar:GradScaler=None):
+def train(device: Union[int, str, torch.device],
+          dataloader: DataLoader,
+          model: nn.Module,
+          loss_fn=None,
+          optimizer=None,
+          scheduler=None,
+          gradient_accumulation: int = 8,
+          grad_clip: float = None,
+          fp16: bool = False,
+          grad_scalar: GradScaler = None):
     '''
     ## Train model and refrensh its gradients & parameters
 
@@ -397,18 +399,19 @@ def train(device:Union[int,str,torch.device],
             h0 = model.module.init_hidden(x.size(0))
         y = torch.autograd.Variable(y).cuda(device, non_blocking=True)
         with autocast(enabled=fp16):
-            if (i+1)%gradient_accumulation!=0 and i+1<batchs:
+            if (i+1) % gradient_accumulation != 0 and i+1 < batchs:
                 with model.no_sync():
-                    pred = model(x,h0)
+                    pred = model(x, h0)
                     loss = loss_fn(pred, y)
                     loss = loss/gradient_accumulation
                     grad_scalar.scale(loss).backward()
-            elif (i+1) % gradient_accumulation == 0 or i+1==batchs:
-                pred = model(x,h0)
+            elif (i+1) % gradient_accumulation == 0 or i+1 == batchs:
+                pred = model(x, h0)
                 loss = loss_fn(pred, y)
                 loss = loss/gradient_accumulation
-                if grad_clip is not None and fp16==False:
-                    torch.nn.utils.clip_grad_norm_(model.parameters(),grad_clip)
+                if grad_clip is not None and fp16 == False:
+                    torch.nn.utils.clip_grad_norm_(
+                        model.parameters(), grad_clip)
                 grad_scalar.scale(loss).backward()
                 grad_scalar.step(optimizer)
                 grad_scalar.update()

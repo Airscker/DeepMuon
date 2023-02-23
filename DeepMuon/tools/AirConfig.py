@@ -203,24 +203,27 @@ class Config:
         self.paras['hyperpara'] = self.config.hyperpara
         self.paras['work_config'] = self.config.work_config
         if 'logfile' not in self.paras['work_config'].keys():
-            current_time=time.strftime("%Y-%m-%d-%H.%M.%S", time.localtime(time.time()))
-            self.paras['work_config']['logfile']=f"{current_time}.log"
+            current_time = time.strftime(
+                "%Y-%m-%d-%H.%M.%S", time.localtime(time.time()))
+            self.paras['work_config']['logfile'] = f"{current_time}.log"
         self.paras['checkpoint_config'] = self.config.checkpoint_config
         self.paras['config'] = dict(path=self.configpath)
         if 'optimize_config' not in self.config_keys:
-            self.paras['optimize_config']=dict(fp16=False,grad_acc=1,grad_clip=False)
+            self.paras['optimize_config'] = dict(
+                fp16=False, grad_acc=1, grad_clip=False)
         else:
-            optim_config=getattr(self.config,'optimize_config')
+            optim_config = getattr(self.config, 'optimize_config')
             if 'fp16' not in optim_config.keys():
-                optim_config['fp16']=False
+                optim_config['fp16'] = False
             if 'grad_acc' not in optim_config.keys():
-                optim_config['grad_acc']=1
+                optim_config['grad_acc'] = 1
             if 'grad_clip' not in optim_config.keys():
-                optim_config['grad_clip']=None
+                optim_config['grad_clip'] = None
             if optim_config['fp16'] and optim_config['grad_clip'] is not None:
-                warnings.warn('Gradient clip is only available when mixed precision training is disabled, grad_clip is set as None to avoid mistakes')
-                optim_config['grad_clip']=None
-            self.paras['optimize_config']=optim_config
+                warnings.warn(
+                    'Gradient clip is only available when mixed precision training is disabled, grad_clip is set as None to avoid mistakes')
+                optim_config['grad_clip'] = None
+            self.paras['optimize_config'] = optim_config
         if 'gpu_config' in self.config_keys:
             warnings.warn(
                 "'gpu_config' was deprecated, please do not use it anymore")

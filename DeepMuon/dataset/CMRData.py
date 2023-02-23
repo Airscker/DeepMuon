@@ -121,6 +121,7 @@ def Random_Gamma_Bright(frames: np.ndarray, ratio=0.5, low=0.4, high=1):
                 frames[i], np.random.uniform(low, high))
     return frames
 
+
 def AddRandomNumber(frames: np.ndarray, range=0.1):
     """
     ## Adjust the brightness of nifti data within specified range with spcified probability
@@ -128,11 +129,11 @@ def AddRandomNumber(frames: np.ndarray, range=0.1):
     ### Args:
         - frames: the numpy array data of nifti file, input shape should be `THWC`
         - range: the range of the noise value
-    
+
     ### Return:
         - the nifti data augmented
     """
-    noise=(2*np.random.rand(frames.shape)-1)*range
+    noise = (2*np.random.rand(frames.shape)-1)*range
     return frames+noise
 
 
@@ -389,8 +390,8 @@ class NIIDecodeV2(Dataset):
         if self.model != 'LSTM':
             if self.fusion:
                 for i in range(len(data)):
-                    data[i]=data[i].unsqueeze(0)
-                return torch.cat(data,dim=0), label
+                    data[i] = data[i].unsqueeze(0)
+                return torch.cat(data, dim=0), label
             else:
                 return data[0], label
         elif self.model == 'LSTM':

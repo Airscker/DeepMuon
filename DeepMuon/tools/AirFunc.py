@@ -21,22 +21,25 @@ from torch import nn
 torch.set_default_tensor_type(torch.FloatTensor)
 
 
-def check_device(device:Union[int,str,torch.device]):
+def check_device(device: Union[int, str, torch.device]):
     '''check the cuda/cpu device specified'''
     if not torch.cuda.is_available():
         warnings.warn(f"CUDA is not available, device is replaced as 'cpu'")
-        device='cpu'
-    elif isinstance(device,int):
-        if device+1>torch.cuda.device_count():
-            warnings.warn(f"Only {torch.cuda.device_count()} devices available, however cuda:{device} is specified. We will use cuda:{torch.cuda.device_count()-1} instead")
-        device=torch.device(min(device,torch.cuda.device_count()-1))
-    elif isinstance(device,torch.device):
-        if device.index+1>torch.cuda.device_count():
-            warnings.warn(f"Only {torch.cuda.device_count()} devices available, however {device} is specified. We will use cuda:{torch.cuda.device_count()-1} instead")
-            device=torch.device(torch.cuda.device_count()-1)
+        device = 'cpu'
+    elif isinstance(device, int):
+        if device+1 > torch.cuda.device_count():
+            warnings.warn(
+                f"Only {torch.cuda.device_count()} devices available, however cuda:{device} is specified. We will use cuda:{torch.cuda.device_count()-1} instead")
+        device = torch.device(min(device, torch.cuda.device_count()-1))
+    elif isinstance(device, torch.device):
+        if device.index+1 > torch.cuda.device_count():
+            warnings.warn(
+                f"Only {torch.cuda.device_count()} devices available, however {device} is specified. We will use cuda:{torch.cuda.device_count()-1} instead")
+            device = torch.device(torch.cuda.device_count()-1)
     return device
 
-def plot_3d(img,save='',show=False,title='',norm=False):
+
+def plot_3d(img, save='', show=False, title='', norm=False):
     """
     ## Plot the 3D image of the given image.
 
@@ -47,30 +50,30 @@ def plot_3d(img,save='',show=False,title='',norm=False):
         - title: the title of the image
         - norm: whether to normalize the image
     """
-    x=[]
-    y=[]
-    z=[]
-    num=[]
-    img=np.array(img)
+    x = []
+    y = []
+    z = []
+    num = []
+    img = np.array(img)
     if norm:
-        img=(img-np.min(img))/(np.max(img)-np.min(img))
+        img = (img-np.min(img))/(np.max(img)-np.min(img))
     for i in range(img.shape[0]):
         for j in range(img.shape[1]):
             for k in range(img.shape[2]):
-                if img[i][j][k]!=0:
+                if img[i][j][k] != 0:
                     x.append(i)
                     y.append(j)
                     z.append(k)
                     num.append(img[i][j][k])
-    fig=plt.figure(figsize=(15,15))
+    fig = plt.figure(figsize=(15, 15))
     plt.title(title)
-    ax=plt.axes(projection='3d')
-    ax.scatter3D(x,y,z,c=num,cmap='jet')
+    ax = plt.axes(projection='3d')
+    ax.scatter3D(x, y, z, c=num, cmap='jet')
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_zlabel('z')
-    if save!='':
-        plt.savefig(save,dpi=600)
+    if save != '':
+        plt.savefig(save, dpi=600)
     if show:
         plt.show()
     plt.clf()
@@ -230,9 +233,11 @@ def import_module(module_path: str):
     ### Return:
         - the imported module
     '''
-    assert module_path.endswith('.py'), f'Config file must be a python file but {module_path} is given'
-    total_path=os.path.abspath(module_path)
-    assert os.path.exists(total_path), f'Configuration file {total_path} does not exist. Please check the path again'
+    assert module_path.endswith(
+        '.py'), f'Config file must be a python file but {module_path} is given'
+    total_path = os.path.abspath(module_path)
+    assert os.path.exists(
+        total_path), f'Configuration file {total_path} does not exist. Please check the path again'
     module_spec = importlib.util.spec_from_file_location('', total_path)
     module = importlib.util.module_from_spec(module_spec)
     module_spec.loader.exec_module(module)
