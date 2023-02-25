@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-02-22 19:06:48
+LastEditTime: 2023-02-24 01:11:40
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -38,7 +38,7 @@ def check_device(device: Union[int, str, torch.device]):
     return device
 
 
-def plot_3d(img, save='', show=False, title='', norm=False):
+def plot_3d(img, save='', show=False, title='', norm=False,vector=None):
     """
     ## Plot the 3D image of the given image.
 
@@ -48,6 +48,7 @@ def plot_3d(img, save='', show=False, title='', norm=False):
         - show: whether to show the image
         - title: the title of the image
         - norm: whether to normalize the image
+        - vector: (optional)the vector to be ploted, [x0,y0,z0,nx,ny,nz]
     """
     x = []
     y = []
@@ -68,6 +69,12 @@ def plot_3d(img, save='', show=False, title='', norm=False):
     plt.title(title)
     ax = plt.axes(projection='3d')
     ax.scatter3D(x, y, z, c=num, cmap='jet')
+    if vector is not None:
+        start_point=vector[:3]
+        direction=vector[3:]
+        direction=direction/np.sqrt(np.sum(direction**2))
+        end_point=direction*5+start_point
+        ax.quiver(start_point[0],start_point[1],start_point[2],end_point[0],end_point[1],end_point[2],color='red')
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_zlabel('z')
