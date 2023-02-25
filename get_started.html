@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Interdisciplinary deep-learning platform">
+    <meta name="author" content="Airscker(Yufeng)">
+    <title>DeepMuon</title>
+
+    <!-- font icons -->
+    <link rel="stylesheet" href="assets/vendors/themify-icons/css/themify-icons.css">
+
+    <!-- Bootstrap + DeepMuon main styles -->
+    <link rel="stylesheet" href="assets/css/home.css">
+    <link rel="stylesheet" href="assets/css/get-started.css">
+
+</head>
+
+<body data-spy="scroll" data-target=".navbar" data-offset="40" id="home">
+    <!-- Page Navigation -->
+    <nav class="navbar custom-navbar navbar-expand-lg navbar-dark" data-spy="affix" data-offset-top="20" id="page_nav">
+    </nav>
+    <!-- End Of Page Navigation -->
+    <!-- Page Header -->
+    <header class="header">
+        <div class="overlay">
+            <h6 class="subtitle">Get Started with DeepMuon</h6>
+        </div>
+    </header>
+    <!-- End Of Page Header -->
+    <!-- Install section -->
+    <section>
+        <div class="container ">
+            <div class="row align-items-center ">
+                <div class="col-md-7 col-lg-auto ">
+                    <h2 class="section-title mb-3 ">Install DeepMuon</h2>
+                    <p>The installation can be accessed from sereval sources, and they are all stable editions. Please make sure you have met the prerequisites (such as numpy). Here we list some important prerequisites of DeepMuon:</p>
+                    <ul class="indent_list">
+                        <li>numpy</li>
+                        <li>click</li>
+                        <li>tqdm</li>
+                        <li>pandas</li>
+                        <li>numba</li>
+                        <li>ptflops</li>
+                        <li>torchinfo</li>
+                        <li>captum</li>
+                        <li>monai</li>
+                        <li>pynvml</li>
+                        <li>psutil</li>
+                        <li>GPUtil</li>
+                        <li>matplotlib</li>
+                        <li>timm</li>
+                        <li>SimpleITK</li>
+                        <li>sklearn</li>
+                        <li>scikit-image</li>
+                    </ul>
+                    <p>The prerequisites listed above will be installed automatically when installing DeepMuon, however, you need to first make sure PyTorch >= 1.12(CUDA edition) was installed properly. The lowest tolerable edition of PyTorch is 1.10.0.,
+                        otherwise DeepMuon may occur fatal mistakes. We strongly suggest you install <b>torchvision</b> and <b>torchaudio</b> at the same time.</p>
+                    <p>As for the python environment, the lowest edition of python should be python 3.6.0.</p>
+                    <p>DeepMuon support Windows/MacOSX/Linux platforms, we <b>recommand</b> you to install DeepMuon from source to get the best customize experience.</p>
+                    <p>DeepMuon is constructed based on latest (>=1.12) <a href="https://pytorch.org/ ">PyTorch</a>, and the supported edition should larger than 1.10. Because not all users' platform support latest pytorch, so the feature <b>Fully Sharded Data
+                        Parallel (FSDP)</b> would be disabled if torch's edition is low (such as torch=1.10.0).</p>
+                    <h6 class="section-subtitle mb-2 ">From Source:</h6>
+                    <pre><code>git clone git@github.com:Airscker/DeepMuon.github<br>cd DeepMuon<br>pip install -v -e ./</code></pre>
+                    <h6 class="section-subtitle mb-2 ">From PyPI:</h6>
+                    <ul class="indent_list ">
+                        <li>Via pip:<pre><code>pip install DeepMuon</code></pre></li>
+                        <li>Via conda:<pre><code>conda install DeepMuon</code></pre></li>
+                    </ul>
+                    <p>If you have occured any wrong during the installation of DeepMuon, we recommand you to install from source.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- End of Install Section -->
+
+
+
+    <!-- core -->
+    <script src="assets/vendors/jquery/jquery-3.4.1.js "></script>
+    <script src="assets/vendors/bootstrap/bootstrap.bundle.js "></script>
+
+    <!-- bootstrap affix -->
+    <script src="assets/vendors/bootstrap/bootstrap.affix.js "></script>
+
+    <!-- DeepMuon js -->
+    <script src="assets/js/deepmuon.js "></script>
+    <script src="assets/js/navigation.js "></script>
+
+
+</body>
+
+</html>

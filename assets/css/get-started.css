@@ -1,0 +1,55 @@
+.header {
+    height: 40%;
+    min-height: 600px;
+    background: url(../imgs/header.jpg) no-repeat center center fixed;
+    background-size: cover;
+}
+
+.header .overlay {
+    position: relative;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+    -ms-flex-align: center;
+    align-items: center;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+}
+
+.header .overlay .subtitle {
+    margin-top: 40px;
+    font-size: calc(20px + (30 - 20) * ((100vw - 320px) / (1200 - 320)));
+    font-weight: 300;
+}
+
+.header .overlay .title {
+    font-size: calc(40px + (90 - 40) * ((100vw - 320px) / (1200 - 320)));
+    margin-bottom: 40px;
+}
+
+@media (max-width: 767.98px) {
+    .header .overlay .subtitle {
+        margin-top: 0;
+    }
+}
+
+ul {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
