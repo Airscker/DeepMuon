@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Interdisciplinary deep-learning platform">
+    <meta name="author" content="Airscker(Yufeng)">
+    <title>DeepMuon</title>
+
+    <!-- font icons -->
+    <link rel="stylesheet" href="assets/vendors/themify-icons/css/themify-icons.css">
+
+    <!-- Bootstrap + DeepMuon main styles -->
+    <link rel="stylesheet" href="assets/css/home.css">
+
+</head>
+
+<body data-spy="scroll" data-target=".navbar" data-offset="40" id="home">
+    <!-- Page Navigation -->
+    <nav class="navbar custom-navbar navbar-expand-lg navbar-dark" data-spy="affix" data-offset-top="20" id="page_nav">
+        <!-- <div class="container">
+            <a class="navbar-brand" href="#">
+                <img src="assets/imgs/long_logo.png" alt="DeepMuon Logo">
+            </a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#start">Get Started</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="">Blogs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="">Tutorials</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="">Documents</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://github.com/Airscker/DeepMuon" target="_blank">Github</a>
+                    </li>
+                </ul>
+            </div>
+        </div> -->
+    </nav>
+    <script>
+        $(".navbar").load("navigation.html");
+    </script>
+    <!-- End Of Page Navigation -->
+
+    <!-- Page Header -->
+    <header class="header">
+        <div class="overlay">
+            <h6 class="subtitle">Interdisciplinary Deep-Learning Platform</h6>
+            <h1 class="title"><img src='assets/imgs/logo.png' class='deepmuon_main_logo'>DeepMuon</h1>
+            <div class="buttons text-center">
+                <a href="#start" class="btn btn-primary rounded w-lg btn-lg my-1">Install</a>
+                <a href="#doc" class="btn btn-outline-light rounded w-lg btn-lg my-1">Document</a>
+            </div>
+        </div>
+    </header>
+    <!-- End Of Page Header -->
+    <!-- Box -->
+    <div class="box text-center">
+        <div class="box-item">
+            <i class="ti-hand-stop"></i>
+            <a href="https://github.com/Airscker/DeepMuon/releases/tag/1.23.23" target="_blank">
+                <h6 class="box-title">1.23.23 Stable Edtion Released</h6>
+            </a>
+            <p></p>
+        </div>
+        <!-- <div class="box-item">
+            <i class="ti-search"></i>
+            <h6 class="box-title">Attention</h6>
+            <p class="text-left"></p>
+        </div> -->
+    </div>
+    <!-- End of Box -->
+    <!-- Start section -->
+    <section id="start">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-7 col-lg-auto">
+                    <h2 class="section-title mb-3">Install DeepMuon</h2>
+                    <p>The installation can be accessed from sereval sources, and they are all stable editions. Please make sure you have met the prerequisites (such as numpy).</p>
+                    <p>DeepMuon support Windows/MacOSX/Linux platforms, we <b>recommand</b> you to install DeepMuon from source to get the best customize experience.</p>
+                    <p>DeepMuon is constructed based on latest (>=1.12) <a href="https://pytorch.org/">PyTorch</a>, and the supported edition should larger than 1.10. Because not all users' platform support latest pytorch, so the feature <b>Fully Sharded Data
+                        Parallel (FSDP)</b> would be disabled if torch's edition is low (such as torch=1.10.0).</p>
+                    <h6 class="section-subtitle mb-2">From Source:</h6>
+                    <pre><code>git clone git@github.com:Airscker/DeepMuon.github<br>cd DeepMuon<br>pip install -v -e ./</code></pre>
+                    <h6 class="section-subtitle mb-2">From PyPI:</h6>
+                    <ul class="indent_list">
+                        <li>Via pip:<pre><code>pip install DeepMuon</code></pre></li>
+                        <li>Via conda:<pre><code>conda install DeepMuon</code></pre></li>
+                    </ul>
+                    <p>If you have occured any wrong during the installation of DeepMuon, we recommand you to install from source.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- End of Start Section -->
+
+    <!-- Intro Section with bg -->
+    <section class="has-bg-img py-md">
+        <div class="container text-center">
+            <h6 class="section-subtitle">Make Deep-Learning</h6>
+            <h6 class="section-title mb-6">Simple & Efficient</h6>
+            <div class="widget mb-4">
+                <div class="widget-item">
+                    <i class="ti-notepad"></i>
+                    <h4>Create</h4>
+                </div>
+                <div class="widget-item">
+                    <i class="ti-control-forward"></i>
+                    <h4>Practice</h4>
+                </div>
+                <div class="widget-item">
+                    <i class="ti-key"></i>
+                    <h4>Solve</h4>
+                </div>
+                <div class="widget-item">
+                    <i class="ti-flag"></i>
+                    <h4>Progress</h4>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- End Of Intro Sectoin -->
+
+    <!-- Features Section -->
+    <section id="features">
+        <div class="container">
+            <h5 class="section-title text-center mb-6">Key Features</h5>
+            <div class="row">
+                <div class="col-sm-4 col-md-3">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h2 class="mb-4"><i class="ti-filter text-primary"></i></h2>
+                            <h6 class="card-title">Based on PyTorch</h6>
+                            <p>Support almost all available features of PyTorch and can be used with minimal effort to realize your ideas.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4 col-md-3">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h2 class="mb-4"><i class="ti-paint-roller text-primary"></i></h2>
+                            <h6 class="card-title">Distributed Training</h6>
+                            <p>Using DDP/FSDP parallel algorithms to accelerate your experiments and make Large model training as practical as possible.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4 col-md-3">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h2 class="mb-4"><i class="ti-ruler-pencil text-primary"></i></h2>
+                            <h6 class="card-title">Gradient Accumulation</h6>
+                            <p>Help solving shortage of computing sources, make more researches get rid of online training brought by small batch size.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4 col-md-3">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h2 class="mb-4"><i class="ti-layers text-primary"></i></h2>
+                            <h6 class="card-title">Gradient Clip</h6>
+                            <p>Restrict the gradient size to avoid missing the global minimum, help solving gradient annihilation/exploration problems.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4 col-md-3">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h2 class="mb-4"><i class="ti-bolt text-primary"></i></h2>
+                            <h6 class="card-title">Mixed Precision Training</h6>
+                            <p>Accelerate model training using less computing sources and reduce the time to wait for the ultimate results.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4 col-md-3">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h2 class="mb-4"><i class="ti-palette text-primary"></i></h2>
+                            <h6 class="card-title">Attribution Analysis</h6>
+                            <p>Findout what neuron network is learning, understanding the function of different neurons/layers of the model.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4 col-md-3">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h2 class="mb-4"><i class="ti-stats-up text-primary"></i></h2>
+                            <h6 class="card-title">Excellent Loging System</h6>
+                            <p>Using <b>Tensorboard</b> to visulize the evaluation meatrics and training procedure, recording detailed results of training & testing.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4 col-md-3">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h2 class="mb-4"><i class="ti-location-arrow text-primary"></i></h2>
+                            <h6 class="card-title">Configuration Mechanism</h6>
+                            <p>Customize your model/loss/dataset and providing proper interfaces, start your experiment by setting simple configurations.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+    <!-- End of Features Section -->
+
+
+    <section class="has-bg-img bg-img-2 " id="users">
+        <div class="container text-center ">
+            <h6 class="section-title mb-6 ">Universities using DeepMuon</h6>
+            <div class="widget-2 ">
+                <div class="widget-item ">
+                    <img class="card-img-top inset " src="assets/imgs/users/ustc.png ">
+                    <p><b>Where DeepMuon was born</b></p>
+                    <p>Rebuilding neutrino trace in Trident Neutrino Telescope based on deep-learning.</p>
+                </div>
+                <div class="widget-item ">
+                    <img class="card-img-top inset " src="assets/imgs/users/stanford.png ">
+                    <p><b>First ball of DeepMuon</b></p>
+                    <p>Artificial Intelligence-enabled CMR interpretation.</p>
+                </div>
+                <div class="widget-item ">
+                    <img class="card-img-top inset " src="assets/imgs/users/stonybrook.png ">
+                    <p><b>Next shot coming</b></p>
+                    <p>Let's see what will happen.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Blog Section -->
+    <section id="blog ">
+        <div class="container ">
+            <h6 class="section-subtitle text-center ">News Feeds</h6>
+            <h6 class="section-title mb-6 text-center ">Our Blog</h6>
+
+            <div class="row ">
+                <div class="col-md-4 ">
+                    <div class="card blog-post my-4 my-sm-5 my-md-0 ">
+                        <img src="assets/imgs/blog-1.jpg " alt="Download free bootstrap 4 landing page, free boootstrap 4 templates, Download free bootstrap 4.1 landing page, free boootstrap 4.1.1 templates, Creative studio Landing page ">
+                        <div class="card-body ">
+                            <div class="details mb-3 ">
+                                <a href="javascript:void(0) "><i class="ti-comments "></i> 123</a>
+                                <a href="javascript:void(0) "><i class="ti-eye "></i> 123</a>
+                            </div>
+                            <h5 class="card-title ">Possimus aliquam veniam</h5>
+                            <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Repudiandae laudantium dolor nisi obcaecati, non laboriosam asperiores doloremque tempora repellendus iure!</p>
+                            <a href="javascript:void(0) " class="d-block mt-3 ">Read More...</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 ">
+                    <div class="card blog-post my-4 my-sm-5 my-md-0 ">
+                        <img src="assets/imgs/blog-2.jpg " alt="Download free bootstrap 4 landing page, free boootstrap 4 templates, Download free bootstrap 4.1 landing page, free boootstrap 4.1.1 templates, Creative studio Landing page ">
+                        <div class="card-body ">
+                            <div class="details mb-3 ">
+                                <a href="javascript:void(0) "><i class="ti-comments "></i> 434</a>
+                                <a href="javascript:void(0) "><i class="ti-eye "></i> 987</a>
+                            </div>
+                            <h5 class="card-title ">Repudiandae laudantium</h5>
+                            <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Repudiandae laudantium dolor nisi obcaecati, non laboriosam asperiores doloremque tempora repellendus iure!</p>
+                            <a href="javascript:void(0) " class="d-block mt-3 ">Read More...</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 ">
+                    <div class="card blog-post my-4 my-sm-5 my-md-0 ">
+                        <img src="assets/imgs/blog-3.jpg " alt="Download free bootstrap 4 landing page, free boootstrap 4 templates, Download free bootstrap 4.1 landing page, free boootstrap 4.1.1 templates, Creative studio Landing page ">
+                        <div class="card-body ">
+                            <div class="details mb-3 ">
+                                <a href="javascript:void(0) "><i class="ti-comments "></i> 164</a>
+                                <a href="javascript:void(0) "><i class="ti-eye "></i> 425</a>
+                            </div>
+                            <h5 class="card-title ">Laboriosam asperiores</h5>
+                            <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Repudiandae laudantium dolor nisi obcaecati, non laboriosam asperiores doloremque tempora repellendus iure!</p>
+                            <a href="javascript:void(0) " class="d-block mt-3 ">Read More...</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- End of Blog Section -->
+
+    <section class="has-bg-img py-0 ">
+        <div class="container ">
+            <div class="footer ">
+                <div class="footer-lists ">
+                    <ul class="list ">
+                        <li class="list-head ">
+                            <h6 class="font-weight-bold ">About</h6>
+                        </li>
+                        <li class="list-body ">
+                            <a href="# " class="logo ">
+                                <img src="assets/imgs/logo.png " alt="Logo of DeepMuon ">
+                                <h6>DeepMuon</h6>
+                            </a>
+                            <p>Interdisciplinary deep-learning platform built for scientists.</p>
+                            <p class="mt-3 ">
+                                Copyright &copy;
+                                <script>
+                                    document.write(new Date().getFullYear())
+                                </script> by <a class="d-inline text-primary " href="https://airscker.github.io/ ">Airscker(Yufeng)</a>
+                            </p>
+                        </li>
+                    </ul>
+                    <ul class="list ">
+                        <li class="list-head ">
+                            <h6 class="font-weight-bold ">DeepMuon</h6>
+                        </li>
+                        <li class="list-body ">
+                            <div class="row ">
+                                <div class="col ">
+                                    <a href="#start ">Get Started</a>
+                                    <a href=" ">Blogs</a>
+                                    <a href=" ">Tutorials</a>
+                                    <a href=" ">Docs</a>
+                                    <a href="https://github.com/Airscker/DeepMuon " target='_blank'>Github</a>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                    <ul class="list ">
+                        <li class="list-head ">
+                            <h6 class="font-weight-bold ">Contact</h6>
+                        </li>
+                        <li class="list-body ">
+                            <p>Contact with author and make DeepMuon better</p>
+                            <p><i class="ti-location-pin "></i>University of Science and Technology of China</p>
+                            <div class="social-links ">
+                                <a href="mailto:airscker@gmail.com " class="link "><i class="ti-email "></i></a>
+                                <a href="javascript:void(0) " class="link "><i class="ti-facebook "></i></a>
+                                <a href="javascript:void(0) " class="link "><i class="ti-twitter-alt "></i></a>
+                                <a href="javascript:void(0) " class="link "><i class="ti-google "></i></a>
+                                <a href="javascript:void(0) " class="link "><i class="ti-pinterest-alt "></i></a>
+                                <a href="javascript:void(0) " class="link "><i class="ti-instagram "></i></a>
+                                <a href="javascript:void(0) " class="link "><i class="ti-rss "></i></a>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- core -->
+    <script src="assets/vendors/jquery/jquery-3.4.1.js "></script>
+    <script src="assets/vendors/bootstrap/bootstrap.bundle.js "></script>
+
+    <!-- bootstrap affix -->
+    <script src="assets/vendors/bootstrap/bootstrap.affix.js "></script>
+
+    <!-- DeepMuon js -->
+    <script src="assets/js/deepmuon.js "></script>
+
+</body>
+
+</html>
+
+</html>
