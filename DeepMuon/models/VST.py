@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-12-23 10:33:54
 LastEditors: airscker
-LastEditTime: 2023-02-19 23:57:09
+LastEditTime: 2023-02-26 19:26:48
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -760,14 +760,13 @@ class screening_model(nn.Module):
             nn.AdaptiveAvgPool3d((1, 1, 1)),
             nn.Dropout(mlp_dropout_ratio),
         )
-        self.flatten = nn.Flatten()
         self.linear = nn.Linear(mlp_in_channels, num_classes)
 
     def forward(self, x: torch.Tensor):
         '''x: NCTHW'''
         x = self.vst(x)
         x = self.pre_mlp(x)
-        x = self.flatten(x)
+        x = x.view(x.shape[0], -1)
         x = self.linear(x)
         return x
 
@@ -819,7 +818,6 @@ class fusion_model(nn.Module):
         self.freeze = freeze_vst
         self.avgpool = nn.AdaptiveAvgPool3d((1, 1, 1))
         self.dropout = nn.Dropout(mlp_dropout_ratio)
-        self.flatten = nn.Flatten()
         self.linear = nn.Linear(mlp_in_channels*mlp_num_mod, num_classes)
         self.freeze_vst()
 
@@ -832,7 +830,7 @@ class fusion_model(nn.Module):
             except:
                 print(f'{weights[i]} loading fail')
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         '''x: NMCTHW'''
         assert x.shape[1] == len(
             self.vst_backbones), f'Multi modality input data types does not match the number of vst backbones; {len(self.vst_backbones)} types of data expected however {x.shape[1]} given'
@@ -844,7 +842,7 @@ class fusion_model(nn.Module):
         features = torch.cat(features, dim=0)
         x = torch.permute(features, (1, 0, 2, 3, 4, 5))
         x = self.dropout(x)
-        x = self.flatten(x)
+        x = x.view(x.shape[0], -1)
         x = self.linear(x)
         return x
 

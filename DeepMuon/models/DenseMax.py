@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-12-26 21:36:52
 LastEditors: airscker
-LastEditTime: 2023-01-22 19:01:49
+LastEditTime: 2023-02-27 11:52:49
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -55,7 +55,7 @@ class DenseMax(nn.Module):
         for layer in self.hit_dense_list:
             hit_num_dense_out.append(layer(hit_num))
             for item in hit_num_dense_out:
-                hit_num += item
+                hit_num = item
         mat_dense_out = []
         for layer in self.mat_dense_list:
             mat_dense_out.append(layer(mat))

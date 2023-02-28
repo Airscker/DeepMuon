@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-17 18:11:14
 LastEditors: airscker
-LastEditTime: 2023-02-16 19:08:58
+LastEditTime: 2023-02-27 13:35:53
 Description: Datasets Built for Hailing TRIDENT Project
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -128,7 +128,7 @@ class HailingDataset_DirectV3(Dataset):
         image = torch.from_numpy(image.copy()).type(torch.FloatTensor)
         # image = torch.permute(image, (3, 0, 1, 2))
         image = torch.permute(image, (3, 2, 0, 1))
-        image[1:, :, :, :] = 0.0001*image[1:, :, :, :]
+        # image[1:, :, :, :] = 0.0001*image[1:, :, :, :]
         label = torch.from_numpy(label).type(torch.FloatTensor)
         return image, label
 
@@ -177,7 +177,11 @@ class HailingDataset_Direct2(Dataset):
         image = torch.from_numpy(image.copy()).type(torch.FloatTensor)
         image = torch.permute(image, (3, 0, 1, 2))
         # image = torch.permute(image, (3, 2, 0, 1))
-        image[1:, :, :, :] = 0.0001*image[1:, :, :, :]
+        # image[1:, :, :, :] = 0.0001*image[1:, :, :, :]
+        image[0,:,:,:]=(image[0,:,:,:]-torch.min(image[0,:,:,:]))/(torch.max(image[0,:,:,:])-torch.min(image[0,:,:,:]))
+        mat_range=torch.max(image[1,:,:,:])-torch.min(image[1,:,:,:])
+        image[1,:,:,:]=(image[1,:,:,:]-torch.min(image[1,:,:,:]))/mat_range
+        image[2,:,:,:]=image[2,:,:,:]/mat_range
         label = torch.from_numpy(label).type(torch.FloatTensor)
         return image, label
 

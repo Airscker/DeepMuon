@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-23 19:55:47
+LastEditTime: 2023-02-28 21:31:04
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -408,7 +408,7 @@ def train(device: Union[int, str, torch.device],
         predictions.append(pred.detach().cpu().numpy())
         labels.append(y.detach().cpu().numpy())
         train_loss += loss.item()*gradient_accumulation
-    scheduler.step()
+    scheduler.step(train_loss/batchs)
     return train_loss/batchs, np.concatenate(predictions, axis=0), np.concatenate(labels, axis=0)
 
 
