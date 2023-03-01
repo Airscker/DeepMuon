@@ -38,15 +38,18 @@
             name: 'DeepMuon',
             nameLink: 'https://airscker.github.io/DeepMuon',
             repo: 'https://github.com/Airscker/DeepMuon',
+            // basePath: 'https://airscker.github.io/DeepMuon/',
 
             el: '#app',
             executeScript: true,
-            loadSidebar: true,
+            loadSidebar: 'content.md',
+            autoHeader: true,
+            // hideSidebar: true,
             alias: {
                 "/.*/_sidebar.md": "/_sidebar.md",
             },
 
-            relativePath: true,
+            // relativePath: true,
             auto2top: true,
             themeColor: '#3F51B5',
             logo: 'https://github.com/Airscker/DeepMuon/raw/main/Resources/DeepMuon.png',
