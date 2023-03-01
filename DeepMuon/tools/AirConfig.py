@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-02-23 19:54:48
+LastEditTime: 2023-03-01 12:53:40
 Description: Import configuration file and prepare configurations for experiments
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -210,7 +210,7 @@ class Config:
         self.paras['config'] = dict(path=self.configpath)
         if 'optimize_config' not in self.config_keys:
             self.paras['optimize_config'] = dict(
-                fp16=False, grad_acc=1, grad_clip=False)
+                fp16=False, grad_acc=1, grad_clip=None,double_precision=False)
         else:
             optim_config = getattr(self.config, 'optimize_config')
             if 'fp16' not in optim_config.keys():
@@ -219,6 +219,8 @@ class Config:
                 optim_config['grad_acc'] = 1
             if 'grad_clip' not in optim_config.keys():
                 optim_config['grad_clip'] = None
+            if 'double_precision' not in optim_config.keys():
+                optim_config['double_precision'] = False
             self.paras['optimize_config'] = optim_config
         if 'gpu_config' in self.config_keys:
             warnings.warn(

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 22:24:05
 LastEditors: airscker
-LastEditTime: 2023-02-23 09:16:31
+LastEditTime: 2023-03-01 12:29:10
 Description: Configuration of Hailing 1TeV MLP3_3D_Direct Model
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -54,4 +54,4 @@ scheduler = dict(backbone='ReduceLROnPlateau', params=dict(
 ## Specify the GPU config and DDP
 '''
 fsdp_parallel = dict(enabled=False, min_num_params=1e4)
-optimize_config = dict(fp16=True, grad_acc=8, grad_clip=0.01)
+optimize_config = dict(fp16=True, grad_acc=8, grad_clip=0.01, double_precision=True)

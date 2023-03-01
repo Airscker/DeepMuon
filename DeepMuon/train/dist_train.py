@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-02-28 21:31:04
+LastEditTime: 2023-03-01 12:53:52
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -40,11 +40,12 @@ except:
 
 pkg_path = DeepMuon.__path__[0]
 msg = os.path.join(pkg_path.split('DeepMuon')[0], 'LICENSE.txt')
-
+precision=torch.FloatTensor
 
 def main(config_info, test_path=None):
     global msg
     global fsdp_env
+    global precision
     '''Initialize the basic training configuration'''
     configs = config_info.paras
     batch_size = configs['hyperpara']['batch_size']
@@ -61,6 +62,9 @@ def main(config_info, test_path=None):
     grad_scalar = GradScaler(enabled=fp16)
     grad_clip = configs['optimize_config']['grad_clip']
     grad_acc = configs['optimize_config']['grad_acc']
+    if configs['optimize_config']['double_precision']:
+        precision=torch.DoubleTensor
+    torch.set_default_tensor_type(precision)
     if test_path is not None:
         load = test_path
         resume = ''
@@ -386,7 +390,7 @@ def train(device: Union[int, str, torch.device],
     batchs = len(dataloader)
     gradient_accumulation = min(batchs, gradient_accumulation)
     for i, (x, y) in enumerate(dataloader):
-        x, y = x.to(device), y.to(device)
+        x, y = x.type(precision).to(device), y.to(device)
         with autocast(enabled=fp16):
             if (i+1) % gradient_accumulation != 0:
                 with model.no_sync():
@@ -420,7 +424,7 @@ def test(device, dataloader, model, loss_fn):
     labels = []
     with torch.no_grad():
         for x, y in dataloader:
-            x, y = x.to(device), y.to(device)
+            x, y = x.type(precision).to(device), y.to(device)
             pred = model(x)
             predictions.append(pred.detach().cpu().numpy())
             labels.append(y.detach().cpu().numpy())
