@@ -30,8 +30,6 @@ The tutorials are classified into different blocks:
   - [Usage of Tensorboard](log/tensorboard.md)
   - [JSON log](log/json.md)
   - [Text log](log/text.md)
-
-
 - Interpreting model
   - [Neuron Flow](interpret/neuron_flow.md)
   - [Model profiler](interpret/profiler.md)
