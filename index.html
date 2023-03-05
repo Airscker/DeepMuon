@@ -29,9 +29,6 @@
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav ml-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="https://airscker.github.io/DeepMuon/get_started.html">Get Started</a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link" href="https://airscker.github.io/DeepMuon/blogs/index.html">Blogs</a>
                     </li>
                     <li class="nav-item">
@@ -78,19 +75,60 @@
     </div>
     <!-- End of Box -->
     <!-- Install section -->
-    <section id="install">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-7 col-lg-auto">
-                    <h2 class="section-title mb-3">Install DeepMuon</h2>
-                    <p>The installation can be accessed from sereval sources, and they are all stable editions. Please make sure you have met the prerequisites (such as numpy).</p>
+    <section>
+        <div class="container ">
+            <div class="row align-items-center ">
+                <div class="col-md-7 col-lg-auto ">
+                    <h2 class="section-title mb-3 ">Install DeepMuon</h2>
+                    <p>The installation can be accessed from sereval sources, and they are all stable editions. Please make sure you have met the prerequisites (such as numpy). Here we list some important prerequisites of DeepMuon:</p>
+                    <center>
+                        <table style="border-collapse:collapse;border-spacing:0" class="tg">
+                            <thead>
+                                <tr>
+                                    <th style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;font-weight:bold;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal" colspan="3">Package Names</th>
+                                    <th style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;font-weight:bold;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">Edition</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">numpy</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">matplotlib</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">torchinfo</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal" rowspan="5"><br><br><br><br>Latest Recomended</td>
+                                </tr>
+                                <tr>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">click</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">captum</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">timm</td>
+                                </tr>
+                                <tr>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">pandas</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">monai</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">SimpleITK</td>
+                                </tr>
+                                <tr>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">numba</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">pynvml</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">sklearn</td>
+                                </tr>
+                                <tr>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">ptflops</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">GPUtil</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">scikit-image</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </center>
+                    <p>The prerequisites listed above will be installed automatically when installing DeepMuon, however, you need to first make sure PyTorch >= 1.12(CUDA edition) was installed properly. The lowest tolerable edition of PyTorch is 1.10.0.,
+                        otherwise DeepMuon may occur fatal mistakes. We strongly suggest you install <b>torchvision</b> and <b>torchaudio</b> at the same time.</p>
+                    <p>As for the python environment, the lowest edition of python should be python 3.6.0.</p>
                     <p>DeepMuon support Windows/MacOSX/Linux platforms, we <b>recommand</b> you to install DeepMuon from source to get the best customize experience.</p>
-                    <p>DeepMuon is constructed based on latest (>=1.12) <a href="https://pytorch.org/">PyTorch</a>, and the supported edition should larger than 1.10. Because not all users' platform support latest pytorch, so the feature <b>Fully Sharded Data
+                    <p>DeepMuon is constructed based on latest (>=1.12) <a href="https://pytorch.org/ ">PyTorch</a>, and the supported edition should larger than 1.10. Because not all users' platform support latest pytorch, so the feature <b>Fully Sharded Data
                         Parallel (FSDP)</b> would be disabled if torch's edition is low (such as torch=1.10.0).</p>
-                    <h6 class="section-subtitle mb-2">From Source:</h6>
+                    <h6 class="section-subtitle mb-2 ">From Source:</h6>
                     <pre><code>git clone git@github.com:Airscker/DeepMuon.github<br>cd DeepMuon<br>pip install -v -e ./</code></pre>
-                    <h6 class="section-subtitle mb-2">From PyPI:</h6>
-                    <ul class="indent_list">
+                    <h6 class="section-subtitle mb-2 ">From PyPI:</h6>
+                    <ul class="indent_list ">
                         <li>Via pip:<pre><code>pip install DeepMuon</code></pre></li>
                         <li>Via conda:<pre><code>conda install DeepMuon</code></pre></li>
                     </ul>
@@ -256,7 +294,7 @@
                         <img class='blog_img' src="blogs/trident/example_1TeV.png" alt="">
                         <div class="card-body ">
                             <h5 class="card-title ">TRIDENT neutrino telescope (Hailing Plan) tracing task</h5>
-                            <p>Creative work based on Residual CNN and Spatial Pyromid Pooling.</p>
+                            <p>Creative work based on Residual CNN and Spatial Pyramid Pooling.</p>
                             <a href="https:airscker.github.io/DeepMuon/blogs/trident/index.html" class="d-block mt-3 ">Read More...</a>
                         </div>
                     </div>
