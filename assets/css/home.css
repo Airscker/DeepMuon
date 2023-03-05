@@ -12290,3 +12290,9 @@ section .section-title {
     height: 200px;
     margin-bottom: 2rem
 }
+
+.blog_img {
+    height: 200px;
+    position: relative;
+    object-fit: cover;
+}
