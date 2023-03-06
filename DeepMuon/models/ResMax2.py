@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-12-26 21:36:52
 LastEditors: airscker
-LastEditTime: 2023-02-27 12:16:40
+LastEditTime: 2023-03-06 12:48:21
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -125,3 +125,13 @@ class ResMax3(nn.Module):
                     (feature, self.pools[i](all_feature).view(batch, -1)), 1)
         feature = self.linear_relu_stack(self.flat(feature))
         return F.normalize(feature)
+    def freeze_stages(self):
+        self.hit_conv.eval()
+        self.mat_conv.eval()
+        for params in self.hit_conv.parameters():
+            params.requires_grad=False
+        for params in self.mat_conv.parameters():
+            params.requires_grad=False
+    def train(self, mode: bool = True):
+        super().train(mode)
+        self.freeze_stages()
