@@ -109,9 +109,13 @@ The augmentation methods are expected to avoid the over-fitting of the model, in
 
 ### Training Pipeline
 
-We set the batch size as 48 at the first 1000 epochs, the initial learning rate is 0.0002, we used AdamW optimizer, weight_decay is 0.01, learning rate scheduler is ReduceLROnPlateau. From epoch 1001, the batch size was 1024, we changed the optimizer at epoch 1418 to SGD with momentum 0.9, and at epoch 1829, the optimizer returned to AdamW. From epoch 2057 to epoch 2200, we freeze the residual convolution part of ResMax3. To avoid the gradient annihilation or gradient explosion we used the gradient clip method, setting the maximum gradient clipping value as 0.01. 
+We set the batch size as 48 at the first 1000 epochs, the initial learning rate is 0.0002, we used AdamW optimizer, weight_decay is 0.01, learning rate scheduler is ReduceLROnPlateau. From epoch 1001, the batch size was 1024, we changed the optimizer at epoch 1418 to SGD with momentum 0.9, and at epoch 1829, the optimizer returned to AdamW. From epoch 2057 to epoch 2200, we freeze the residual convolution part of ResMax3. To avoid the gradient annihilation or gradient explosion we used the gradient clip method, setting the maximum gradient clipping value as 0.01. We achieved the ultimate ***state of art result: 0.49 degrees.***
 
-### Interpretation - Integrated Gradient
+<center><div style='width:1000px'><img src="https://github.com/Airscker/DeepMuon/blob/site/blogs/trident/lr.png?raw=true" alt="lr"/><p align='left'><b>Learning rate.</b> The schedule of learning rate is done by ReduceLROnPlateau algorithm.</p></div></center>
+
+<center><div style='width:1000px'><img src="https://github.com/Airscker/DeepMuon/blob/site/blogs/trident/loss.png?raw=true" alt="lr"/><p align='left'><b>MSALoss of training and testing procedure.</b></p></div></center>
+
+### Interpretation - Integrated Gradient (Come as long as 3D visualization technic improved)
 
 
 ## Bibliography
