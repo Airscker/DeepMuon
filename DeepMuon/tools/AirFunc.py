@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-02-24 01:11:40
+LastEditTime: 2023-03-07 23:34:52
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -172,16 +172,18 @@ def unpack_json_log(log_path: str, start_from: int = 0) -> list:
     return info
 
 
-def load_json_log(log_file: str, start_from: int = 0) -> np.ndarray:
+def load_json_log(log_file: str, start_from: int = 0,unique_key:int=None) -> np.ndarray:
     '''
     ## Load json data from json logfile
 
     ### Args:
         - log_file: the path of json logfile
         - start_from: the index of line to start with
+        - unique_key: the key used to abandon the repeated information, such as epochs with the same index,
+            set unique_key='epoch' will omit the former presented repeated epochs' information
 
     ### Return:
-        - dict(list()):
+        - dict(dict(list())):
     '''
     assert log_file.endswith(
         '.json'), f"log_file must be json file, however, {log_file} given"
@@ -190,12 +192,23 @@ def load_json_log(log_file: str, start_from: int = 0) -> np.ndarray:
     json_log = unpack_json_log(log_file, start_from)
     log_info = {}
     for i in range(len(json_log)):
-        if json_log[i]['mode'] in log_info.keys():
-            log_info[json_log[i]['mode']].append(
-                list(exclude_key(json_log[i], del_key='mode').values()))
+        if unique_key in json_log[i].keys():
+            unique_key_check=json_log[i][unique_key]
         else:
-            log_info[json_log[i]['mode']] = [
-                list(exclude_key(json_log[i], del_key='mode').values())]
+            unique_key_check=i
+        if json_log[i]['mode'] not in log_info.keys():
+            log_info[json_log[i]['mode']] = {unique_key_check:exclude_key(json_log[i], del_key='mode')}
+        else:
+            log_info[json_log[i]['mode']][unique_key_check]=exclude_key(json_log[i], del_key='mode')
+    for mod in log_info.keys():
+        new_info={}
+        for key_checked in log_info[mod].keys():
+            for info_key in log_info[mod][key_checked].keys():
+                if info_key not in new_info.keys():
+                    new_info[info_key]=[log_info[mod][key_checked][info_key]]
+                else:
+                    new_info[info_key].append(log_info[mod][key_checked][info_key])
+        log_info[mod]=new_info
     return log_info
 
 
