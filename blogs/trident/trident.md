@@ -23,9 +23,9 @@ To have a complete vision of our contribution, we first introduced the basic dat
     <table style="border-collapse:collapse;border-spacing:0" class="tg" frame=void rules=none>
     <thead>
         <tr>
-            <th style="font-family:Arial, sans-serif;font-size:14px;font-weight:bold;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal"><img src='trident_design.png' height='400px'></th>
-            <th style="font-family:Arial, sans-serif;font-size:14px;font-weight:bold;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal"><img src='trident_string.jpg' height='400px'></th>
-            <th style="font-family:Arial, sans-serif;font-size:14px;font-weight:bold;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal"><img src='HDOM.jpg' height='400px'></th>
+            <th style="font-family:Arial, sans-serif;font-size:14px;font-weight:bold;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal"><img src='https://github.com/Airscker/DeepMuon/blob/site/blogs/trident/trident_design.png?raw=true' height='400px'></th>
+            <th style="font-family:Arial, sans-serif;font-size:14px;font-weight:bold;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal"><img src='https://github.com/Airscker/DeepMuon/blob/site/blogs/trident/trident_string.jpg?raw=true' height='400px'></th>
+            <th style="font-family:Arial, sans-serif;font-size:14px;font-weight:bold;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal"><img src='https://github.com/Airscker/DeepMuon/blob/site/blogs/trident/HDOM.jpg?raw=true' height='400px'></th>
     </thead>
     <tbody>
         <tr>
@@ -39,12 +39,13 @@ To have a complete vision of our contribution, we first introduced the basic dat
 </center>
 
 
+
 ### Collected Dataset
 
 As shown above, the physical structure of TRIDENT determines the data structure we collected from TRIDENT. By converting signals accepted by hDOMs into orthogonal coordinates, we can feed data into common deep-learning models to infer the incident angle of neutrinos. The converted data sample is shown as this:
 
 <center><div style='width:600px'>
-    <img src="example_1TeV.png" alt="example_1TeV" width='600px'/>
+    <img src="https://github.com/Airscker/DeepMuon/blob/site/blogs/trident/example_1TeV.png?raw=true" alt="example_1TeV" width='600px'/>
     <p align='left'>
         <b>Converted data structure.</b> The strength of signal points is represented as the color of signal points, and the vector indicates the direction of the incident neutrino.
     </p>
@@ -60,7 +61,7 @@ However, the real data we got contained three types of information at every sign
 
 What's more, not every non-zero (at least contained one kind of information) point has three types of information, and each data sample's available signal points are different from another:
 
-<center><div style='width:1000px'><img src='dist.jpg'><p align='left'>
+<center><div style='width:1000px'><img src='https://github.com/Airscker/DeepMuon/blob/site/blogs/trident/dist.jpg?raw=true'><p align='left'>
     <b>Distribution of the number of available Signal points of every data sample(NAS).</b>
     The maximal number of available signal points within a data sample if 356 and the minimal number is only 1. And the mean value of NAS is 214, the standard derivation is 42. Suppose the distribution obeys normal distribution then its 3-Sigma range is 340 ~ 87.
     </p></div></center>
@@ -69,9 +70,16 @@ To avoid the possible negative effects brought by out-of-physical data samples, 
 
 ## Experiment
 
-### ResMax3
+### ResMax3 (Residual Unit Based Multi-modality Spatial Pyramid Max-pooling V3)
+
+<center><div style='width:1000px'><img src='https://github.com/Airscker/DeepMuon/blob/site/blogs/trident/resmax3.png?raw=true'></div><p align='left'>
+    <b>Architecture of ResMax3</b>
+    </p></center>
+
+The 
 
 ### Basic Configuration
+
 - Loss Function
 - 
 
