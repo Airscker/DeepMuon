@@ -68,10 +68,10 @@ To avoid the possible negative effects brought by out-of-physical data samples, 
 ### ResMax3 (Residual Unit Based Multi-modality Spatial Pyramid Max-pooling V3)
 
 <center><div style='width:1000px'><img src='https://github.com/Airscker/DeepMuon/blob/site/blogs/trident/resmax3.png?raw=true'><p align='left'>
-    <b>Architecture of ResMax3</b>
+    <b>Architecture of ResMax3.</b> The Residual convolution module has two branches: one is trained on hit num, and another is trained on mean/std arriving time. Convolution layers in the network have the same kernel size 9 and stride is 1, padding is 4. Every <b>Conv</b> Block shown in the figure contains two convolution layers. The labels <b>CIn</b> and <b>COut</b> indicates the channels of blocks' input and output. Between every two adjacent residual units, we set adaptive max-pooling operations to reduce the computing resources required and improve the robustness of the model. The spatial shapes of every max-pooling layer's output are labeled in the figure. These two branches get different data modalities and produce latent features that have the same spatial shapes. We then concatenate channel-wisely these features and feed them in different max-pooling layers to get spatial-pyramid-like feature groups. These groups are flattened and fed into a 3-layer MLP to get the ultimate incident unified direction vector.
     </p></div></center>
 
-The 
+The overall GFLOPs of ResMax3 is 149.1M and its number of parameters is 803.63k.
 
 ### Important Configurations
 
@@ -114,8 +114,7 @@ We set the batch size as 48 at the first 1000 epochs, the initial learning rate 
 ### Interpretation - Integrated Gradient
 
 
-
-
+## Bibliography
 <p id='ref1'>[1]: https://trident.sjtu.edu.cn/en</p>
 
 <p id='ref2'>[2]: K.Murase, F. W. Stecker, <b>High-Energy Neutrinos from Active Galactic Nuclei.</b> arXv:2202.03381.</p>
