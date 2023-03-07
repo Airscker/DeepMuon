@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-03-07 23:34:52
+LastEditTime: 2023-03-07 23:40:23
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -326,7 +326,6 @@ def plot_curve(data, title='Curve', axis_label=['Epoch', 'Loss'], data_label=['C
     # data=np.array(data)
     plt.figure(figsize=(20, 10))
     plt.title(f'{title}')
-    assert mod == 'min' or mod == 'max', f"mod must be 'min'/'max', however mod='{mod}' given"
     if isinstance(data[0], list) or isinstance(data[0], np.ndarray):
         for i in range(len(data)):
             data[i] = np.array(data[i])
@@ -337,8 +336,9 @@ def plot_curve(data, title='Curve', axis_label=['Epoch', 'Loss'], data_label=['C
             elif mod == 'max':
                 label = f'{label} MAX/POS: {np.max(data[i])}/{np.argwhere(data[i]==np.max(data[i]))[-1]}'
                 plt.axhline(np.max(data[i]), linestyle='-.')
+            else:
+                continue
             plt.plot(data[i], label=label)
-
     else:
         data = np.array(data)
         label = data_label[0] if len(data_label) >= 1 else f'Curve1'
@@ -348,6 +348,8 @@ def plot_curve(data, title='Curve', axis_label=['Epoch', 'Loss'], data_label=['C
         elif mod == 'max':
             label = f'{label} MAX/POS: {np.max(data)}/{np.argwhere(data==np.max(data))[-1]}'
             plt.axhline(np.max(data), linestyle='-.')
+        else:
+            pass
         plt.plot(data, label=label)
     plt.xlabel(axis_label[0])
     plt.ylabel(axis_label[1])
