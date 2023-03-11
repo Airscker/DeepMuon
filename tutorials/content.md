@@ -8,8 +8,8 @@
   - [Customize configuration](start_exp/cus_config.md)
   - [Start your first experiment](start_exp/start_exp.md)
 - `Dataset` based on PyTorch
+- - [What to do when adding a customized `Dataset` into DeepMuon?](dataset/dataset.md)
   - [How to add augmentation?](dataset/augment.md)
-  - [What to do when adding a customized `Dataset` into DeepMuon?](dataset/dataset.md)
 - Which model fits best?
   - [From zero to infinity](models/zero_inf.md)
   - [Intrinsically supported models](models/intrinsic_models.md)
