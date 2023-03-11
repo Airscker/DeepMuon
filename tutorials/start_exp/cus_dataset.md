@@ -71,6 +71,8 @@ class MINIST(Dataset):
         return self.dataset[index]
 ```
 
+We recommend to save this model under the installation path of DeepMuon, within the folder `dataset`.
+
 In this way, if we specify the name of the `Dataset`, that is, **MINIST**, it's just an index of customized `Dataset` and we can use it by the `getattr()` method. The reason why this requirement needs to be obeyed will be explained in the section [Dynamic importing mechanism](https://airscker.github.io/DeepMuon/tutorials/index.html#/config/import).
 
 Up to now, you have already made your dataset prepared and the work of customizing the `Dataset` is completed. The next step is to create your own suitable model, please refer to the following section [Customize model](https://airscker.github.io/DeepMuon/tutorials/index.html#/start_exp/cus_model) to continue the learning.

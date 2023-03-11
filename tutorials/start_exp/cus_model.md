@@ -43,6 +43,8 @@ class MLP(nn.Module):
         return logits
 ```
 
+We recommend to save this model under the installation path of DeepMuon, within the folder `models`.
+
 This is a simplest neural network, it has one hidden layer and three layers. The model is applied on the MINIST dataset to classify the flowers in the dataset.
 
 The customization is over and the next step is decide your experiments' training/testing configuration, and this is the last step to prepare our experiments. Please read the section [Customize configuration](https://airscker.github.io/DeepMuon/tutorials/index.html#/start_exp/cus_config) to complete your first experiment.
