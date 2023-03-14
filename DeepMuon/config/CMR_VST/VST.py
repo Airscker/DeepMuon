@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-28 11:34:38
 LastEditors: airscker
-LastEditTime: 2023-02-19 22:22:27
+LastEditTime: 2023-03-14 21:46:50
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -20,24 +20,21 @@ train_dataset = dict(
     params=dict(ann_file='/data/JoyceW/VST_fusion_dataset/DeepMuon/debug/test.txt',
                 mask_ann='/data/JoyceW/VST_fusion_dataset/workdir/mask_ann_map.pkl',
                 fusion=False,
-                modalities=['sax'],
                 frame_interval=2,
                 augment_pipeline=[dict(type='HistEqual'),
                                 dict(type='Padding', size=(120, 120)),
                                 dict(type='Random_rotate',range=180, ratio=0.3),
                                 dict(type='Resize', size=(224, 224)),
-                                dict(type='Random_Gamma_Bright',ratio=0.5, low=0.4, high=1),
-                                dict(type='SingleNorm'),
+                                dict(type='Batch_norm',mean=151.28,std=69.32),
                                 dict(type='AddRandomNumber',range=0.1)]))
 test_dataset = dict(
     backbone='NIIDecodeV2',
     params=dict(ann_file='/data/JoyceW/VST_fusion_dataset/DeepMuon/debug/test.txt',
                 mask_ann='/data/JoyceW/VST_fusion_dataset/workdir/mask_ann_map.pkl',
                 fusion=False,
-                modalities=['sax'],
                 frame_interval=2,
                 augment_pipeline=[dict(type='HistEqual'),
-                                  dict(type='SingleNorm'),
+                                  dict(type='Batch_norm',mean=154.5,std=66.62),
                                   dict(type='Padding', size=(120, 120)),
                                   dict(type='Resize', size=(224, 224))]))
 '''

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-27 19:51:21
 LastEditors: airscker
-LastEditTime: 2023-02-23 20:08:14
+LastEditTime: 2023-03-14 21:36:19
 Description:
     ## Dataset built for:
         - Video Swin-Transformer (VST) CMR Screening & Diagnose Model
@@ -223,7 +223,7 @@ class NIIDecodeV2(Dataset):
     def __init__(self, ann_file: str = None,
                  mask_ann: str = None,
                  fusion=False,
-                 modalities: list = [],
+                 modalities: list = ['4ch'],
                  model=None,
                  frame_interval=2,
                  augment_pipeline: list = [dict(type='HistEqual'),
