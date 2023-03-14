@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 22:24:05
 LastEditors: airscker
-LastEditTime: 2023-03-13 14:20:58
+LastEditTime: 2023-03-14 17:13:42
 Description: Configuration of Hailing 1TeV MLP3_3D_Direct Model
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -16,18 +16,18 @@ model = dict(backbone='ResNet50_C1')
 ## Specify the dataset to load the data, all dataset are stored in 'dataset'
 '''
 train_dataset = dict(backbone='EGFR_NPY', 
-                     params=dict(img_dataset='/data/Airscker/VST3/EGFR/img_dataset/imgs_train.pkl',
+                     params=dict(img_dataset='/home/dachuang2022/Yufeng/data_code_egfr_0316/img_dataset/imgs_train.pkl',
                                 augment=False,
                                 augment_pipeline=[dict(type='add_random_number'),
                                                 dict(type='flip'),
                                                 dict(type='rotate',angle_range=180),
                                                 dict(type='bright',light_range=(0.8,1.1))]))
-test_dataset = dict(backbone='EGFR_NPY', params=dict(img_dataset='/data/Airscker/VST3/EGFR/img_dataset/imgs_test.pkl', augment=False))
+test_dataset = dict(backbone='EGFR_NPY', params=dict(img_dataset='/home/dachuang2022/Yufeng/data_code_egfr_0316/img_dataset/imgs_test.pkl', augment=False))
 '''
 ## Specify the work_dir to save the training log and checkpoints
 '''
 work_config = dict(
-    work_dir='/data/Airscker/VST3/EGFR/work_dir/EXP002')
+    work_dir='/home/dachuang2022/Yufeng/data_code_egfr_0316/EGFR_work_dir/EXP001')
 '''
 ## Specify the checkpoint configuration
 '''

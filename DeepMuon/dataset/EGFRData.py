@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-03-12 14:21:18
 LastEditors: airscker
-LastEditTime: 2023-03-13 08:48:01
+LastEditTime: 2023-03-14 16:45:20
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -71,7 +71,7 @@ class EGFR_NPY(Dataset):
         img=np.clip(img,bottom_clip,top_clip)
         return img
     def norm_range(self,img:np.ndarray):
-        return 255.0*(img-np.min(img))/(np.max(img)-np.min(img))
+        return (img-np.min(img))/(np.max(img)-np.min(img))
     def __len__(self):
         return len(self.dataset)
     def __getitem__(self, index):
