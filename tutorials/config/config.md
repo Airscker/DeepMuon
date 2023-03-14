@@ -41,7 +41,7 @@ loss_fn = dict(filepath='',backbone='CrossEntropyLoss',params=dict())
 '''
 ## Specify the customized evaluation metrics to be used, if no metrics specified, no evaluation will be performed and model will trained to minimized the loss value
 '''
-evaluation = dict(metrics=['f1_score', 'confusion_matrix','AUC','every_class_accuracy', 'top_k_accuracy'],
+evaluation = dict(interval=1,metrics=['f1_score', 'confusion_matrix','AUC','every_class_accuracy', 'top_k_accuracy'],
                   sota_target=dict(mode='max', target='AUC'))
 '''
 ## Specify the hyperparameters to be used
@@ -120,6 +120,7 @@ optimize_config = dict(fp16=False, grad_acc=1, grad_clip=0.01, double_precision=
 
 ## evaluation
 
+- interval: the interval to evaluate the model performance, if omitted, it will be set as 1 default.
 - metrics: the list of the names of evaluation metrics to be used.
 - sota_target: indicates the optimized target, if omitted the model will be optimized to minimize the loss value of the testing dataset.
   - mode: only 'min'/'max' allowed, indicates whether to minimize or maximize the evaluation metric value specified by `target`.
