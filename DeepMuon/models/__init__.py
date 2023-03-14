@@ -19,9 +19,11 @@ from .FCN import FCN1
 from .VST import SwinTransformer3D, VST, screening_model, fusion_model
 from .CNNLSTM import Dense4012FrameRNN
 from .cryoFIRE import CRYOFIRE
+from .EGFR import ResMax_C1,ResNet50_C1
 
 
 __all__ = ['MLP3', 'Vit_MLP', 'Vit_MLP2', 'Vit_MLP3',
            'ResMax', 'DResMax', 'BotP', 'SideP', 'TRIP',
            'SwinTransformer3D', 'VST', 'ResMax2', 'UNet_VAE', 'UNet_VAE2',
-           'DenseMax', 'ResMax3', 'TransConv', 'FCN1', 'Dense4012FrameRNN', 'CRYOFIRE', 'screening_model', 'fusion_model']
+           'DenseMax', 'ResMax3', 'TransConv', 'FCN1', 'Dense4012FrameRNN',
+           'CRYOFIRE', 'screening_model', 'fusion_model','ResMax_C1','ResNet50_C1']

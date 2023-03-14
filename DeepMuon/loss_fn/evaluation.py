@@ -2,14 +2,21 @@
 Author: airscker
 Date: 2023-01-31 09:28:41
 LastEditors: airscker
-LastEditTime: 2023-02-16 17:57:12
+LastEditTime: 2023-03-13 09:02:25
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import numpy as np
 from sklearn.metrics import f1_score as f1
+from sklearn.metrics import roc_auc_score
 
+def AUC(scores,label):
+    new_score=[]
+    for i in range(len(label)):
+        new_score.append(scores[i][label[i]])
+    res=roc_auc_score(label, new_score, multi_class='ovo')
+    return res
 
 def f1_score(scores, label):
     '''
