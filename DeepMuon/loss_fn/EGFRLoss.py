@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-03-14 16:57:11
 LastEditors: airscker
-LastEditTime: 2023-03-14 16:57:28
+LastEditTime: 2023-03-17 00:04:43
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -17,8 +17,8 @@ class CLS_REC_KLD(nn.Module):
         self.a=a
         self.b=b
         self.c=c
-    def forward(self,data,cla_out,rec_out,fea,fea2,target):
-        cls_loss=F.cross_entropy(cla_out,target)
+    def forward(self,data,cla_out,rec_out,ali_out,model_out,target,device):
+        cls_loss=F.cross_entropy(cla_out,target,weight=torch.Tensor([0.4,0.6]).to(device))
         rec_loss=F.mse_loss(rec_out,data)
-        con_loss=F.kl_div(fea,fea2)
+        con_loss=F.kl_div(ali_out,model_out,reduce='batchmean')
         return self.a*cls_loss+self.b*rec_loss+self.c*con_loss

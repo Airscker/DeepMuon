@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-12-23 10:33:54
 LastEditors: airscker
-LastEditTime: 2023-02-26 19:26:48
+LastEditTime: 2023-03-16 14:03:30
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -117,8 +117,7 @@ class WindowAttention3D(nn.Module):
         coords_d = torch.arange(self.window_size[0])
         coords_h = torch.arange(self.window_size[1])
         coords_w = torch.arange(self.window_size[2])
-        coords = torch.stack(torch.meshgrid(
-            coords_d, coords_h, coords_w))  # 3, Wd, Wh, Ww
+        coords = torch.stack(torch.meshgrid([coords_d, coords_h, coords_w],indexing='ij'))  # 3, Wd, Wh, Ww
         coords_flatten = torch.flatten(coords, 1)  # 3, Wd*Wh*Ww
         # 3, Wd*Wh*Ww, Wd*Wh*Ww
         relative_coords = coords_flatten[:, :,

@@ -11,10 +11,10 @@ import numpy as np
 from sklearn.metrics import f1_score as f1
 from sklearn.metrics import roc_auc_score
 
-def AUC(scores,label):
+def AUC(scores,label,pos_label=1):
     new_score=[]
     for i in range(len(label)):
-        new_score.append(scores[i][label[i]])
+        new_score.append(scores[i][pos_label])
     res=roc_auc_score(label, new_score, multi_class='ovo')
     return res
 

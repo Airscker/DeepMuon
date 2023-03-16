@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-03-14 17:07:05
+LastEditTime: 2023-03-17 00:11:41
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -370,7 +370,8 @@ def evaluation(scores, labels, evaluation_command, best_target, loss):
         try:
             eva_res[key] = metrics[key](scores, labels)
         except:
-            pass
+            print(f'ERROR with evaluation metric: {key}, scores.shape: {scores.shape}, labels.shape: {labels.shape}')
+            eva_res[key]=None
     if target is not None and best_target is not None:
         if mode == 'min':
             if eva_res[target] < best_target:
@@ -421,13 +422,13 @@ def train(device: Union[int, str, torch.device],
         with autocast(enabled=fp16):
             if (i+1) % gradient_accumulation != 0:
                 with model.no_sync():
-                    cla_out,rec_out,fea,fea2 = model(x)
-                    loss = loss_fn(x,cla_out,rec_out,fea,fea2,y)
+                    cla_out,rec_out,ali_out,swin_out = model(x)
+                    loss = loss_fn(x,cla_out,rec_out,ali_out,swin_out,y,device)
                     loss = loss/gradient_accumulation
                     grad_scalar.scale(loss).backward()
             elif (i+1) % gradient_accumulation == 0:
-                cla_out,rec_out,fea,fea2 = model(x)
-                loss = loss_fn(x,cla_out,rec_out,fea,fea2,y)
+                cla_out,rec_out,ali_out,swin_out = model(x)
+                loss = loss_fn(x,cla_out,rec_out,ali_out,swin_out,y,device)
                 loss = loss/gradient_accumulation
                 if grad_clip is not None:
                     torch.nn.utils.clip_grad_value_(
@@ -436,7 +437,7 @@ def train(device: Union[int, str, torch.device],
                 grad_scalar.step(optimizer)
                 grad_scalar.update()
                 optimizer.zero_grad()
-        predictions.append(pred.detach().cpu().numpy())
+        predictions.append(cla_out.detach().cpu().numpy())
         labels.append(y.detach().cpu().numpy())
         train_loss += loss.item()*gradient_accumulation
     scheduler.step(train_loss/batchs)
@@ -453,10 +454,11 @@ def test(device, dataloader, model, loss_fn):
         for i, (x, y) in enumerate(dataloader):
             x = x.type(precision).to(device)
             y = y.reshape(-1).to(device)
-            pred = model(x)
-            predictions.append(pred.detach().cpu().numpy())
+            cla_out,rec_out,ali_out,swin_out = model(x)
+            loss = loss_fn(x,cla_out,rec_out,ali_out,swin_out,y,device)
+            predictions.append(cla_out.detach().cpu().numpy())
             labels.append(y.detach().cpu().numpy())
-            test_loss += loss_fn(pred, y).item()
+            test_loss += loss.item()
     test_loss /= num_batches
     return test_loss, np.concatenate(predictions, axis=0), np.concatenate(labels, axis=0)
 

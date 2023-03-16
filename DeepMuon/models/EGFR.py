@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-12-26 21:36:52
 LastEditors: airscker
-LastEditTime: 2023-03-14 17:04:36
+LastEditTime: 2023-03-16 20:29:10
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -270,9 +270,9 @@ class Bottleneck(nn.Module):
         return out
 
 class ResNet50_cls_rec(nn.Module):
-    def __init__(self) -> None:
+    def __init__(self,num_classes=2) -> None:
         super().__init__()
-        self.model=ResNet(Bottleneck, [3, 4, 6, 3], num_classes=2, include_top=None)
+        self.model=ResNet(Bottleneck, [3, 4, 6, 3], num_classes=num_classes, include_top=None)
     def forward(self,x):
         cla_out,rec_out,fea=self.model(x)
         cla_out2,rec_out2,fea2=self.model(rec_out)

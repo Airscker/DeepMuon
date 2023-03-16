@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-03-07 23:40:23
+LastEditTime: 2023-03-15 19:25:56
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -183,7 +183,7 @@ def load_json_log(log_file: str, start_from: int = 0,unique_key:int=None) -> np.
             set unique_key='epoch' will omit the former presented repeated epochs' information
 
     ### Return:
-        - dict(dict(list())):
+        - dict(dict(list())): {mode:{metric:[data]}}
     '''
     assert log_file.endswith(
         '.json'), f"log_file must be json file, however, {log_file} given"
@@ -407,14 +407,26 @@ def load_model(path: str, device: torch.device):
         - loss_fn_dic
     """
     checkpoint = torch.load(path, map_location=device)
-    model_dic = checkpoint['model']
-    optimizer_dic = checkpoint['optimizer']
+    try:
+        model_dic = checkpoint['model']
+    except:
+        model_dic=checkpoint
+    try:
+        optimizer_dic = checkpoint['optimizer']
+    except:
+        optimizer_dic=None
     try:
         scheduler_dic = checkpoint['scheduler']
     except:
-        scheduler_dic = checkpoint['schedular']
-    epoch = checkpoint['epoch']
-    loss_fn_dic = checkpoint['loss_fn']
+        scheduler_dic = None
+    try:
+        epoch = checkpoint['epoch']
+    except:
+        epoch=0
+    try:
+        loss_fn_dic = checkpoint['loss_fn']
+    except:
+        loss_fn_dic=None
     return epoch, model_dic, optimizer_dic, scheduler_dic, loss_fn_dic
 
 

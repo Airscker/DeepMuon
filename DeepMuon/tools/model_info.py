@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-05 13:35:07
 LastEditors: airscker
-LastEditTime: 2023-02-16 18:09:48
+LastEditTime: 2023-03-16 11:49:29
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -12,7 +12,7 @@ from ptflops import get_model_complexity_info
 from torchinfo import summary
 
 
-def model_para(model, datasize: list, depth=3, gpu=0, show=False):
+def model_para(model, datasize: list, depth=3, device='cpu', show=False):
     """
     ## Get the number of parameters and FLOPs for a given model as well as the detailed list of layers
 
@@ -29,7 +29,7 @@ def model_para(model, datasize: list, depth=3, gpu=0, show=False):
         - sumres: the detailed report of model acrchitecture
     """
     if torch.cuda.is_available():
-        device = torch.device(gpu)
+        device = torch.device(device)
     else:
         device = torch.device('cpu')
     # model = model()
