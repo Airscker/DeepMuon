@@ -21,7 +21,6 @@ def model_optim():
     experiment.config.tuner.class_args['optimize_mode'] = 'maximize'
     experiment.config.max_trial_number = 100
     # experiment.config.max_trial_duration='20s'
-    # experiment.config.experiment_working_directory='/data/Airscker/UBK_VST_Airscker/CNNSLTM/nni_experiments'
     experiment.config.experiment_working_directory = '/data/JoyceW/VST_fusion_dataset/CNNLSTM/workdir/nni_experiments'
     print(experiment.config)
     experiment.run(14001)

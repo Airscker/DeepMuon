@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-28 11:34:38
 LastEditors: airscker
-LastEditTime: 2023-03-14 21:46:50
+LastEditTime: 2023-03-26 10:41:13
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -17,8 +17,8 @@ Specify the dataset to load the data, all dataset are stored in 'dataset'
 '''
 train_dataset = dict(
     backbone='NIIDecodeV2',
-    params=dict(ann_file='/data/JoyceW/VST_fusion_dataset/DeepMuon/debug/test.txt',
-                mask_ann='/data/JoyceW/VST_fusion_dataset/workdir/mask_ann_map.pkl',
+    params=dict(ann_file='/home/amax/Desktop/HCM/VST/VST/SAX_DIAG_11CLS_DEMO/demo_ann.txt',
+                mask_ann='/home/amax/Desktop/HCM/VST/VST/SAX_DIAG_11CLS_DEMO/demo_mask_ann.pkl',
                 fusion=False,
                 frame_interval=2,
                 augment_pipeline=[dict(type='HistEqual'),
@@ -29,8 +29,8 @@ train_dataset = dict(
                                 dict(type='AddRandomNumber',range=0.1)]))
 test_dataset = dict(
     backbone='NIIDecodeV2',
-    params=dict(ann_file='/data/JoyceW/VST_fusion_dataset/DeepMuon/debug/test.txt',
-                mask_ann='/data/JoyceW/VST_fusion_dataset/workdir/mask_ann_map.pkl',
+    params=dict(ann_file='/home/amax/Desktop/HCM/VST/VST/SAX_DIAG_11CLS_DEMO/demo_ann.txt',
+                mask_ann='/home/amax/Desktop/HCM/VST/VST/SAX_DIAG_11CLS_DEMO/demo_mask_ann.pkl',
                 fusion=False,
                 frame_interval=2,
                 augment_pipeline=[dict(type='HistEqual'),
@@ -40,12 +40,12 @@ test_dataset = dict(
 '''
 Specify the work_dir to save the training log and checkpoints
 '''
-work_config = dict(work_dir='/data/JoyceW/VST_fusion_dataset/DM_workdir/test')
+work_config = dict(work_dir='/home/amax/Desktop/HCM/VST/VST/SAX_DIAG_11CLS_DEMO/')
 '''
 Specify the checkpoint configuration
 '''
 checkpoint_config = dict(
-    load_from='/data/JoyceW/VST_fusion_dataset/DeepMuon/checkpoints/swin_base_patch244_window877_kinetics600_22k.pth', resume_from='', save_inter=50)
+    load_from='/home/amax/Desktop/HCM/VST/VST/SAX_DIAG_11CLS_DEMO/best_f1_score_epoch_184.pth', resume_from='', save_inter=50)
 '''
 Specify the customized loss function to be used, if no customized loss function specified, nn.MSELoss() will be used
 '''

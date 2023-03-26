@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-03-01 12:53:40
+LastEditTime: 2023-03-27 00:20:07
 Description: Import configuration file and prepare configurations for experiments
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -12,11 +12,12 @@ import os
 import warnings
 import shutil
 import time
+from yapf.yapflib.yapf_api import FormatCode
 from DeepMuon.loss_fn import *
 from DeepMuon.interpret import *
 from DeepMuon.models import *
 from DeepMuon.dataset import *
-from DeepMuon.tools.AirFunc import import_module, readable_dict
+from DeepMuon.tools.AirFunc import import_module, readable_dict, module_source
 from torch.optim import *
 from torch.optim.lr_scheduler import *
 from torch.nn.modules.loss import *
@@ -43,11 +44,14 @@ class Config:
                 `scheduler`
             - optional:
                 `evaluation`,
-                `model_parallel`
+                `fsdp_parallel`,
+                `optimize_config`,
+                `search_params`
 
     ### Example:
-
-    >>> model = dict(backbone='VST', params=dict(n_classes=11, input_shape=(3, 130, 130), seq_dropout=0.1))
+    
+    >>> search_params = dict(seq_dropout=0.1)
+    >>> model = dict(backbone='VST', params=dict(n_classes=11, input_shape=(3, 130, 130), seq_dropout=search_params['seq_dropout']))
     >>> train_dataset = dict(backbone='NIIDecodeV2',params=dict(ann_file=None,mask_ann=None,fusion=False,modalities=[],
                                                                 augment_pipeline=[dict(type='HistEqual'),
                                                                                 dict(type='SingleNorm'),
@@ -66,6 +70,7 @@ class Config:
     >>> scheduler = dict(backbone='CosineAnnealingLR', params=dict(T_max=10))
     >>> hyperpara = dict(epochs=2000, batch_size=7500, inputshape=[1, 3, 40, 10, 10])
     >>> fsdp_parallel=dict(enabled=True,min_num_params=1e6)
+    >>> optimize_config = dict(fp16=True, grad_acc=8, grad_clip=0.01, double_precision=True)
     """
 
     def __init__(self, configpath: str):
@@ -87,12 +92,15 @@ class Config:
         self.__para_config()
         # print(self.paras)
 
-    def move_config(self):
-        try:
-            shutil.copyfile(self.configpath, os.path.join(
-                self.paras['work_config']['work_dir'], 'config.py'))
-        except:
-            pass
+    def move_config(self,formatted=True):
+        save_path=os.path.join(self.paras['work_config']['work_dir'], 'config.py')
+        if formatted:
+            source_code=FormatCode(module_source(self.configpath))[0]
+            with open(save_path,'w+')as f:
+                f.write(source_code)
+            f.close()
+        else:
+            shutil.copyfile(self.configpath,save_path)
 
     def __check_config(self):
         paras_config = self.config_keys

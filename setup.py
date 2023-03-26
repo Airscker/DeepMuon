@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-21 18:43:31
 LastEditors: airscker
-LastEditTime: 2023-02-15 14:38:26
+LastEditTime: 2023-03-26 22:07:14
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -85,8 +85,11 @@ setup(
                       'matplotlib',
                       'timm',
                       'SimpleITK',
-                      'sklearn',
-                      'scikit-image'
+                      'scikit-learn',
+                      'scikit-image',
+                      'tensorboard',
+                      'yapf',
+                      'parso'
                       ],
     # Similar to `install_requires` above, these must be valid existing
     # projects.

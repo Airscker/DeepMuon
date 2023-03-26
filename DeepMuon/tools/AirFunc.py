@@ -2,13 +2,15 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-03-15 19:25:56
+LastEditTime: 2023-03-26 23:15:47
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 import os
 import shutil
+import parso
+from yapf.yapflib.yapf_api import FormatCode
 import importlib
 import warnings
 import numpy as np
@@ -261,6 +263,81 @@ def import_module(module_path: str):
     module = importlib.util.module_from_spec(module_spec)
     module_spec.loader.exec_module(module)
     return module
+
+def module_source(module_path: str):
+    '''
+    ## Get python module's source code according to the file path
+
+    ### Args:
+        - module_path: the path of the module to be imported
+
+    ### Return:
+        - the source code of the module
+    '''
+    assert module_path.endswith(
+        '.py'), f'Config file must be a python file but {module_path} is given'
+    total_path = os.path.abspath(module_path)
+    assert os.path.exists(
+        total_path), f'Configuration file {total_path} does not exist. Please check the path again'
+    module_spec = importlib.util.spec_from_file_location('', total_path)
+    module_loader = module_spec.loader
+    return module_loader.get_source('')
+
+
+def parse_config(source:str=None,path:str=None,key:str=None,formatted=True):
+    """
+    ## This function parses a configuration file and returns the source code of a specific element.
+
+    ### Args:
+        - source (str): the source code of the configuration file
+        - path (str): the path of the configuration file
+        - key (str): the name of the element to be parsed
+        - formatted (bool): whether or not to format the source code
+        
+    ### Return:
+        - (str): the source code of the parsed element
+    """
+    assert source!=None or path!=None,f"At least one parameter of source / path expected."
+    assert key is not None,f"Name of the parsed element expected."
+    if source is None:
+        source=module_source(path)
+    parsed_code=parso.parse(source)
+    target_source=None
+    for child in parsed_code.children:
+        if not isinstance(child,parso.python.tree.EndMarker):
+            element_ins=child.children[0]
+            if isinstance(element_ins,parso.python.tree.ExprStmt):
+                element_source=child.get_code()
+                if element_source.startswith(key):
+                    target_source=element_source
+    if target_source is not None and formatted:
+        target_source=FormatCode(target_source)[0].rstrip('\n')
+    return target_source
+
+def generate_nni_config(path:str=None,save_path:str=None,new_params:dict=None):
+    config_info=import_module(path)
+    target=parse_config(path=path,key='search_params',formatted=False)
+    source=module_source(module_path=path)
+    config_info.search_params.update(new_params)
+    source=source.replace(target,f"search_params={config_info.search_params}\n")
+    source=FormatCode(source)[0]
+    tmp_path=path.replace('.py','_tmp.py')
+    with open(tmp_path,'w+')as f:
+        f.write(source)
+    f.close()
+    new_config=import_module(tmp_path)
+    config_elements=dir(new_config)
+    new_source=''
+    for key in config_elements:
+        if key!='search_params' and not key.startswith('__'):
+            new_source+=f"{key}={getattr(new_config,key)}\n"
+    new_source=FormatCode(new_source)[0]
+    if save_path is not None:
+        with open(save_path,'w+')as f:
+            f.write(new_source)
+        f.close()
+    os.remove(tmp_path)
+    return new_config,new_source
 
 
 def plot_hist_2nd(data, title='x', bins=15, sigma=3, save='', show=False):
