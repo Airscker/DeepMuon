@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-03-27 00:20:07
+LastEditTime: 2023-03-29 00:13:57
 Description: Import configuration file and prepare configurations for experiments
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -21,7 +21,6 @@ from DeepMuon.tools.AirFunc import import_module, readable_dict, module_source
 from torch.optim import *
 from torch.optim.lr_scheduler import *
 from torch.nn.modules.loss import *
-
 
 class Config:
     """
@@ -50,6 +49,12 @@ class Config:
 
     ### Example:
     
+    >>> search_config=dict(search_space= {'seq_dropout': {'_type': 'choice', '_value': [0.1, 0.3, 0.5, 0.7]}},
+                            exp_name='DeepMuon EXP',
+                            concurrency=1,
+                            trial_number=10,
+                            port=14001,
+                            tuner='TPE')
     >>> search_params = dict(seq_dropout=0.1)
     >>> model = dict(backbone='VST', params=dict(n_classes=11, input_shape=(3, 130, 130), seq_dropout=search_params['seq_dropout']))
     >>> train_dataset = dict(backbone='NIIDecodeV2',params=dict(ann_file=None,mask_ann=None,fusion=False,modalities=[],

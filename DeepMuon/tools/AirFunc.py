@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-03-26 23:15:47
+LastEditTime: 2023-03-29 00:56:12
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -10,16 +10,39 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 import os
 import shutil
 import parso
-from yapf.yapflib.yapf_api import FormatCode
+import socket
 import importlib
 import warnings
 import numpy as np
 from typing import Union
 import matplotlib.pyplot as plt
+from yapf.yapflib.yapf_api import FormatCode
 
 
 import torch
 from torch import nn
+
+def check_port(ip:str='127.0.0.1',port:int=8080):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    result = sock.connect_ex((ip,port))
+    if result == 0:
+        return False
+    else:
+        return True
+
+
+def fix_port(ip:str='127.0.0.1',port:int=8080):
+    new_port=port
+    while True:
+        port_usable=check_port(ip=ip,port=new_port)
+        if not port_usable:
+            new_port+=1
+        else:
+            break
+    info=None
+    if new_port!=port:
+        info=f'WARN: Port {port} is unavailable, we reset it as the nearest usable port {new_port}'
+    return new_port,info
 
 
 def check_device(device: Union[int, str, torch.device]):

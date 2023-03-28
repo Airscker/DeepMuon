@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-21 18:43:31
 LastEditors: airscker
-LastEditTime: 2023-03-26 22:07:14
+LastEditTime: 2023-03-28 22:39:39
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -66,7 +66,7 @@ setup(
     python_requires=">=3.6, <4",
     # This field lists other packages that your project depends on to run.
     # Any package you put here will be installed by pip when your project is
-    # installed, so they must be valid existing projects.s
+    # installed, so they must be valid existing projects.
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/discussions/install-requires-vs-requirements/

@@ -1,5 +1,6 @@
 from nni import Experiment
 import os
+import click
 
 
 def model_optim():
@@ -28,4 +29,15 @@ def model_optim():
     return 0
 
 
-model_optim()
+# model_optim()
+
+@click.command()
+@click.option('--get',is_flag=True)
+def mm(get):
+    if get:
+        print('GOT!')
+    else:
+        print('NO')
+
+if __name__=='__main__':
+    mm()

@@ -464,7 +464,8 @@ def test(device, dataloader, model, loss_fn):
 @click.command()
 @click.option('--config', default='', help='Specify the path of configuartion file')
 @click.option('--test', default='', help='Specify the path of checkpoint used to test the model performance, if nothing given the test mode will be disabled')
-def run(config, test):
+@click.option('--search',is_flag=True,help='Specify whether to use Neural Network Hyperparameter Searching (NNHS for short)')
+def run(config, test, search):
     train_config = Config(configpath=config)
     if not os.path.exists(test) and test != '':
         test = None

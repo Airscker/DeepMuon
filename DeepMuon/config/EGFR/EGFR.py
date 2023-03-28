@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 22:24:05
 LastEditors: airscker
-LastEditTime: 2023-03-16 21:25:02
+LastEditTime: 2023-03-29 00:23:18
 Description: Configuration of Hailing 1TeV MLP3_3D_Direct Model
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -11,6 +11,13 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 ## Specify which model to be used, all models are stored in 'models' 
 '''
+search_config=dict(search_space= {'augment_ratio1': {'_type': 'choice', '_value': [0.01, 0.05, 0.1, 0.2]}},
+                   exp_name='EXP',
+                   concurrency=2,
+                   trial_number=10,
+                   port=14001,
+                   tuner='TPE')
+search_params=dict(augment_ratio1=0.3)
 model = dict(backbone='ResNet50_cls_rec',params=dict(num_classes=2))
 '''
 ## Specify the dataset to load the data, all dataset are stored in 'dataset'
@@ -18,7 +25,7 @@ model = dict(backbone='ResNet50_cls_rec',params=dict(num_classes=2))
 train_dataset = dict(backbone='EGFR_NPY', 
                      params=dict(img_dataset='/home/dachuang2022/Yufeng/data_code_egfr_0316/img_dataset/imgs_train.pkl',
                                 augment=False,
-                                augment_ratio=[0.3,0.6],
+                                augment_ratio=[search_params['augment_ratio1'],0.6],
                                 augment_pipeline=[dict(type='flip'),
                                                 dict(type='rotate',angle_range=180),
                                                 dict(type='bright',light_range=(0.8,1.1))]))
@@ -27,7 +34,7 @@ test_dataset = dict(backbone='EGFR_NPY', params=dict(img_dataset='/home/dachuang
 ## Specify the work_dir to save the training log and checkpoints
 '''
 work_config = dict(
-    work_dir='/home/dachuang2022/Yufeng/EGFR/work_dir/EXP006')
+    work_dir='/home/dachuang2022/Yufeng/EGFR/work_dir/NNHSEXP01')
 '''
 ## Specify the checkpoint configuration
 '''
@@ -44,7 +51,7 @@ evaluation = dict(metrics=['f1_score', 'confusion_matrix','AUC',
 '''
 ## Specify the Hyperparameters to be used
 '''
-hyperpara = dict(epochs=200, batch_size=16)
+hyperpara = dict(epochs=20, batch_size=16)
 '''
 optimizer
 '''

@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-03-17 00:11:41
+LastEditTime: 2023-03-29 01:05:38
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -91,6 +91,7 @@ def main(config_info, test_path=None):
         logger.log(
             f'========= Current Time: {time.ctime()} Current PID: {os.getpid()} =========')
         logger.log(f'LOCAL WORLD SIZE: {local_world_size}')
+        logger.log(f"PORT: {os.environ['MASTER_PORT']}")
         if not os.path.exists(msg):
             logger.log('LICENSE MISSED! REFUSE TO START TRAINING')
             return 0
@@ -466,7 +467,8 @@ def test(device, dataloader, model, loss_fn):
 @click.command()
 @click.option('--config', default='', help='Specify the path of configuartion file')
 @click.option('--test', default='', help='Specify the path of checkpoint used to test the model performance, if nothing given the test mode will be disabled')
-def run(config, test):
+@click.option('--search',is_flag=True,help='Specify whether to use Neural Network Hyperparameter Searching (NNHS for short)')
+def run(config, test, search):
     train_config = Config(configpath=config)
     if not os.path.exists(test) and test != '':
         test = None
