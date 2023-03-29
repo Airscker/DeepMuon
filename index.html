@@ -62,10 +62,10 @@
     <div class="box text-center">
         <div class="box-item">
             <i class="ti-hand-stop"></i>
-            <a href="https://github.com/Airscker/DeepMuon/releases/tag/1.23.23" target="_blank">
-                <h6 class="box-title">1.23.23 Stable Edtion Released</h6>
+            <a href="https://github.com/Airscker/DeepMuon/releases/tag/1.23.32" target="_blank">
+                <h6 class="box-title">1.23.32 Stable Edtion Released</h6>
             </a>
-            <p></p>
+            <p>Neural Network Hyperparameter Searching (NNHS) Function Enabled!</p>
         </div>
         <!-- <div class="box-item">
             <i class="ti-search"></i>
@@ -82,46 +82,65 @@
                     <h2 class="section-title mb-3 ">Install DeepMuon</h2>
                     <p>The installation can be accessed from sereval sources, and they are all stable editions. Please make sure you have met the prerequisites (such as numpy). Here we list some important prerequisites of DeepMuon:</p>
                     <center>
-                        <table style="border-collapse:collapse;border-spacing:0" class="tg">
+                        <table style="border-collapse:collapse;border-spacing:0;table-layout: fixed; width: 708px" class="tg">
+                            <colgroup>
+                                <col style="width: 101.333333px">
+                                <col style="width: 101.333333px">
+                                <col style="width: 101.333333px">
+                                <col style="width: 101.333333px">
+                                <col style="width: 101.333333px">
+                                <col style="width: 201.333333px">
+                            </colgroup>
                             <thead>
                                 <tr>
-                                    <th style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;font-weight:bold;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal" colspan="3">Package Names</th>
+                                    <th style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;font-weight:bold;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal" colspan="5">Package Name</th>
                                     <th style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;font-weight:bold;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">Edition</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">numpy</td>
-                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">matplotlib</td>
-                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">torchinfo</td>
-                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal" rowspan="5"><br><br><br><br>Latest Recomended</td>
-                                </tr>
-                                <tr>
                                     <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">click</td>
-                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">captum</td>
-                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">timm</td>
-                                </tr>
-                                <tr>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">tqdm</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">numpy</td>
                                     <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">pandas</td>
-                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">monai</td>
-                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">SimpleITK</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">nni</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;font-weight:bold;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal" rowspan="5"><br><br><br><br>Latest Recommanded</td>
                                 </tr>
                                 <tr>
                                     <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">numba</td>
-                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">pynvml</td>
-                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">sklearn</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">ptflops</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">torchinfo</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">captum</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">monai</td>
                                 </tr>
                                 <tr>
-                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">ptflops</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">pynvml</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">psutil</td>
                                     <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">GPUtil</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">matplotlib</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">timm</td>
+                                </tr>
+                                <tr>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">SimpleITK</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">scikit-learn</td>
                                     <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">scikit-image</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">tensorboard</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">yapf</td>
+                                </tr>
+                                <tr>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">parso</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal"></td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal"></td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal"></td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal"></td>
                                 </tr>
                             </tbody>
                         </table>
                     </center>
-                    <p>The prerequisites listed above will be installed automatically when installing DeepMuon, however, you need to first make sure PyTorch >= 1.12(CUDA edition) was installed properly. The lowest tolerable edition of PyTorch is 1.10.0.,
-                        otherwise DeepMuon may occur fatal mistakes. We strongly suggest you install <b>torchvision</b> and <b>torchaudio</b> at the same time.</p>
-                    <p>As for the python environment, the lowest edition of python should be python 3.6.0.</p>
+                    <p><br>Most of the prerequisites listed above will be installed automatically when installing DeepMuon, however, you need to first make sure PyTorch >= 1.12(CUDA edition) was installed properly. The lowest tolerable edition of PyTorch
+                        is 1.10.0., otherwise DeepMuon may occur fatal mistakes. We strongly suggest you install <b>torchvision</b> and <b>torchaudio</b> at the same time. What's more, you need to install <b>nni </b>manually, which is not available yet
+                        on MacOSX, as a result, the <b>Neural network hyperparameter searching (NNHS for short)</b> function will be disabled.</p>
+                    <p>As for the python environment, the lowest edition of python should be <b>python 3.6.0</b></p>
                     <p>DeepMuon support Windows/MacOSX/Linux platforms, we <b>recommend</b> you to install DeepMuon from source to get the best customize experience.</p>
                     <p>DeepMuon is constructed based on latest (>=1.12) <a href="https://pytorch.org/ ">PyTorch</a>, and the supported edition should larger than 1.10. Because not all users' platform support latest pytorch, so the feature <b>Fully Sharded Data
                         Parallel (FSDP)</b> would be disabled if torch's edition is low (such as torch=1.10.0).</p>
@@ -171,16 +190,16 @@
         <div class="container">
             <h5 class="section-title text-center mb-6">Key Features</h5>
             <div class="row">
-                <div class="col-sm-4 col-md-3">
+                <div class="col-sm-4 col-md-4">
                     <div class="card mb-4">
                         <div class="card-body">
                             <h2 class="mb-4"><i class="ti-filter text-primary"></i></h2>
                             <h6 class="card-title">Based on PyTorch</h6>
-                            <p>Support almost all available features of PyTorch and can be used with minimal effort to realize your ideas.</p>
+                            <p>Support almost all available features of newest PyTorch and can be used with minimal effort to realize your ideas.</p>
                         </div>
                     </div>
                 </div>
-                <div class="col-sm-4 col-md-3">
+                <div class="col-sm-4 col-md-4">
                     <div class="card mb-4">
                         <div class="card-body">
                             <h2 class="mb-4"><i class="ti-paint-roller text-primary"></i></h2>
@@ -189,7 +208,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-sm-4 col-md-3">
+                <div class="col-sm-4 col-md-4">
                     <div class="card mb-4">
                         <div class="card-body">
                             <h2 class="mb-4"><i class="ti-ruler-pencil text-primary"></i></h2>
@@ -198,7 +217,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-sm-4 col-md-3">
+                <div class="col-sm-4 col-md-4">
                     <div class="card mb-4">
                         <div class="card-body">
                             <h2 class="mb-4"><i class="ti-layers text-primary"></i></h2>
@@ -207,7 +226,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-sm-4 col-md-3">
+                <div class="col-sm-4 col-md-4">
                     <div class="card mb-4">
                         <div class="card-body">
                             <h2 class="mb-4"><i class="ti-bolt text-primary"></i></h2>
@@ -216,7 +235,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-sm-4 col-md-3">
+                <div class="col-sm-4 col-md-4">
                     <div class="card mb-4">
                         <div class="card-body">
                             <h2 class="mb-4"><i class="ti-palette text-primary"></i></h2>
@@ -225,7 +244,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-sm-4 col-md-3">
+                <div class="col-sm-4 col-md-4">
                     <div class="card mb-4">
                         <div class="card-body">
                             <h2 class="mb-4"><i class="ti-stats-up text-primary"></i></h2>
@@ -234,12 +253,21 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-sm-4 col-md-3">
+                <div class="col-sm-4 col-md-4">
                     <div class="card mb-4">
                         <div class="card-body">
                             <h2 class="mb-4"><i class="ti-location-arrow text-primary"></i></h2>
                             <h6 class="card-title">Configuration Mechanism</h6>
                             <p>Customize your model/loss/dataset and providing proper interfaces, start your experiment by setting simple configurations.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4 col-md-4">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h2 class="mb-4"><i class="ti-panel text-primary"></i></h2>
+                            <h6 class="card-title">Neural network hyperparameter searching</h6>
+                            <p>Based on NNI, in order to search the best hyperparameter combinations automatically and visualize the optimization course.</p>
                         </div>
                     </div>
                 </div>
