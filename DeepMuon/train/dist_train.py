@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-03-01 12:53:52
+LastEditTime: 2023-03-29 12:20:39
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -30,6 +30,11 @@ from torch.nn.parallel import DistributedDataParallel
 from torch.utils.tensorboard import SummaryWriter
 torch.backends.cudnn.benchmark = True
 # torch.manual_seed(3407)
+try:
+    import nni
+    NNHS_enabled=True
+except:
+    NNHS_enabled=False
 
 try:
     from torch.distributed.fsdp import FullyShardedDataParallel as FSDP, FullStateDictConfig, StateDictType
@@ -42,7 +47,7 @@ pkg_path = DeepMuon.__path__[0]
 msg = os.path.join(pkg_path.split('DeepMuon')[0], 'LICENSE.txt')
 precision=torch.FloatTensor
 
-def main(config_info, test_path=None):
+def main(config_info:Config, test_path:str=None, search:bool=False, source_code:str=None):
     global msg
     global fsdp_env
     global precision
@@ -53,6 +58,9 @@ def main(config_info, test_path=None):
     train_data = configs['train_dataset']['params']
     test_data = configs['test_dataset']['params']
     work_dir = configs['work_config']['work_dir']
+    if search:
+        trail_id=nni.get_trial_id()
+        work_dir=os.path.join(work_dir,F'NNHS_{nni.get_experiment_id()}',trail_id)
     log = configs['work_config']['logfile']
     if test_path is not None:
         log = 'test_'+log
@@ -84,12 +92,19 @@ def main(config_info, test_path=None):
             os.makedirs(work_dir)
         except:
             pass
-        config_info.move_config()
+        if search:
+            config_info.move_config(source_code=source_code,save_path=os.path.join(work_dir,'config.py'))
+        else:
+            config_info.move_config()
         log = os.path.join(work_dir, log)
         '''show hyperparameters'''
         logger.log(
             f'========= Current Time: {time.ctime()} Current PID: {os.getpid()} =========')
         logger.log(f'LOCAL WORLD SIZE: {local_world_size}')
+        logger.log(f"PORT: {os.environ['MASTER_PORT']}")
+        if search:
+            logger.log('Neural network hyperparameter searching enabled')
+            logger.log(f'NNHS expeirment ID: {nni.get_experiment_id()}')
         if not os.path.exists(msg):
             logger.log('LICENSE MISSED! REFUSE TO START TRAINING')
             return 0
@@ -293,8 +308,29 @@ def main(config_info, test_path=None):
                 json_logger.log(ts_eva_info)
                 logger.log(AirFunc.readable_dict(tr_eva_info))
                 logger.log(AirFunc.readable_dict(ts_eva_info))
+                if t+1==epochs:
+                    end_exp=True
+                else:
+                    end_exp=False
+                nnhs_report(search=search,sota_target=sota_target,eva_metrics=[tr_eva_metrics,ts_eva_metrics],modes=['tr_eval','ts_eval'],end_exp=end_exp)
     return 0
 
+def nnhs_report(search:bool,sota_target:str,eva_metrics:list,modes:list,end_exp:bool):
+    if search:
+        new_metric={}
+        for i in range(len(eva_metrics)):
+            for key in eva_metrics[i].keys():
+                if key == sota_target and modes[i] == 'ts_eval':
+                    new_key='default'
+                    print('SOTA TARGET',modes[i],key,sota_target)
+                else:
+                    new_key=f'{modes[i]}_{key}'
+                new_metric[new_key]=eva_metrics[i][key]
+        if end_exp:
+            nni.report_final_result(new_metric)
+        else:
+            nni.report_intermediate_result(new_metric)
+        
 
 def ddp_fsdp_model_save(epoch=0, model=None, optimizer=None,
                         loss_fn=None, scheduler=None, path=None, ddp_training=True):
@@ -437,17 +473,25 @@ def test(device, dataloader, model, loss_fn):
 @click.option('--config', default='', help='Specify the path of configuartion file')
 @click.option('--test', default='', help='Specify the path of checkpoint used to test the model performance, if nothing given the test mode will be disabled')
 @click.option('--search',is_flag=True,help='Specify whether to use Neural Network Hyperparameter Searching (NNHS for short)')
-def run(config, test, search):
-    train_config = Config(configpath=config)
+def start_exp(config, test, search, main_func=main):
+    global NNHS_enabled
+    if not NNHS_enabled:
+        search=False
+    if search:
+        new_para=nni.get_next_parameter()
+        config_module,source_code=AirFunc.generate_nnhs_config(path=config,new_params=new_para)
+        train_config = Config(config_module=config_module)
+    else:
+        train_config = Config(configpath=config)
     if not os.path.exists(test) and test != '':
         test = None
         print(f"checkpoint {test} cannot be found, test mode is disabled!")
         return 0
     elif test == '':
         test = None
-    main(train_config, test)
+    main_func(train_config, test, search, source_code)
 
 
 if __name__ == '__main__':
     print(f'\n---Starting Neural Network...PID:{os.getpid()}---')
-    run()
+    start_exp()

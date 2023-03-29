@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-03-29 00:56:12
+LastEditTime: 2023-03-29 10:28:48
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -18,11 +18,11 @@ from typing import Union
 import matplotlib.pyplot as plt
 from yapf.yapflib.yapf_api import FormatCode
 
-
 import torch
 from torch import nn
 
 def check_port(ip:str='127.0.0.1',port:int=8080):
+    '''check the socket port's availability'''
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     result = sock.connect_ex((ip,port))
     if result == 0:
@@ -32,6 +32,7 @@ def check_port(ip:str='127.0.0.1',port:int=8080):
 
 
 def fix_port(ip:str='127.0.0.1',port:int=8080):
+    '''check the socket port's availbility and find usable port'''
     new_port=port
     while True:
         port_usable=check_port(ip=ip,port=new_port)
@@ -267,7 +268,7 @@ def load_log(log_file: str) -> np.ndarray:
     return np.array(train_info)
 
 
-def import_module(module_path: str):
+def import_module(module_path: str) -> importlib.types.ModuleType:
     '''
     ## Import python module according to the file path
 
@@ -337,14 +338,26 @@ def parse_config(source:str=None,path:str=None,key:str=None,formatted=True):
         target_source=FormatCode(target_source)[0].rstrip('\n')
     return target_source
 
-def generate_nni_config(path:str=None,save_path:str=None,new_params:dict=None):
+def generate_nnhs_config(path:str=None,save_path:str=None,new_params:dict=None):
+    '''
+    ## Generate neural network hyperparameter searching configuartion for every trail
+    
+    ### Args:
+        - path: specify the overall configuartion path of NNHS experiments
+        - save_path: specify the path to save the NNHS trail configuration
+        - new_params: specify the new parameters given by NNHS search space
+    
+    ### Returns:
+        - new_config: the new module which contains hyperparameters refreshed
+        - new_source: the source code of generated NNHS configuration
+    '''
     config_info=import_module(path)
     target=parse_config(path=path,key='search_params',formatted=False)
     source=module_source(module_path=path)
     config_info.search_params.update(new_params)
     source=source.replace(target,f"search_params={config_info.search_params}\n")
     source=FormatCode(source)[0]
-    tmp_path=path.replace('.py','_tmp.py')
+    tmp_path=path.replace('.py',f'_{os.getpid()}.py')
     with open(tmp_path,'w+')as f:
         f.write(source)
     f.close()
@@ -352,7 +365,7 @@ def generate_nni_config(path:str=None,save_path:str=None,new_params:dict=None):
     config_elements=dir(new_config)
     new_source=''
     for key in config_elements:
-        if key!='search_params' and not key.startswith('__'):
+        if key!='search_params' and not key.startswith('__') and key!='search_config':
             new_source+=f"{key}={getattr(new_config,key)}\n"
     new_source=FormatCode(new_source)[0]
     if save_path is not None:

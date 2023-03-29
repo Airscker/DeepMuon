@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-03-29 00:13:57
+LastEditTime: 2023-03-29 11:07:20
 Description: Import configuration file and prepare configurations for experiments
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -12,6 +12,7 @@ import os
 import warnings
 import shutil
 import time
+import importlib
 from yapf.yapflib.yapf_api import FormatCode
 from DeepMuon.loss_fn import *
 from DeepMuon.interpret import *
@@ -28,6 +29,7 @@ class Config:
 
     ### Args:
         - configpath: The path of the config file
+        - config_module: If we don't want to import configuration from file, we can directly specify the module to be used
 
     ### Attributions:
         - paras: The parameters in config file, dtype: dict
@@ -78,7 +80,7 @@ class Config:
     >>> optimize_config = dict(fp16=True, grad_acc=8, grad_clip=0.01, double_precision=True)
     """
 
-    def __init__(self, configpath: str):
+    def __init__(self, configpath: str=None, config_module:importlib.types.ModuleType=None):
         self.paras = {'model': None,
                       'train_dataset': None,
                       'test_dataset': None,
@@ -90,22 +92,33 @@ class Config:
                       'optimizer': None,
                       'scheduler': None,
                       'lr_config': None, }
-        self.config = import_module(configpath)
+        if config_module is not None:
+            self.config = config_module
+        else:
+            self.config = import_module(configpath)
         self.config_keys = dir(self.config)
         self.configpath = configpath
         self.__check_config()
         self.__para_config()
         # print(self.paras)
 
-    def move_config(self,formatted=True):
-        save_path=os.path.join(self.paras['work_config']['work_dir'], 'config.py')
-        if formatted:
-            source_code=FormatCode(module_source(self.configpath))[0]
+    def move_config(self,formatted=True,source_code:str='',save_path:str=None):
+        if save_path is None:
+            save_path=os.path.join(self.paras['work_config']['work_dir'], 'config.py')
+        if self.configpath is not None:
+            if formatted:
+                source_code=FormatCode(module_source(self.configpath))[0]
+                with open(save_path,'w+')as f:
+                    f.write(source_code)
+                f.close()
+            else:
+                shutil.copyfile(self.configpath,save_path)
+        else:
+            if formatted:
+                source_code=FormatCode(source_code)[0]
             with open(save_path,'w+')as f:
                 f.write(source_code)
             f.close()
-        else:
-            shutil.copyfile(self.configpath,save_path)
 
     def __check_config(self):
         paras_config = self.config_keys
