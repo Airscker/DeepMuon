@@ -125,11 +125,11 @@ class HailingDataset_DirectV3(Dataset):
             oper = np.unique(np.random.randint(0, 4, np.random.randint(0, 4)))
             for oper_i in range(len(oper)):
                 image, label = self.augmentation[oper[oper_i]](image, label)
-        image = torch.from_numpy(image.copy()).type(torch.FloatTensor)
+        image = torch.from_numpy(image.copy())#.type(torch.FloatTensor)
         # image = torch.permute(image, (3, 0, 1, 2))
         image = torch.permute(image, (3, 2, 0, 1))
         # image[1:, :, :, :] = 0.0001*image[1:, :, :, :]
-        label = torch.from_numpy(label).type(torch.FloatTensor)
+        label = torch.from_numpy(label)#.type(torch.FloatTensor)
         return image, label
 
     def __Init(self):
@@ -174,7 +174,7 @@ class HailingDataset_Direct2(Dataset):
             oper = np.unique(np.random.randint(0, 4, np.random.randint(0, 4)))
             for oper_i in range(len(oper)):
                 image, label = self.augmentation[oper[oper_i]](image, label)
-        image = torch.from_numpy(image.copy()).type(torch.FloatTensor)
+        image = torch.from_numpy(image.copy())#.type(torch.FloatTensor)
         image = torch.permute(image, (3, 0, 1, 2))
         # image = torch.permute(image, (3, 2, 0, 1))
         # image[1:, :, :, :] = 0.0001*image[1:, :, :, :]
@@ -182,7 +182,7 @@ class HailingDataset_Direct2(Dataset):
         mat_range=torch.max(image[1,:,:,:])-torch.min(image[1,:,:,:])
         image[1,:,:,:]=(image[1,:,:,:]-torch.min(image[1,:,:,:]))/mat_range
         image[2,:,:,:]=image[2,:,:,:]/mat_range
-        label = torch.from_numpy(label).type(torch.FloatTensor)
+        label = torch.from_numpy(label)#.type(torch.FloatTensor)
         return image, label
 
     def __Init(self):

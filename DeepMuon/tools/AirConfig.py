@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-03-29 11:07:20
+LastEditTime: 2023-03-29 22:31:16
 Description: Import configuration file and prepare configurations for experiments
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -19,6 +19,7 @@ from DeepMuon.interpret import *
 from DeepMuon.models import *
 from DeepMuon.dataset import *
 from DeepMuon.tools.AirFunc import import_module, readable_dict, module_source
+import torch
 from torch.optim import *
 from torch.optim.lr_scheduler import *
 from torch.nn.modules.loss import *
@@ -247,6 +248,10 @@ class Config:
                 optim_config['grad_clip'] = None
             if 'double_precision' not in optim_config.keys():
                 optim_config['double_precision'] = False
+            if optim_config['double_precision']:
+                self.precision=torch.DoubleTensor
+            else:
+                self.precision=torch.FloatTensor
             self.paras['optimize_config'] = optim_config
         if 'gpu_config' in self.config_keys:
             warnings.warn(

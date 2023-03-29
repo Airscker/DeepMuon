@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-03-29 12:24:45
+LastEditTime: 2023-03-29 22:59:42
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -497,6 +497,7 @@ def start_exp(config, test, search, main_func=main):
     global NNHS_enabled
     if not NNHS_enabled:
         search=False
+    source_code=None
     if search:
         new_para=nni.get_next_parameter()
         config_module,source_code=AirFunc.generate_nnhs_config(path=config,new_params=new_para)
