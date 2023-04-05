@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-12-23 10:33:54
 LastEditors: airscker
-LastEditTime: 2023-03-16 14:03:30
+LastEditTime: 2023-04-04 15:56:49
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -837,10 +837,10 @@ class fusion_model(nn.Module):
         features = []
         for i in range(x.shape[0]):
             features.append(self.avgpool(
-                self.vst_backbones[i](x[i])).unsqueeze(0))
-        features = torch.cat(features, dim=0)
-        x = torch.permute(features, (1, 0, 2, 3, 4, 5))
-        x = self.dropout(x)
+                self.vst_backbones[i](x[i])))
+        features = torch.cat(features, dim=1)
+        print(features)
+        x = self.dropout(features)
         x = x.view(x.shape[0], -1)
         x = self.linear(x)
         return x

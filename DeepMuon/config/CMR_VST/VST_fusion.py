@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-28 11:34:38
 LastEditors: airscker
-LastEditTime: 2023-02-18 13:12:11
+LastEditTime: 2023-04-03 23:56:16
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -37,12 +37,12 @@ test_dataset = dict(
     params=dict(ann_file='/data/JoyceW/VST_fusion_dataset/CNNLSTM/test_fusion.txt',
                 mask_ann='/data/JoyceW/VST_fusion_dataset/workdir/mask_ann_map.pkl',
                 fusion=True,
-                modalities=['sax','4ch'],
+                modalities=['4ch','4ch'],
                 frame_interval=2,
                 augment_pipeline=[dict(type='HistEqual'),
-                                  dict(type='SingleNorm'),
                                   dict(type='Padding', size=(120, 120)),
-                                  dict(type='Resize', size=(224, 224))]))
+                                  dict(type='Resize', size=(224, 224)),
+                                  dict(type='Batch_norm',mean=[153.52,155.78,0],std=[68.84,65.9,1]),]))
 '''
 Specify the work_dir to save the training log and checkpoints
 '''

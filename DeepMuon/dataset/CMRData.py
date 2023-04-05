@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-27 19:51:21
 LastEditors: airscker
-LastEditTime: 2023-03-14 21:36:19
+LastEditTime: 2023-04-04 00:19:32
 Description:
     ## Dataset built for:
         - Video Swin-Transformer (VST) CMR Screening & Diagnose Model
@@ -48,6 +48,7 @@ def Batch_norm(frames: np.ndarray, mean, std):
     return (frames-mean)/std
 
 
+
 def HistEqual(frames: np.ndarray):
     """
     ## Histogram equalization for multi-frames nifti data
@@ -62,6 +63,7 @@ def HistEqual(frames: np.ndarray):
         img = frames[i]
         for j in range(img.shape[-1]):
             img[:, :, j] = cv2.equalizeHist(np.uint8(img[:, :, j]))
+        img=img.astype(np.uint8)
         frames[i] = img
     return frames
 
@@ -255,7 +257,7 @@ class NIIDecodeV2(Dataset):
             self.data_mask_map = pkl.load(f)
         f.close()
         print(
-            f'To improve the performance of {self.__class__.__name__}, we deprecated ROI & Datapath checking pipeline. Please make sure the content of Datapth-ROI hash maps is correct before you start training models')
+            f'To improve the performance of {self.__class__.__name__}, we deprecated ROI & Datapath checking pipeline. Please make sure the content of Datapath-ROI hash maps is correct before you start training models')
 
     def __load_annotations(self):
         """Load annotation file to get nifti data information."""
@@ -369,11 +371,16 @@ class NIIDecodeV2(Dataset):
                 file_path=self.nifti_info_list[index]['lge'], mod='lge')
             results['lge'] = lge_data
         env = globals()
-        for mod in self.modalities:
+        for i in range(len(self.modalities)):
+            mod=self.modalities[i]
             for augment in self.augment_pipeline:
                 try:
-                    results[mod] = env[augment['type']](
-                        results[mod], **exclude_key(augment))
+                    if augment['type']=='Batch_norm' and len(self.modalities)>1:
+                        results[mod] = env['Batch_norm'](
+                            results[mod], mean=augment['mean'][i],std=augment['std'][i])
+                    else:
+                        results[mod] = env[augment['type']](
+                            results[mod], **exclude_key(augment))
                 except:
                     pass
             if self.model != 'LSTM':
