@@ -63,7 +63,6 @@ def HistEqual(frames: np.ndarray):
         img = frames[i]
         for j in range(img.shape[-1]):
             img[:, :, j] = cv2.equalizeHist(np.uint8(img[:, :, j]))
-        img=img.astype(np.uint8)
         frames[i] = img
     return frames
 
@@ -359,28 +358,28 @@ class NIIDecodeV2(Dataset):
         results = {}
         data = []
         if 'sax' in self.modalities:
-            sax_fusion = self.__crop(
+            sax_data = self.__crop(
                 file_path=self.nifti_info_list[index]['sax'], mod='sax')
-            results['sax'] = sax_fusion
+            results['sax'] = np.float32(sax_data)
         if '4ch' in self.modalities:
             lax4ch_data = self.__crop(
                 file_path=self.nifti_info_list[index]['4ch'], mod='4ch')
-            results['4ch'] = lax4ch_data
+            results['4ch'] = np.float32(lax4ch_data)
         if 'lge' in self.modalities:
             lge_data = self.__crop(
                 file_path=self.nifti_info_list[index]['lge'], mod='lge')
-            results['lge'] = lge_data
+            results['lge'] = np.float32(lge_data)
         env = globals()
         for i in range(len(self.modalities)):
             mod=self.modalities[i]
             for augment in self.augment_pipeline:
                 try:
                     if augment['type']=='Batch_norm' and len(self.modalities)>1:
-                        results[mod] = env['Batch_norm'](
-                            results[mod], mean=augment['mean'][i],std=augment['std'][i])
+                        results[mod] = np.float32(env['Batch_norm'](
+                            results[mod], mean=augment['mean'][i],std=augment['std'][i]))
                     else:
-                        results[mod] = env[augment['type']](
-                            results[mod], **exclude_key(augment))
+                        results[mod] = np.float32(env[augment['type']](
+                            results[mod], **exclude_key(augment)))
                 except:
                     pass
             if self.model != 'LSTM':

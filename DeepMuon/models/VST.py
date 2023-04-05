@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-12-23 10:33:54
 LastEditors: airscker
-LastEditTime: 2023-04-04 15:56:49
+LastEditTime: 2023-04-05 12:30:33
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -801,7 +801,7 @@ class fusion_model(nn.Module):
         if lge_weight is not None:
             weights.append(lge_weight)
         mlp_num_mod = len(weights)
-        self.vst_backbones = nn.ModuleList([SwinTransformer3D(patch_size=patch_size,
+        self.vst = nn.ModuleList([SwinTransformer3D(patch_size=patch_size,
                                                               embed_dim=embed_dim,
                                                               depths=depths,
                                                               num_heads=num_heads,
@@ -824,7 +824,7 @@ class fusion_model(nn.Module):
         for i in range(len(weights)):
             try:
                 checkpoint = torch.load(weights[i], map_location='cpu')
-                self.vst_backbones[i].load_state_dict(checkpoint, strict=False)
+                self.vst[i].load_state_dict(checkpoint, strict=False)
                 print(f'{weights[i]} loaded successfully')
             except:
                 print(f'{weights[i]} loading fail')
@@ -832,14 +832,13 @@ class fusion_model(nn.Module):
     def forward(self, x: torch.Tensor):
         '''x: NMCTHW'''
         assert x.shape[1] == len(
-            self.vst_backbones), f'Multi modality input data types does not match the number of vst backbones; {len(self.vst_backbones)} types of data expected however {x.shape[1]} given'
+            self.vst), f'Multi modality input data types does not match the number of vst backbones; {len(self.vst_backbones)} types of data expected however {x.shape[1]} given'
         x = torch.permute(x, (1, 0, 2, 3, 4, 5))
         features = []
         for i in range(x.shape[0]):
             features.append(self.avgpool(
-                self.vst_backbones[i](x[i])))
+                self.vst[i](x[i])))
         features = torch.cat(features, dim=1)
-        print(features)
         x = self.dropout(features)
         x = x.view(x.shape[0], -1)
         x = self.linear(x)
@@ -847,8 +846,8 @@ class fusion_model(nn.Module):
 
     def freeze_vst(self):
         if self.freeze:
-            self.vst_backbones.eval()
-            for params in self.vst_backbones.parameters():
+            self.vst.eval()
+            for params in self.vst.parameters():
                 params.requires_grad = False
 
     def train(self, mode: bool = True):
