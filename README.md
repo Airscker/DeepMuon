@@ -1,4 +1,4 @@
-# <center><img src="./Resources/DeepMuon.png" width =900px></center>
+<h1><center><img src="./Resources/DeepMuon.png" width='900px'></center></h1>
 
 ## Introduction
 
@@ -15,6 +15,8 @@ Here we list out the available features of DeepMuon:
 - Tidy file system
 - Simple and direct tutorials
 
+More details please refer to the home page of [DeepMuon](https://airscker.github.io/DeepMuon/).
+
 ## Installation
 
 ```bash
@@ -22,14 +24,6 @@ git clone https://github.com/Airscker/DeepMuon.git
 cd DeepMuon
 pip install -v -e ./ --user
 ```
-
-## Tutorials
-
-- [Regulations](./Tutorial/1.Regulations.md)
-- [Customize Dataset](./Tutorial/2.Customize%20Dataset.md)
-- [Customize Model](./Tutorial/3.Customize%20Model.md)
-- [Configuration](./Tutorial/4.Configuration.md)
-- [Training and Inference](./Tutorial/5.Training%20and%20Inference.md)
 
 ## CopyRight
 
@@ -41,7 +35,7 @@ pip install -v -e ./ --user
 >
 > Author: Airscker/Yufeng Wang
 >
-> Contributors: Yufeng Wang, Yu Zhang, Shendong Su
+> Contributors: Yufeng Wang, Shendong Su
 >
 > University of Science of Technology of China
 >
