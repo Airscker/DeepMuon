@@ -44,6 +44,13 @@ pip install -v -e ./ --user
 > If you want to publish thesis using DeepMuon, please add bibliography:
 >
 > ```tex
-> @article{}
+> @misc{deepmuon,
+>   author       = {Yufeng Wang},
+>   title        = {DeepMuon: Interdisciplinary deep-learning platform},
+>   year         = {2022},
+>   publisher    = {GitHub},
+>   journal      = {GitHub repository},
+>   howpublished = {\url{https://airscker.github.io/DeepMuon}},
+> }
 > ```
 > Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
