@@ -21,6 +21,7 @@
   - [Dynamic importing mechanism](config/import.md)
 - Fully control your training/testing pipelines
   - [Data Distributed Parallel & Fully Sharded Distributed Parallel](train_test/parallel.md)
+  - [Neural Network Hyperparameter Searching (NNHS)](train_test/nnhs.md)
   - [16-bit float tensor & 32-bit float tensor & 64-bit double tensor](train_test/precision.md)
   - [Discriminative / Regression tasks](train_test/task.md)
   - [Gradient clip & Gradient accumulation](train_test/grad.md)

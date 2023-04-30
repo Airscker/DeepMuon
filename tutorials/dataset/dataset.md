@@ -6,7 +6,7 @@ DeepMuon is built based on PyTorch, and its grammar is the same. Here we give ou
 
   The path of `Dataset` can be the installation position of DeepMuon, or anywhere else. We recommend you keep it under the installation path of DeepMuon, within the folder `dataset`, be the way, you also need to add the name of `Dataset` into the file `__init__.py` under the folder `dataset`. 
 
-  However, if you put it anywhere else, you need to specify its path in the configuration, otherwise, errors will occur when loading your configuration. To add the `filepath` parameter of your `Dataset` into the configuration, please refer to [Elements of `config.py`](https://airscker.github.io/DeepMuon/tutorials/index.html#/config/config).
+  However, if you put it anywhere else, you need to specify its path in the configuration, otherwise, errors will occur when loading your configuration. To add the `filepath` parameter of your `Dataset` into the configuration, please refer to [Elements of config.py](https://airscker.github.io/DeepMuon/tutorials/index.html#/config/config?id=traintest_dataset).
 
 - Grammar of `Dataset`:
 
