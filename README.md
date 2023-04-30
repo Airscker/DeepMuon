@@ -2,22 +2,26 @@
 
 ## Introduction
 
-DeepMuon is a easy-using deep learning platform built for dark matter searching experiments, we are eager to provide advanced model training frame and excellent project management assistance.
+DeepMuon is a easy-using deep learning platform initially built for dark matter searching experiments. Up to now it has been a interdisciplinary deep learning platform. We are eager to provide advanced model training framework and excellent project management assistance.
 
-Here we list out the available features of DeepMuon:
+Here we list out some available features of DeepMuon:
 
-- DeepMuon support **Single GPU** training and **Distributed Data Parallel** training
-- Model Inference and analysis
+- **Single GPU** training， **Distributed Data Parallel** training and **Fully Sharded Distributed Parallel** training.
+- Neural Network Hyperparameter Searching (NNHS)
+- Gradient accumulation
+- Gradient clipping
+- Mixed precision training
+- Double precision training
 - Customize models
 - Customize datasets
 - Customize loss functions
-- Easy to train/inference
-- Tidy file system
+- Tidy logging system
+- Model interpretation
 - Simple and direct tutorials
 
 More details please refer to the home page of [DeepMuon](https://airscker.github.io/DeepMuon/).
 
-## Installation
+## Installation (From source recommended)
 
 ```bash
 git clone https://github.com/Airscker/DeepMuon.git
@@ -38,8 +42,6 @@ pip install -v -e ./ --user
 > Contributors: Yufeng Wang, Shendong Su
 >
 > University of Science of Technology of China
->
-> Internal supported sensor's dataset: Pandax-4T III, TRIDENT
 >
 > If you want to publish thesis using DeepMuon, please add bibliography:
 >
