@@ -10,8 +10,8 @@ The tutorials are classified into different blocks:
   - [Customize configuration](start_exp/cus_config.md)
   - [Start your first experiment](start_exp/start_exp.md)
 - `Dataset` based on PyTorch
-  - [How to add augmentation?](dataset/augment.md)
   - [What to do when adding a customized `Dataset` into DeepMuon?](dataset/dataset.md)
+  - [How to add augmentation?](dataset/augment.md)
 - Which model fits best?
   - [From zero to infinity](models/zero_inf.md)
   - [Intrinsically supported models](models/intrinsic_models.md)
@@ -23,6 +23,7 @@ The tutorials are classified into different blocks:
   - [Dynamic importing mechanism](config/import.md)
 - Fully control your training/testing pipelines
   - [Data Distributed Parallel & Fully Sharded Distributed Parallel](train_test/parallel.md)
+  - [Neural Network Hyperparameter Searching (NNHS)](train_test/nnhs.md)
   - [16-bit float tensor & 32-bit float tensor & 64-bit double tensor](train_test/precision.md)
   - [Discriminative / Regression tasks](train_test/task.md)
   - [Gradient clip & Gradient accumulation](train_test/grad.md)
