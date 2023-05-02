@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-21 18:43:31
 LastEditors: airscker
-LastEditTime: 2023-03-29 11:57:35
+LastEditTime: 2023-05-02 15:02:15
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -23,7 +23,7 @@ with open(os.path.join("DeepMuon", "__version__.py")) as f:
 setup(
     name="DeepMuon",
     version=version['__version__'],
-    description="DeepMuon Project Built for Simple and Direct Deep Learning Researches on Dark Matter Searching",
+    description="Interdisciplinary Deep Learning Platform",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://airscker.github.io/DeepMuon/",
