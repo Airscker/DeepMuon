@@ -57,14 +57,14 @@ Dmuon_train -g 0 1 -p 20224 -c config.py -tr dist_train -ts checkpoint.pth -sr
 Here is the explanation of command parameters:
 
 - `Dmuon_train` indicates the training/testing mode.
--  `-g` or `--gpus` indicates the IDs of the GPUs to be used to train/test the model.
--  `-p` or `--port` indicates the port used for DDP/FSDP IO teleportation.
--  `-c` or `--config` indicates the path of the configuration file of the experiment.
+- `-g` or `--gpus` indicates the IDs of the GPUs to be used to train/test the model.
+- `-p` or `--port` indicates the port used for DDP/FSDP IO teleportation, you can omit it and DeepMuon will automatically select teleportation port.
+- `-c` or `--config` indicates the path of the configuration file of the experiment.
 - `-tr` or `--train` indicates the training/testing pipeline file to be used, you can add the `.py` suffix or omit it, the pipeline file must be placed at `~/DeepMuon/train/`.
 - `-ts` or `--test` indicates the checkpoint to be used to test the model performance, it's the path of the checkpoint file saved during training. **If you omit this parameter, the experiment will enter training mode automatically.**
 - `-sr` or `--search` indicates whether to enable the Neural Network Hyperparameter Searching (NNHS) system, omitting this will automatically disable NNHS, and NNHS won't take action when `-ts`/`--test` parameter is valid (that is testing mode is enabled). For more details on NNHS please refer to [Neural Network Hyperparameter Searching (NNHS).](https://airscker.github.io/DeepMuon/tutorials/index.html#/train_test/nnhs)
 
-If you want to start SGT, you just need to specify one GPU ID. And to enable the FSDP, you need to set its configurations in the experiment's configuration file, also you need to make sure the edition of PyTorch installed supports FSDP (>=1.12). For more details on modifying FSDP please refer to [Elements of config.py.](https://airscker.github.io/DeepMuon/tutorials/index.html#/config/config?id=fsdp_parallel)
+If you want to start SGT, you just need to specify one GPU ID and keep other commands unchanged. To enable the FSDP, you need to set its configurations in the experiment's configuration file, also you need to make sure the edition of PyTorch installed supports FSDP (>=1.12). For more details on modifying FSDP please refer to [Elements of config.py.](https://airscker.github.io/DeepMuon/tutorials/index.html#/config/config?id=fsdp_parallel)
 
 
 
