@@ -1,7 +1,7 @@
 GNU GENERAL PUBLIC LICENSE Version 3
 
 Project: DeepMuon
-Dark Matter Searching Deep Learning Platform
+Interdisciplinary Deep Learning Platform
 Author: Airscker/Yufeng Wang
 Contributors: Yufeng Wang, Shendong Su
 University of Science of Technology of China

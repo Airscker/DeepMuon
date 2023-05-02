@@ -14,6 +14,7 @@ from monai.networks.blocks.convolutions import ResidualUnit
 
 
 class ResMax2(nn.Module):
+    ''''''
     def __init__(self, mlp_drop_rate=0, res_dropout=0):
         super().__init__()
         self.output_num = [5, 4, 3, 2]

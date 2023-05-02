@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-07 21:35:54
 LastEditors: airscker
-LastEditTime: 2023-03-29 01:44:12
+LastEditTime: 2023-05-02 13:26:35
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -22,6 +22,11 @@ except:
     NNHS_enabled=False
 
 class NNHSearch:
+    '''
+    The NNHSearch class is designed to facilitate neural network hyperparameter searching (NNHS) using the NNI (Neural Network Intelligence) package.
+    It initializes the NNI experiment and sets up the configuration for the search space, experiment name, concurrency, trial number, port, tuner, and optimization mode.
+    It also provides a method to start the experiment and another method to fix the port number to avoid port occupation errors in multi-concurrency searching.
+    '''
     def __init__(self,path,search) -> None:
         self.config_info=import_module(path)
         self.search=search
@@ -143,15 +148,15 @@ def main():
     global NNHS_enabled
     global pkg_path
     parser = argparse.ArgumentParser()
-    parser.add_argument('-g', '--gpus', nargs='+', default=0)
-    parser.add_argument('-p', '--port', default=22911)
-    parser.add_argument('-c', '--config', default='')
-    parser.add_argument('-tr', '--train', default='dist_train.py')
-    parser.add_argument('-ts', '--test', default='')
-    parser.add_argument('-sr', '--search',action='store_true')
+    parser.add_argument('-g', '--gpus', nargs='+', default=0, type=int)
+    parser.add_argument('-p', '--port', default=22911, type=int)
+    parser.add_argument('-c', '--config', default='', type=str)
+    parser.add_argument('-tr', '--train', default='dist_train.py', type=str)
+    parser.add_argument('-ts', '--test', default='', type=str)
+    parser.add_argument('-sr', '--search', action='store_true')
     args = parser.parse_args()
     '''Set NNHS Configuration'''
-    exp=NNHSearch(args.config,args.search)
+    exp: NNHSearch = NNHSearch(args.config, args.search)
     '''Start Experiment'''
     exp.start_exp(args)
     # print(command)

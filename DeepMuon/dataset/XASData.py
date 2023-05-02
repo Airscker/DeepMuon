@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-04-30 15:40:28
 LastEditors: airscker
-LastEditTime: 2023-04-30 16:23:57
+LastEditTime: 2023-05-02 13:41:38
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -37,6 +37,14 @@ def valence_map(elements:list,valences:list):
     return map
 
 class ValenceDataset(Dataset):
+    """
+    The ValenceDataset class is a PyTorch Dataset that loads and preprocesses X-ray absorption near edge structure (XANES) spectra data for machine learning tasks.
+    It takes an annotation file as input, which contains the paths to the data files to be loaded. The class unpacks the data files,
+    extracts the XANES spectra and corresponding valences of the elements in the spectra, and returns them as a tuple of data and label for each sample.
+
+    ## Args:
+        - annotation: the path of the annotation text file which contains the paths of data samples to be used to train/test the model.
+    """
     def __init__(self,annotation=''):
         super().__init__()
         with open(annotation,'r')as f:
@@ -54,7 +62,6 @@ class ValenceDataset(Dataset):
                 element=sub_spec.split('-')[-2]
                 self.dataset.append([np.array(spectrum[sub_spec]),valences[element]])
     def __getitem__(self, index):
-        super().__getitem__(index)
         data,label=self.dataset[index]
         data=torch.from_numpy(data).type(torch.FloatTensor)
         label=torch.LongTensor([label])

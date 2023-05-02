@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-05 13:35:07
 LastEditors: airscker
-LastEditTime: 2023-03-16 11:49:29
+LastEditTime: 2023-05-02 12:56:16
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -17,10 +17,10 @@ def model_para(model, datasize: list, depth=3, device='cpu', show=False):
     ## Get the number of parameters and FLOPs for a given model as well as the detailed list of layers
 
     ### Args:
-        - model: The model to be tested.
-        - datasize: A list containing the size of each dimension of the input
+        - model: The model to be tested, such as model=MLP()
+        - datasize: A list containing the size of each dimension of the input, such as [N,H,W]
         - depth: The depth at which to run summary(). Default is 3.
-        - gpu: the id of GPU to be used, if it does not exist the CPU will be used
+        - device: the id of GPU to be used, if it does not exist the CPU will be used
         - show: whether to print information of model
 
     ### Return:

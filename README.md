@@ -35,7 +35,7 @@ pip install -v -e ./ --user
 >
 > Project: DeepMuon
 >
-> Dark Matter Searching Deep Learning Platform
+> Interdisciplinary Deep Learning Platform
 >
 > Author: Airscker/Yufeng Wang
 >
