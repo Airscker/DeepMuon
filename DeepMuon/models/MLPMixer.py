@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-04-30 15:39:26
 LastEditors: airscker
-LastEditTime: 2023-05-02 13:18:45
+LastEditTime: 2023-05-05 13:39:48
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -67,10 +67,11 @@ class MLPMixer(nn.Module):
         self.linear=nn.Linear(dim,classes)
         self.reset_parameters()
     def reset_parameters(self):
-        for module in self.modules():
-            if isinstance(module, nn.Linear):
-                nn.init.kaiming_uniform_(module.weight, a=1)
-                nn.init.zeros_(module.bias)
+        for name,para in self.named_parameters():
+            if name=='weight':
+                nn.init.kaiming_uniform_(para)
+            elif name=='bias':
+                nn.init.zeros_(para)
     def forward(self,x:torch.Tensor):
         x=self.mixers(x)
         x=torch.mean(x,dim=1)
