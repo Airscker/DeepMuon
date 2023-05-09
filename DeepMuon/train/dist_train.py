@@ -448,7 +448,7 @@ def train(device: Union[int, str, torch.device],
         predictions.append(pred.detach().cpu().numpy())
         labels.append(y.detach().cpu().numpy())
         train_loss += loss.item()*gradient_accumulation
-    scheduler.step(train_loss/batchs)
+    scheduler.step()
     return train_loss/batchs, np.concatenate(predictions, axis=0), np.concatenate(labels, axis=0)
 
 
