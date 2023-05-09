@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-04-30 15:39:26
 LastEditors: airscker
-LastEditTime: 2023-05-05 13:39:48
+LastEditTime: 2023-05-08 21:10:59
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -59,7 +59,7 @@ class MLPMixer(nn.Module):
                  channel: int = 2,
                  token_drop: float = 0.1,
                  channel_drop: float = 0.1,
-                 classes: int = 10):
+                 classes: int = 6):
         super().__init__()
         self.mixers = nn.Sequential(
             *[MixerBlock(dim=dim, channel=channel, token_drop=token_drop, channel_drop=channel_drop) for _ in range(depth)]

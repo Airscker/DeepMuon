@@ -330,7 +330,7 @@ def nnhs_report(search:bool,sota_target:str,eva_metrics:list,modes:list,end_exp:
             nni.report_final_result(new_metric)
         else:
             nni.report_intermediate_result(new_metric)
-        
+
 
 def ddp_fsdp_model_save(epoch=0, model=None, optimizer=None,
                         loss_fn=None, scheduler=None, path=None, ddp_training=True):
