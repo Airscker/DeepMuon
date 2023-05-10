@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-03-29 22:31:16
+LastEditTime: 2023-05-10 23:37:08
 Description: Import configuration file and prepare configurations for experiments
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -18,6 +18,7 @@ from DeepMuon.loss_fn import *
 from DeepMuon.interpret import *
 from DeepMuon.models import *
 from DeepMuon.dataset import *
+from DeepMuon.train.pipeline import *
 from DeepMuon.tools.AirFunc import import_module, readable_dict, module_source
 import torch
 from torch.optim import *
@@ -59,7 +60,11 @@ class Config:
                             port=14001,
                             tuner='TPE')
     >>> search_params = dict(seq_dropout=0.1)
-    >>> model = dict(backbone='VST', params=dict(n_classes=11, input_shape=(3, 130, 130), seq_dropout=search_params['seq_dropout']))
+    >>> model = dict(backbone='VST',
+                    pipeline='regression',
+                    params=dict(n_classes=11,
+                                input_shape=(3, 130, 130),
+                                seq_dropout=search_params['seq_dropout']))
     >>> train_dataset = dict(backbone='NIIDecodeV2',params=dict(ann_file=None,mask_ann=None,fusion=False,modalities=[],
                                                                 augment_pipeline=[dict(type='HistEqual'),
                                                                                 dict(type='SingleNorm'),
@@ -143,15 +148,22 @@ class Config:
         internal_env = globals()
         '''import the model anywhere'''
         model_info = getattr(self.config, 'model')
+        if 'pipeline' not in model_info.keys():
+            pipeline='regression'
+        else:
+            pipeline=model_info['pipeline']
         if 'params' not in model_info.keys():
             model_params = {}
         else:
             model_params = model_info['params']
         if 'filepath' not in model_info.keys() or not os.path.exists(model_info['filepath']):
             self.paras['model'] = {'backbone': internal_env[self.config.model['backbone']],
+                                   'pipeline':internal_env[pipeline],
                                    'params': model_params}
         else:
-            self.paras['model'] = {'backbone': getattr(import_module(model_info['filepath']), model_info['backbone']),
+            imported_module=import_module(model_info['filepath'])
+            self.paras['model'] = {'backbone': getattr(imported_module,model_info['backbone']),
+                                   'pipeline':getattr(imported_module,pipeline),
                                    'params': model_params}
         # self.paras['model']={'backbone':internal_env[self.config.model['backbone']]}
         '''import dataset anywhere'''

@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-03-29 22:59:18
+LastEditTime: 2023-05-11 00:04:39
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -212,9 +212,9 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
             logger.log(
                 f'Scheduler: \n\t{scheduler.__class__.__name__}:\n\t{scheduler.state_dict()}')
     '''Start testing, only if test_path!=None'''
+    model_pipeline=configs['model']['pipeline'](model)
     if test_path is not None:
-        _, ts_score, ts_label = test(
-            device, test_dataloader, model, loss_fn)
+        _, ts_score, ts_label=test(device=device, dataloader=test_dataloader, model_pipeline=model_pipeline, loss_fn=loss_fn)
         dist.barrier()
         ts_score_val, ts_label_val = gather_score_label(
             ts_score, ts_label, local_world_size)
@@ -236,10 +236,9 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
     for t in range(epoch_now, epochs):
         start_time = time.time()
         train_dataloader.sampler.set_epoch(t)
-        trloss, tr_score, tr_label = train(device=device, dataloader=train_dataloader, model=model, loss_fn=loss_fn, optimizer=optimizer,
+        trloss, tr_score, tr_label = train(device=device, dataloader=train_dataloader, model_pipeline=model_pipeline, loss_fn=loss_fn, optimizer=optimizer,
                                            scheduler=scheduler, gradient_accumulation=grad_acc, grad_clip=grad_clip, fp16=fp16, grad_scalar=grad_scalar)
-        tsloss, ts_score, ts_label = test(
-            device, test_dataloader, model, loss_fn)
+        tsloss, ts_score, ts_label = test(device=device, dataloader=test_dataloader, model_pipeline=model_pipeline, loss_fn=loss_fn)
         '''
         Synchronize all threads
         Reduces the tensor data across all machines in such a way that all get the final result.(Add/Gather results of every gpu)
@@ -398,11 +397,15 @@ def evaluation(scores, labels, evaluation_command, best_target, loss):
             return eva_res, best_target
     elif target is None and best_target is None:
         return eva_res, loss
-
+def release_cache():
+    try:
+        torch.cuda.empty_cache()
+    except:
+        pass
 
 def train(device: Union[int, str, torch.device],
           dataloader: DataLoader,
-          model: nn.Module,
+          model_pipeline:DeepMuon.train.pipeline._base,
           loss_fn=None,
           optimizer=None,
           scheduler=None,
@@ -419,53 +422,56 @@ def train(device: Union[int, str, torch.device],
         - Gradient resacle: Only available when mixed precision training is enabled, to avoid the gradient exploration/annihilation bring by fp16
         - Gradient clip: Using gradient value clip technique
     '''
-    model.train()
+    model_pipeline.model.train()
     train_loss = 0
     predictions = []
     labels = []
     batchs = len(dataloader)
     gradient_accumulation = min(batchs, gradient_accumulation)
     for i, (x, y) in enumerate(dataloader):
-        x, y = x.type(precision).to(device), y.to(device)
         with autocast(enabled=fp16):
             if (i+1) % gradient_accumulation != 0:
-                with model.no_sync():
-                    pred = model(x)
-                    loss = loss_fn(pred, y)
+                with model_pipeline.model.no_sync():
+                    pred,label=model_pipeline.predict(input=x,label=y,device=device,precision=precision)
+                    loss = loss_fn(pred, label)
                     loss = loss/gradient_accumulation
                     grad_scalar.scale(loss).backward()
             elif (i+1) % gradient_accumulation == 0:
-                pred = model(x)
-                loss = loss_fn(pred, y)
+                pred,label=model_pipeline.predict(input=x,label=y,device=device,precision=precision)
+                loss = loss_fn(pred, label)
                 loss = loss/gradient_accumulation
                 if grad_clip is not None:
                     torch.nn.utils.clip_grad_value_(
-                        model.parameters(), grad_clip)
+                        model_pipeline.model.parameters(), grad_clip)
                 grad_scalar.scale(loss).backward()
                 grad_scalar.step(optimizer)
                 grad_scalar.update()
                 optimizer.zero_grad()
         predictions.append(pred.detach().cpu().numpy())
-        labels.append(y.detach().cpu().numpy())
+        labels.append(label.detach().cpu().numpy())
         train_loss += loss.item()*gradient_accumulation
     scheduler.step()
+    release_cache()
     return train_loss/batchs, np.concatenate(predictions, axis=0), np.concatenate(labels, axis=0)
 
 
-def test(device, dataloader, model, loss_fn):
+def test(device:Union[int, str, torch.device],
+         dataloader:DataLoader,
+         model_pipeline:DeepMuon.train.pipeline._base,
+         loss_fn=None):
     num_batches = len(dataloader)
-    model.eval()
+    model_pipeline.model.eval()
     test_loss = 0
     predictions = []
     labels = []
     with torch.no_grad():
         for x, y in dataloader:
-            x, y = x.type(precision).to(device), y.to(device)
-            pred = model(x)
+            pred,label=model_pipeline.predict(input=x,label=y,device=device,precision=precision)
             predictions.append(pred.detach().cpu().numpy())
-            labels.append(y.detach().cpu().numpy())
-            test_loss += loss_fn(pred, y).item()
+            labels.append(label.detach().cpu().numpy())
+            test_loss += loss_fn(pred, label).item()
     test_loss /= num_batches
+    release_cache()
     return test_loss, np.concatenate(predictions, axis=0), np.concatenate(labels, axis=0)
 
 
