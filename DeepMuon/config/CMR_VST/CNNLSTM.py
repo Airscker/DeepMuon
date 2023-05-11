@@ -11,7 +11,7 @@ Copyright (C) 2023 sby Airscker(Yufeng), All Rights Reserved.
 '''
 Specify which model to be used, all models are stored in 'models'
 '''
-model = dict(backbone='Dense4012FrameRNN', params=dict(
+model = dict(backbone='Dense4012FrameRNN', pipeline='cnnlstm_cla',params=dict(
     n_classes=2, input_shape=(3, 128, 128), seq_dropout=0.1, pretrained=False))
 '''
 Specify the dataset to load the data, all dataset are stored in 'dataset'

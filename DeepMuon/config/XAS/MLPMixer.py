@@ -2,12 +2,12 @@
 Author: airscker
 Date: 2023-01-28 11:34:38
 LastEditors: airscker
-LastEditTime: 2023-05-02 13:50:15
+LastEditTime: 2023-05-11 10:41:45
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
-model = dict(backbone='MLPMixer', params=dict(depth=1,dim=100,channel= 2,token_drop= 0.1,channel_drop = 0.1,classes= 10))
+model = dict(backbone='MLPMixer',pipeline='classify',params=dict(depth=1,dim=100,channel= 2,token_drop= 0.1,channel_drop = 0.1,classes= 10))
 
 train_dataset = dict(backbone='ValenceDataset',params=dict(annotation=''))
 test_dataset = dict(backbone='ValenceDataset',params=dict(annotation=''))

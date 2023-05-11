@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 22:24:05
 LastEditors: airscker
-LastEditTime: 2023-02-22 19:10:34
+LastEditTime: 2023-05-11 10:41:37
 Description: Configuration of Pandax4T-III MLP3 Model
 
 Copyright (C) 2022 by Airscker(Yufeng), All Rights Reserved.
@@ -11,7 +11,7 @@ Copyright (C) 2022 by Airscker(Yufeng), All Rights Reserved.
 '''
 ## Specify which model to be used, all models are stored in 'models'
 '''
-model = dict(filepath='./DeepMuon/models/Pandax4T.py',
+model = dict(filepath='./DeepMuon/models/Pandax4T.py',pipeline='regression',
              backbone='MLP3', params=dict())
 '''
 ## Specify the dataset to load the data, all dataset are stored in 'dataset'

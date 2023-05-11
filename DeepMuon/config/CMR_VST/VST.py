@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-28 11:34:38
 LastEditors: airscker
-LastEditTime: 2023-03-26 10:41:13
+LastEditTime: 2023-05-11 10:40:43
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -11,7 +11,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 Specify which model to be used, all models are stored in 'models'
 '''
-model = dict(backbone='screening_model', params=dict(num_classes=11))
+model = dict(backbone='screening_model', pipeline='classify',params=dict(num_classes=11))
 '''
 Specify the dataset to load the data, all dataset are stored in 'dataset'
 '''

@@ -11,7 +11,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 ## Specify which model to be used, all models are stored in 'models' 
 '''
-model = dict(backbone='ResMax')
+model = dict(backbone='ResMax',pipeline='regression')
 '''
 ## Specify the dataset to load the data, all dataset are stored in 'dataset'
 '''

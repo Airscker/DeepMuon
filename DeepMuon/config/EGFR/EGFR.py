@@ -18,7 +18,7 @@ search_config=dict(search_space= {'augment_ratio1': {'_type': 'choice', '_value'
                    port=14001,
                    tuner='TPE')
 search_params=dict(augment_ratio1=0.3)
-model = dict(backbone='ResNet50_cls_rec',params=dict(num_classes=2))
+model = dict(backbone='ResNet50_cls_rec',pipeline='classify',params=dict(num_classes=2))
 '''
 ## Specify the dataset to load the data, all dataset are stored in 'dataset'
 '''

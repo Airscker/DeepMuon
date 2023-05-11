@@ -11,7 +11,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 Specify which model to be used, all models are stored in 'models'
 '''
-model = dict(backbone='fusion_model', params=dict(
+model = dict(backbone='fusion_model', pipeline='classify',params=dict(
     num_classes=11,
     sax_weight='/data/JoyceW/VST_fusion_dataset/DeepMuon/checkpoints/sax_cine_11cls_0.994_best_f1_fusion_base.pth',
     lax_weight='/data/JoyceW/VST_fusion_dataset/DeepMuon/checkpoints/4ch_cine_11cls_0.994_best_f1_fusion_base.pth'))

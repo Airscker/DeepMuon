@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-05-11 00:04:39
+LastEditTime: 2023-05-11 10:43:40
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -18,6 +18,7 @@ import DeepMuon
 from DeepMuon.tools.AirConfig import Config
 import DeepMuon.tools.AirFunc as AirFunc
 import DeepMuon.tools.AirLogger as AirLogger
+import DeepMuon.interpret.attribution as Attr
 
 import torch
 from torch import nn
@@ -215,7 +216,10 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
     model_pipeline=configs['model']['pipeline'](model)
     if test_path is not None:
         _, ts_score, ts_label=test(device=device, dataloader=test_dataloader, model_pipeline=model_pipeline, loss_fn=loss_fn)
+        # attr,_,_=dataattr(device,test_dataloader,model)
         dist.barrier()
+        # all_attr=gather_attr(attr,local_world_size)
+        # np.save(os.path.join(work_dir,'attr.npy'),all_attr)
         ts_score_val, ts_label_val = gather_score_label(
             ts_score, ts_label, local_world_size)
         ts_eva_metrics, _ = evaluation(
@@ -355,6 +359,28 @@ def tensorboard_plot(metrics: dict, epoch: int, writer, tag):
             writer.add_scalar(f'{tag}_{key}', metrics[key], global_step=epoch)
         except:
             pass
+
+
+def dataattr(device, dataloader, model):
+    attr = []
+    delta = []
+    convergence = []
+    batchs = len(dataloader)
+    for i, (x, y) in enumerate(dataloader):
+        res1, res2, res3 = Attr.GradCAM(
+            model, model.pre_mlp, x, label_dim=len(y.reshape(-1)), device=device)
+        attr.append(res1)
+        delta.append(res2)
+        convergence.append(res3)
+        if device.index == 0:
+            print(f'{i}/{batchs} processed')
+    return np.concatenate(attr, axis=1), np.concatenate(delta, axis=1), convergence
+
+
+def gather_attr(data, world_size):
+    gathered_data = [None]*world_size
+    dist.all_gather_object(gathered_data, data)
+    return np.concatenate(gathered_data, axis=1)
 
 
 def gather_score_label(score, label, world_size):
@@ -498,7 +524,7 @@ def start_exp(config, test, search, main_func=main):
         test = None
     main_func(train_config, test, search, source_code)
 
-
+ 
 if __name__ == '__main__':
     print(f'\n---Starting Neural Network...PID:{os.getpid()}---')
     start_exp()
