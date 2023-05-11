@@ -83,7 +83,7 @@ class Config:
     >>> scheduler = dict(backbone='CosineAnnealingLR', params=dict(T_max=10))
     >>> hyperpara = dict(epochs=2000, batch_size=7500, inputshape=[1, 3, 40, 10, 10])
     >>> fsdp_parallel=dict(enabled=True,min_num_params=1e6)
-    >>> optimize_config = dict(fp16=True, grad_acc=8, grad_clip=0.01, double_precision=True)
+    >>> optimize_config = dict(fp16=False, grad_acc=8, grad_clip=0.01, double_precision=False)
     """
 
     def __init__(self, configpath: str=None, config_module:importlib.types.ModuleType=None):

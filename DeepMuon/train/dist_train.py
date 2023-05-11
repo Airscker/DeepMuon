@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-05-11 12:52:01
+LastEditTime: 2023-05-12 00:12:35
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -30,7 +30,7 @@ from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.tensorboard import SummaryWriter
 torch.backends.cudnn.benchmark = True
-# torch.manual_seed(3407)
+torch.manual_seed(3407)
 try:
     import nni
     NNHS_enabled=True

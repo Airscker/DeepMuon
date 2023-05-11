@@ -54,4 +54,4 @@ scheduler = dict(backbone='ReduceLROnPlateau', params=dict(
 ## Specify the GPU config and DDP
 '''
 fsdp_parallel = dict(enabled=False, min_num_params=1e4)
-optimize_config = dict(fp16=True, grad_acc=8, grad_clip=0.01, double_precision=True)
+optimize_config = dict(fp16=False, grad_acc=8, grad_clip=0.01, double_precision=True)
