@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-05-11 10:53:29
+LastEditTime: 2023-05-11 12:52:01
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -432,7 +432,7 @@ def release_cache():
 
 def train(device: Union[int, str, torch.device],
           dataloader: DataLoader,
-          model_pipeline:DeepMuon.train.pipeline._base,
+          model_pipeline:DeepMuon.train.pipeline.Pipeline,
           loss_fn=None,
           optimizer=None,
           scheduler=None,
@@ -484,7 +484,7 @@ def train(device: Union[int, str, torch.device],
 
 def test(device:Union[int, str, torch.device],
          dataloader:DataLoader,
-         model_pipeline:DeepMuon.train.pipeline._base,
+         model_pipeline:DeepMuon.train.pipeline.Pipeline,
          loss_fn=None):
     num_batches = len(dataloader)
     model_pipeline.model.eval()

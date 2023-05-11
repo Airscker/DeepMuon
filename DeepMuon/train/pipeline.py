@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from abc import abstractmethod,ABCMeta
 
-class _base(metaclass=ABCMeta):
+class Pipeline(metaclass=ABCMeta):
     '''
     ## Initialize the model prediction pipeline
         
@@ -29,7 +29,7 @@ class _base(metaclass=ABCMeta):
         pred=self.model(input)
         return pred,label
 
-class classify(_base):
+class classify(Pipeline):
     '''
     Model prediction pipeline built for normal classfication tasks such as Swin-Transformer, ResNet, Video-Swin Transformer, Vision Transformer etc.
 
@@ -45,7 +45,7 @@ class classify(_base):
         pred=self.model(input)
         return pred,label
 
-class regression(_base):
+class regression(Pipeline):
     '''
     Model prediction pipeline built for normal regression tasks such as ResMax.
 
@@ -61,7 +61,7 @@ class regression(_base):
         pred=self.model(input)
         return pred,label
     
-class cnnlstm_cla(_base):
+class cnnlstm_cla(Pipeline):
     '''
     Model prediction pipeline built for CNNLSTM which was implemented within DeepMuon
     '''
