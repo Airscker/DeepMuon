@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-07 21:35:54
 LastEditors: airscker
-LastEditTime: 2023-05-02 13:26:35
+LastEditTime: 2023-05-11 10:48:18
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -113,10 +113,10 @@ class NNHSearch:
             env += f'{exp_args.gpus[i]}'
             if i+1 < len(exp_args.gpus):
                 env += ','
-        '''Set Training File'''
-        if not exp_args.train.endswith('.py'):
-            exp_args.train += '.py'
-        file = os.path.join(pkg_path, 'train', exp_args.train)
+        # '''Set Training File'''
+        # if not exp_args.train.endswith('.py'):
+        #     exp_args.train += '.py'
+        file = os.path.join(pkg_path, 'train/dist_train.py')
         '''Find Usable Port, Avoid ERROR in Multi-Concurrency Searching'''
         if self.search and self.experiment.config.trial_concurrency>1:
             print(f"NNHS concurrency is {self.experiment.config.trial_concurrency}, which is bigger than 1, to avoid errors brought by port occupation, we set PORTs of multi concurrency NNHS experiments randomly.")
@@ -151,7 +151,7 @@ def main():
     parser.add_argument('-g', '--gpus', nargs='+', default=0, type=int)
     parser.add_argument('-p', '--port', default=22911, type=int)
     parser.add_argument('-c', '--config', default='', type=str)
-    parser.add_argument('-tr', '--train', default='dist_train.py', type=str)
+    # parser.add_argument('-tr', '--train', default='dist_train.py', type=str)
     parser.add_argument('-ts', '--test', default='', type=str)
     parser.add_argument('-sr', '--search', action='store_true')
     args = parser.parse_args()

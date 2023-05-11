@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-05-11 10:43:40
+LastEditTime: 2023-05-11 10:53:29
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -298,7 +298,8 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
             time_info = dict(time=epoch_time, eta=eta)
             mem_info = AirFunc.get_mem_info(device)
             loss_info = dict(mode='train', lr=LRn, epoch=t+1, total_epoch=epochs,
-                             test_loss=test_loss, train_loss=train_loss, sota=bestres)
+                             test_loss=test_loss, train_loss=train_loss, sota=bestres,
+                             batch_size=batch_size, train_dataset_size=len(train_dataset),test_dataset_size=len(test_dataset))
             log_info = {**loss_info, **time_info, **mem_info}
             json_logger.log(log_info)
             logger.log(AirFunc.readable_dict(log_info, indent='', sep=','))
