@@ -14,7 +14,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 ## Specify which model to be used
 '''
-model = dict(filepath='~/Customized_model/Resnet50.py',backbone='ResNet50_C1',params=dict())
+model = dict(filepath='~/Customized_model/Resnet50.py',pipeline='classify',backbone='ResNet50_C1',params=dict())
 '''
 ## Specify the dataset to load the data
 '''
@@ -61,17 +61,18 @@ scheduler = dict(filepath='',backbone='ReduceLROnPlateau', params=dict(mode='min
 fsdp_parallel = dict(enabled=False, min_num_params=1e4)
 optimize_config = dict(fp16=False, grad_acc=1, grad_clip=0.01, double_precision=False)
 ```
+
 ## model
+
 - filepath: indicates the file path of your customized neural network model, you can directly omit this parameter if you have properly put it under the installation path of DeepMuon, folder `models`. Just like this:
 
   ```python
-  model = dict(backbone='ResNet50_C1',params=dict())
+  model = dict(filepath='path/of/model/file.py',backbone='ResNet50_C1',pipeline='classify',params=dict())
   ```
 
   Otherwise, the config loading system will find your model within the file you have specified. That is to say, if you saved model `MODEL01` in the file `cus_models.py`, you need to give the full path of this file.
-
 - backbone: the name of the model you want to use.
-
+- pipeline: the name of the prediction pipeline defined within `~/DeepMuon/train/pipeline.py.`
 - params: indicates the parameters you want to specify when creating the instance of the neural network.
 
   If your model looks like this:

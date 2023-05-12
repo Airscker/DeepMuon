@@ -25,7 +25,7 @@ The tutorials are classified into different blocks:
   - [Data Distributed Parallel & Fully Sharded Distributed Parallel](train_test/parallel.md)
   - [Neural Network Hyperparameter Searching (NNHS)](train_test/nnhs.md)
   - [16-bit float tensor & 32-bit float tensor & 64-bit double tensor](train_test/precision.md)
-  - [Discriminative / Regression tasks](train_test/task.md)
+  - [Prediction Pipeline](train_test/pipeline.md)
   - [Gradient clip & Gradient accumulation](train_test/grad.md)
 - Auto logging system
   - [Usage of Tensorboard](log/tensorboard.md)
