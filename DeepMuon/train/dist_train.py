@@ -196,7 +196,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
         `torch.optim.SGD` <> `configs['optimizer']['backbone']`, `lr=0.001, momentum=0.9, nesterov=True` <> `**configs['optimizer']['params']`
         `torch.optim.lr_scheduler.ReduceLROnPlateau` <> `configs['scheduler']['backbone']`, `mode='min', factor=0.5, patience=100` <> `**configs['scheduler']['params']`
     '''
-    loss_fn = configs['loss_fn']['backbone'](**configs['loss_fn']['params'])
+    loss_fn = configs['loss_fn']['backbone'](**configs['loss_fn']['params']).to(device)
     if test_path is None:
         optimizer = configs['optimizer']['backbone'](
             model.parameters(), **configs['optimizer']['params'])
