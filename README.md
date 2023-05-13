@@ -1,4 +1,4 @@
-<h1><center><img src="./Resources/DeepMuon.png" width='900px'></center></h1>
+<h1><center><img src="https://github.com/Airscker/DeepMuon/blob/site/assets/imgs/logo.png?raw=true" width='900px'></center></h1>
 
 ## Introduction
 
@@ -6,7 +6,7 @@ DeepMuon is a easy-using deep learning platform initially built for dark matter 
 
 Here we list out some available features of DeepMuon:
 
-- **Single GPU** training， **Distributed Data Parallel** training and **Fully Sharded Distributed Parallel** training.
+- **Single GPU** training, **Distributed Data Parallel** training and **Fully Sharded Distributed Parallel** training.
 - Neural Network Hyperparameter Searching (NNHS)
 - Gradient accumulation
 - Gradient clipping
