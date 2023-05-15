@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-05-12 00:12:35
+LastEditTime: 2023-05-16 00:59:28
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -87,7 +87,6 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
     '''Log the basic parameters'''
     if local_rank == 0:
         logger = AirLogger.LOGT(log_dir=work_dir, logfile=log)
-        json_logger = AirLogger.LOGJ(log_dir=work_dir, logfile=f'{log}.json')
         '''Create work_dir'''
         try:
             os.makedirs(work_dir)
@@ -227,8 +226,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
         ts_eva_info = dict(mode='ts_eval')
         ts_eva_info = {**ts_eva_info, **ts_eva_metrics}
         if local_rank == 0:
-            logger.log(AirFunc.readable_dict(ts_eva_info))
-            json_logger.log(ts_eva_info)
+            logger.log(ts_eva_info,json_log=True)
         return 0
     '''Start training, only if test_path==None'''
     bestres = None
@@ -301,17 +299,14 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                              test_loss=test_loss, train_loss=train_loss, sota=bestres,
                              batch_size=batch_size, train_dataset_size=len(train_dataset),test_dataset_size=len(test_dataset))
             log_info = {**loss_info, **time_info, **mem_info}
-            json_logger.log(log_info)
-            logger.log(AirFunc.readable_dict(log_info, indent='', sep=','))
+            logger.log(log_info,json_log=True)
             if (t+1) % eva_interval == 0 and sota_target != 'loss':
                 tr_eva_info = dict(mode='tr_eval')
                 ts_eva_info = dict(mode='ts_eval')
                 tr_eva_info = {**tr_eva_info, **tr_eva_metrics}
                 ts_eva_info = {**ts_eva_info, **ts_eva_metrics}
-                json_logger.log(tr_eva_info)
-                json_logger.log(ts_eva_info)
-                logger.log(AirFunc.readable_dict(tr_eva_info))
-                logger.log(AirFunc.readable_dict(ts_eva_info))
+                logger.log(tr_eva_info,json_log=True)
+                logger.log(ts_eva_info,json_log=True)
                 if t+1==epochs:
                     end_exp=True
                 else:
@@ -477,7 +472,7 @@ def train(device: Union[int, str, torch.device],
         predictions.append(pred.detach().cpu().numpy())
         labels.append(label.detach().cpu().numpy())
         train_loss += loss.item()*gradient_accumulation
-    scheduler.step()
+    scheduler.step(train_loss/batchs)
     release_cache()
     return train_loss/batchs, np.concatenate(predictions, axis=0), np.concatenate(labels, axis=0)
 

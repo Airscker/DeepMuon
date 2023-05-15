@@ -8,16 +8,16 @@ Description: NULL
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import torch
-model = dict(backbone='MLPMixer',pipeline='classify',params=dict(depth=1,dim=100,channel= 2,token_drop= 0.1,channel_drop = 0.1,classes= 3))
+model = dict(backbone='XASMLP',pipeline='classify',params=dict(classes=3,dropout=0.1))
 
 train_dataset = dict(backbone='ValenceDataset',params=dict(annotation='/home/dachuang2022/Yufeng/XAS/training_dataset.txt'))
 test_dataset = dict(backbone='ValenceDataset',params=dict(annotation='/home/dachuang2022/Yufeng/XAS/testing_dataset.txt'))
 
-work_config = dict(work_dir='/home/dachuang2022/Yufeng/XAS/XAS/MLPMixer_004')
+work_config = dict(work_dir='/home/dachuang2022/Yufeng/XAS/XAS/XASMLP_002')
 
 checkpoint_config = dict(load_from='', resume_from='', save_inter=50)
 
-loss_fn = dict(backbone='CrossEntropyLoss',params=dict(weight=torch.Tensor([0.3,0.1,0.4])))
+loss_fn = dict(backbone='CrossEntropyLoss')
 evaluation = dict(metrics=['f1_score', 'confusion_matrix','every_class_accuracy', 'top_k_accuracy'],
                   sota_target=dict(mode='max', target='f1_score'))
 

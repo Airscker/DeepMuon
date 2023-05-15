@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-04-30 15:39:26
 LastEditors: airscker
-LastEditTime: 2023-05-08 21:10:59
+LastEditTime: 2023-05-15 23:56:04
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -59,7 +59,7 @@ class MLPMixer(nn.Module):
                  channel: int = 2,
                  token_drop: float = 0.1,
                  channel_drop: float = 0.1,
-                 classes: int = 6):
+                 classes: int = 3):
         super().__init__()
         self.mixers = nn.Sequential(
             *[MixerBlock(dim=dim, channel=channel, token_drop=token_drop, channel_drop=channel_drop) for _ in range(depth)]
@@ -77,3 +77,21 @@ class MLPMixer(nn.Module):
         x=torch.mean(x,dim=1)
         x=self.linear(x)
         return x
+    
+class XASMLP(nn.Module):
+    def __init__(self,input_node=100,classes=3,dropout=0.1):
+        super().__init__()
+        self.hidden_nodes=[256,128]
+        self.linear=nn.Sequential(
+            nn.Linear(input_node,self.hidden_nodes[0]),
+            nn.BatchNorm1d(self.hidden_nodes[0]),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(self.hidden_nodes[0],self.hidden_nodes[1]),
+            nn.BatchNorm1d(self.hidden_nodes[1]),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(self.hidden_nodes[1],classes)
+        )
+    def forward(self,x):
+        return self.linear(x)

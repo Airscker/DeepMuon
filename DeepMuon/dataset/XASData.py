@@ -65,9 +65,9 @@ class ValenceDataset(Dataset):
             spectrum = info["xanes"]
             for sub_spec in spectrum.keys():
                 element = sub_spec.split("-")[-2]
-                if element == "Fe" and valences[element].is_integer():
+                if element == "Fe" and valences[element].is_integer() and sub_spec.endswith('K'):
                     self.dataset.append(
-                        [np.array(spectrum[sub_spec]), int(valences[element]) - 1]
+                        [np.array(spectrum[sub_spec][1]), int(valences[element]) - 1]
                     )
 
     def __getitem__(self, index):
@@ -78,3 +78,5 @@ class ValenceDataset(Dataset):
 
     def __len__(self):
         return len(self.dataset)
+    
+
