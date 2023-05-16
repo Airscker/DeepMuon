@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-05-16 22:24:33
+LastEditTime: 2023-05-17 02:05:46
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -337,7 +337,7 @@ def nnhs_report(search:bool,sota_target:str,eva_metrics:list,modes:list,end_exp:
                     continue
                 if key == sota_target and modes[i] == 'ts_eval':
                     new_key='default'
-                    print('SOTA TARGET',modes[i],key,sota_target)
+                    # print('SOTA TARGET',modes[i],key,sota_target)
                 else:
                     new_key=f'{modes[i]}_{key}'
                 new_metric[new_key]=eva_metrics[i][key]
