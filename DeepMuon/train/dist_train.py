@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-05-16 00:59:28
+LastEditTime: 2023-05-16 22:24:33
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -312,6 +312,20 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                 else:
                     end_exp=False
                 nnhs_report(search=search,sota_target=sota_target,eva_metrics=[tr_eva_metrics,ts_eva_metrics],modes=['tr_eval','ts_eval'],end_exp=end_exp)
+    if local_rank==0:
+        print('Ploting train information...')
+        json_log=AirFunc.load_json_log(logger.jsonfile)
+        if json_log=={}:
+            return 0
+        curve_path=os.path.join(work_dir,'Curve')
+        if not os.path.exists(curve_path):
+            os.makedirs(curve_path)
+        for mode in json_log.keys():
+            for para in json_log[mode].keys():
+                try:
+                    AirFunc.plot_curve(data=json_log[mode][para],title=f'{mode}_{para}',axis_label=['epoch','para'],data_label=[f'{para}'],save=os.path.join(curve_path,f'{mode}_{para}.jpg'),mod=None)
+                except:
+                    pass
     return 0
 
 def nnhs_report(search:bool,sota_target:str,eva_metrics:list,modes:list,end_exp:bool):
@@ -319,6 +333,8 @@ def nnhs_report(search:bool,sota_target:str,eva_metrics:list,modes:list,end_exp:
         new_metric={}
         for i in range(len(eva_metrics)):
             for key in eva_metrics[i].keys():
+                if key=='every_class_accuracy' or key=='confusion_matrix':
+                    continue
                 if key == sota_target and modes[i] == 'ts_eval':
                     new_key='default'
                     print('SOTA TARGET',modes[i],key,sota_target)

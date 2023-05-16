@@ -7,7 +7,6 @@ Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
-import torch
 model = dict(backbone='XASMLP',pipeline='classify',params=dict(classes=3,dropout=0.1))
 
 train_dataset = dict(backbone='ValenceDataset',params=dict(annotation='/home/dachuang2022/Yufeng/XAS/training_dataset.txt'))

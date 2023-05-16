@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-04-30 14:06:08
+LastEditTime: 2023-05-16 22:17:43
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -197,8 +197,7 @@ def unpack_json_log(log_path: str, start_from: int = 0) -> list:
             info.append(data)
     return info
 
-
-def load_json_log(log_file: str, start_from: int = 0,unique_key:int=None) -> np.ndarray:
+def load_json_log(log_file: str, start_from: int = 0,unique_key:int=None):
     '''
     ## Load json data from json logfile
 
@@ -211,10 +210,12 @@ def load_json_log(log_file: str, start_from: int = 0,unique_key:int=None) -> np.
     ### Return:
         - dict(dict(list())): {mode:{metric:[data]}}
     '''
-    assert log_file.endswith(
-        '.json'), f"log_file must be json file, however, {log_file} given"
-    assert os.path.exists(
-        log_file), f'Training log {log_file} can not be found'
+    if not log_file.endswith('.json'):
+        warnings.warn(f"log_file must be json file, however, {log_file} given")
+        return {}
+    if not os.path.exists(log_file):
+        warnings.warn(f'Training log {log_file} can not be found')
+        return {}
     json_log = unpack_json_log(log_file, start_from)
     log_info = {}
     for i in range(len(json_log)):
@@ -236,37 +237,6 @@ def load_json_log(log_file: str, start_from: int = 0,unique_key:int=None) -> np.
                     new_info[info_key].append(log_info[mod][key_checked][info_key])
         log_info[mod]=new_info
     return log_info
-
-
-def load_log(log_file: str) -> np.ndarray:
-    """
-    ## Loads the training log from the given log file .
-
-    ### Args:
-        - log_file ([type]): The path of the log file.
-
-    ### Return:
-        - np.array: loaded training results, with shape [epoch:[lr,tsl,trl,btsl]]
-
-    """
-    assert os.path.exists(
-        log_file), f'Training log {log_file} can not be found'
-    with open(log_file, 'r')as f:
-        info = f.readlines()
-    train_info = []
-    for i in range(len(info)):
-        info[i] = info[i].split('\n')[0]
-        if 'LR' in info[i] and 'Test Loss' in info[i] and 'Train Loss' in info[i] and 'Best Test Loss' in info[i]:
-            data = info[i].split(',')
-            epoch = int(data[1].split('[')[1].split(']')[0])
-            train_data = [float(data[0].split(': ')[-1]), float(data[2].split(': ')[-1]),
-                          float(data[3].split(': ')[-1]), float(data[4].split(': ')[-1])]
-            if epoch > len(train_info):
-                train_info.append(train_data)
-            else:
-                train_info[epoch-1] = train_data
-    return np.array(train_info)
-
 
 def import_module(module_path: str) -> importlib.types.ModuleType:
     '''
@@ -356,24 +326,22 @@ def generate_nnhs_config(path:str=None,save_path:str=None,new_params:dict=None):
     source=module_source(module_path=path)
     config_info.search_params.update(new_params)
     source=source.replace(target,f"search_params={config_info.search_params}\n")
-    source=FormatCode(source)[0]
+    try:
+        source=FormatCode(source)[0]
+    except:
+        print('Unexpected error occured in formatting NNHS configuration file, unformatted file was saved.')
     tmp_path=path.replace('.py',f'_{os.getpid()}.py')
     with open(tmp_path,'w+')as f:
         f.write(source)
     f.close()
     new_config=import_module(tmp_path)
     config_elements=dir(new_config)
-    new_source=''
-    for key in config_elements:
-        if key!='search_params' and not key.startswith('__') and key!='search_config':
-            new_source+=f"{key}={getattr(new_config,key)}\n"
-    new_source=FormatCode(new_source)[0]
     if save_path is not None:
         with open(save_path,'w+')as f:
-            f.write(new_source)
+            f.write(source)
         f.close()
     os.remove(tmp_path)
-    return new_config,new_source
+    return new_config,source
 
 
 def plot_hist_2nd(data, title='x', bins=15, sigma=3, save='', show=False):
@@ -418,6 +386,7 @@ def plot_hist_2nd(data, title='x', bins=15, sigma=3, save='', show=False):
         plt.savefig(save)
     if show == True:
         plt.show()
+    plt.clf()
 
 
 def plot_curve(data, title='Curve', axis_label=['Epoch', 'Loss'], data_label=['Curve1'], save='', mod='min', show=False):
@@ -450,7 +419,7 @@ def plot_curve(data, title='Curve', axis_label=['Epoch', 'Loss'], data_label=['C
                 label = f'{label} MAX/POS: {np.max(data[i])}/{np.argwhere(data[i]==np.max(data[i]))[-1]}'
                 plt.axhline(np.max(data[i]), linestyle='-.')
             else:
-                continue
+                label = f'{label}\nMAX/POS: {np.max(data[i])}/{np.argwhere(data[i]==np.max(data[i]))[-1]}\nMIN/POS: {np.min(data[i])}/{np.argwhere(data[i]==np.min(data[i]))[-1]}'
             plt.plot(data[i], label=label)
     else:
         data = np.array(data)
@@ -462,7 +431,7 @@ def plot_curve(data, title='Curve', axis_label=['Epoch', 'Loss'], data_label=['C
             label = f'{label} MAX/POS: {np.max(data)}/{np.argwhere(data==np.max(data))[-1]}'
             plt.axhline(np.max(data), linestyle='-.')
         else:
-            pass
+            label = f'{label}\nMAX/POS: {np.max(data)}/{np.argwhere(data==np.max(data))[-1]}\nMIN/POS: {np.min(data)}/{np.argwhere(data==np.min(data))[-1]}'
         plt.plot(data, label=label)
     plt.xlabel(axis_label[0])
     plt.ylabel(axis_label[1])
@@ -472,6 +441,7 @@ def plot_curve(data, title='Curve', axis_label=['Epoch', 'Loss'], data_label=['C
         plt.savefig(save, dpi=400)
     if show:
         plt.show()
+    plt.clf()
 
 
 def format_time(second):
