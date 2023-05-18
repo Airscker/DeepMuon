@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-28 11:34:38
 LastEditors: airscker
-LastEditTime: 2023-05-17 16:13:10
+LastEditTime: 2023-05-17 10:49:08
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -10,28 +10,27 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 import torch
 search_config=dict(search_space= {'weight1': {'_type': 'choice', '_value': [1,3,5,7,9]},
                                   'weight2': {'_type': 'choice', '_value': [1,3,5,7,9]},
-                                  'weight3': {'_type': 'choice', '_value': [1,3,5,7,9]},
                                   'dropout': {'_type': 'uniform', '_value': [0.1,0.8]},
                                   'batch_size':{'_type':'choice','_value':[16,32,64,128]},
                                   'weight_decay': {'_type': 'uniform', '_value': [0.01,0.2]},
                                   'lr': {'_type': 'uniform', '_value': [1e-5,1e-3]},
                                   },
                    exp_name='XASMLP',
-                   concurrency=10,
+                   concurrency=5,
                    trail_number=500,
                    port=14001,
                    tuner='TPE')
-search_params=dict(weight1=5,weight2=3,weight3=9,dropout=0.1,weight_decay=0.1,lr=1e-3,batch_size=128)
-model = dict(backbone='XASMLP',pipeline='classify',params=dict(classes=3,dropout=search_params['dropout']))
+search_params=dict(weight1=5,weight2=3,dropout=0.1,weight_decay=0.1,lr=1e-3,batch_size=128)
+model = dict(backbone='XASMLP',pipeline='classify',params=dict(classes=2,dropout=search_params['dropout']))
 
-train_dataset = dict(backbone='ValenceDataset',params=dict(annotation='/home/dachuang2022/Yufeng/XAS/training_dataset234.txt'))
-test_dataset = dict(backbone='ValenceDataset',params=dict(annotation='/home/dachuang2022/Yufeng/XAS/testing_dataset234.txt'))
+train_dataset = dict(backbone='ValenceDataset',params=dict(annotation='/home/dachuang2022/Yufeng/XAS/training_dataset.txt'))
+test_dataset = dict(backbone='ValenceDataset',params=dict(annotation='/home/dachuang2022/Yufeng/XAS/testing_dataset.txt'))
 
-work_config = dict(work_dir='/home/dachuang2022/Yufeng/XAS/XAS/XASMLP_S_234')
+work_config = dict(work_dir='/home/dachuang2022/Yufeng/XAS/XAS/XASMLP_CLS23')
 
 checkpoint_config = dict(load_from='', resume_from='', save_inter=50)
 
-loss_fn = dict(backbone='CrossEntropyLoss',params=dict(weight=torch.Tensor([search_params['weight1'],search_params['weight2'],search_params['weight3']])))
+loss_fn = dict(backbone='CrossEntropyLoss',params=dict(weight=torch.Tensor([search_params['weight1'],search_params['weight2']])))
 evaluation = dict(metrics=['f1_score', 'confusion_matrix','every_class_accuracy', 'top_k_accuracy'],
                   sota_target=dict(mode='max', target='top_k_accuracy'))
 
