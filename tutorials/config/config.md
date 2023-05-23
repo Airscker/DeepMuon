@@ -18,7 +18,7 @@ model = dict(filepath='~/Customized_model/Resnet50.py',pipeline='classify',backb
 '''
 ## Specify the dataset to load the data
 '''
-train_dataset = dict(filepath='',backbone='EGFR_NPY', 
+train_dataset = dict(filepath='',backbone='EGFR_NPY',collate_fn=None,
                      params=dict(img_dataset='~/EGFR/img_dataset/imgs_train.pkl',
                                 augment=False,
                                 augment_pipeline=[dict(type='add_random_number'),
@@ -59,7 +59,7 @@ scheduler = dict(filepath='',backbone='ReduceLROnPlateau', params=dict(mode='min
 ## Specify the precision options and DPP/FSDP
 '''
 fsdp_parallel = dict(enabled=False, min_num_params=1e4)
-optimize_config = dict(fp16=False, grad_acc=1, grad_clip=0.01, double_precision=False)
+optimize_config = dict(fp16=False, grad_acc=1, grad_clip=0.01, double_precision=False,find_unused_parameters=False)
 ```
 
 ## model
@@ -101,6 +101,7 @@ optimize_config = dict(fp16=False, grad_acc=1, grad_clip=0.01, double_precision=
 
 - filepath: indicates the path of your customized `Dataset`, nothing needs to be given if you properly put it under the installation path of DeepMuon.
 - backbone: the name of the `Dataset` to be used.
+- collate_fn: the name of the `collate_fn` to be used to construct data batches.
 - params: indicates the parameters to be used to create the instance of the `Dataset`.
 
 ## work_config
@@ -157,3 +158,4 @@ Typically omitted, unless you want to train large models but your platform can't
 - grad_acc: the number of accumulation steps of gradient, 1 means no accumulation. It's useful when your GPU restricts your `batch_size`.
 - grad_clip: the maximum value of the allowed gradient when backpropagating gradients. If `None` is given this operation will be deprecated.
 - double_precision: whether to enable double precision (64-bit tensors will be used) model training.
+- find_unused_parameters: whether to find unused parameters during model training, which must be set as `True` when part of model's parameters' `requires_grad` properties were set to `False`.
