@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-05-10 23:37:08
+LastEditTime: 2023-05-23 14:15:20
 Description: Import configuration file and prepare configurations for experiments
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -60,21 +60,31 @@ class Config:
                             port=14001,
                             tuner='TPE')
     >>> search_params = dict(seq_dropout=0.1)
-    >>> model = dict(backbone='VST',
+    >>> model = dict(filepath='Mypath/model.py',
+                    backbone='VST',
                     pipeline='regression',
                     params=dict(n_classes=11,
                                 input_shape=(3, 130, 130),
                                 seq_dropout=search_params['seq_dropout']))
-    >>> train_dataset = dict(backbone='NIIDecodeV2',params=dict(ann_file=None,mask_ann=None,fusion=False,modalities=[],
-                                                                augment_pipeline=[dict(type='HistEqual'),
-                                                                                dict(type='SingleNorm'),
-                                                                                dict(type='Padding', size=(120, 120)),
-                                                                                dict(type='Resize', size=(130, 130))]))
-    >>> test_dataset = dict(backbone='NIIDecodeV2',params=dict(ann_file=None,mask_ann=None,fusion=False,modalities=[],
-                                                                augment_pipeline=[dict(type='HistEqual'),
-                                                                                dict(type='SingleNorm'),
-                                                                                dict(type='Padding', size=(120, 120)),
-                                                                                dict(type='Resize', size=(130, 130))]))
+    >>> train_dataset = dict(backbone='NIIDecodeV2',
+                            collate_fn=None,
+                            params=dict(ann_file=None,
+                                        mask_ann=None,
+                                        fusion=False,
+                                        modalities=[],
+                                        augment_pipeline=[dict(type='HistEqual'),
+                                                        dict(type='SingleNorm'),
+                                                        dict(type='Padding', size=(120, 120)),
+                                                        dict(type='Resize', size=(130, 130))]))
+    >>> test_dataset = dict(backbone='NIIDecodeV2',
+                            collate_fn=None,
+                            params=dict(ann_file=None,
+                                        mask_ann=None,
+                                        fusion=False,modalities=[],
+                                        augment_pipeline=[dict(type='HistEqual'),
+                                                        dict(type='SingleNorm'),
+                                                        dict(type='Padding', size=(120, 120)),
+                                                        dict(type='Resize', size=(130, 130))]))
     >>> work_config = dict(work_dir='./VST_1', logfile='log.log')
     >>> checkpoint_config = dict(load_from='', resume_from='', save_inter=50)
     >>> loss_fn = dict(backbone='CrossEntropyLoss')
@@ -170,33 +180,49 @@ class Config:
         traindataset_info = getattr(self.config, 'train_dataset')
         testdataset_info = getattr(self.config, 'test_dataset')
         if 'filepath' not in traindataset_info.keys() or not os.path.exists(traindataset_info['filepath']):
-            if 'params' not in traindataset_info:
-                self.paras['train_dataset'] = {'backbone': internal_env[self.config.train_dataset['backbone']],
-                                               'params': dict(datapath=self.config.train_dataset['datapath'])}
+            backbone=internal_env[self.config.train_dataset['backbone']]
+            if 'collate_fn' not in traindataset_info.keys() or traindataset_info['collate_fn'] is None:
+                collate_fn=None
             else:
-                self.paras['train_dataset'] = {'backbone': internal_env[self.config.train_dataset['backbone']],
-                                               'params': traindataset_info['params']}
+                collate_fn=internal_env[self.config.train_dataset['collate_fn']]
+            if 'params' not in traindataset_info:
+                params={}
+            else:
+                params=traindataset_info['params']
         else:
-            if 'params' not in traindataset_info:
-                self.paras['train_dataset'] = {'backbone': getattr(import_module(traindataset_info['filepath']), traindataset_info['backbone']),
-                                               'params': dict(datapath=self.config.train_dataset['datapath'])}
+            imported_module=import_module(traindataset_info['filepath'])
+            backbone=getattr(imported_module,traindataset_info['backbone'])
+            if 'collate_fn' not in traindataset_info.keys() or traindataset_info['collate_fn'] is None:
+                collate_fn=None
             else:
-                self.paras['train_dataset'] = {'backbone': getattr(import_module(traindataset_info['filepath']), traindataset_info['backbone']),
-                                               'params': traindataset_info['params']}
+                collate_fn=getattr(imported_module,traindataset_info['collate_fn'])
+            if 'params' not in traindataset_info:
+                params={}
+            else:
+                params=traindataset_info['params']
+        self.paras['train_dataset']={'backbone':backbone,'collate_fn':collate_fn,'params':params}
         if 'filepath' not in testdataset_info.keys() or not os.path.exists(testdataset_info['filepath']):
-            if 'params' not in testdataset_info:
-                self.paras['test_dataset'] = {'backbone': internal_env[self.config.test_dataset['backbone']],
-                                              'params': dict(datapath=self.config.test_dataset['datapath'])}
+            backbone=internal_env[self.config.test_dataset['backbone']]
+            if 'collate_fn' not in testdataset_info.keys() or testdataset_info['collate_fn'] is None:
+                collate_fn=None
             else:
-                self.paras['test_dataset'] = {'backbone': internal_env[self.config.test_dataset['backbone']],
-                                              'params': testdataset_info['params']}
+                collate_fn=internal_env[self.config.test_dataset['collate_fn']]
+            if 'params' not in testdataset_info:
+                params={}
+            else:
+                params=testdataset_info['params']
         else:
-            if 'params' not in testdataset_info:
-                self.paras['test_dataset'] = {'backbone': getattr(import_module(testdataset_info['filepath']), testdataset_info['backbone']),
-                                              'params': dict(datapath=self.config.test_dataset['datapath'])}
+            imported_module=import_module(testdataset_info['filepath'])
+            backbone=getattr(imported_module,traindataset_info['backbone'])
+            if 'collate_fn' not in testdataset_info.keys() or testdataset_info['collate_fn'] is None:
+                collate_fn=None
             else:
-                self.paras['test_dataset'] = {'backbone': getattr(import_module(testdataset_info['filepath']), testdataset_info['backbone']),
-                                              'params': testdataset_info['params']}
+                collate_fn=getattr(imported_module,testdataset_info['collate_fn'])
+            if 'params' not in testdataset_info:
+                params={}
+            else:
+                params=testdataset_info['params']
+        self.paras['test_dataset']={'backbone':backbone,'collate_fn':collate_fn,'params':params}
         # self.paras['train_dataset']={'backbone':internal_env[self.config.train_dataset['backbone']],'datapath':self.config.train_dataset['datapath']}
         # self.paras['test_dataset']={'backbone':internal_env[self.config.test_dataset['backbone']],'datapath':self.config.test_dataset['datapath']}
         '''import loss function anywhere'''
@@ -207,7 +233,6 @@ class Config:
             if 'params' not in loss_info.keys():
                 loss_info['params'] = dict()
             if 'filepath' not in loss_info.keys() or not os.path.exists(loss_info['filepath']):
-
                 self.paras['loss_fn'] = {'backbone': internal_env[self.config.loss_fn['backbone']],
                                          'params': loss_info['params']}
             else:
@@ -249,7 +274,7 @@ class Config:
         self.paras['config'] = dict(path=self.configpath)
         if 'optimize_config' not in self.config_keys:
             self.paras['optimize_config'] = dict(
-                fp16=False, grad_acc=1, grad_clip=None,double_precision=False)
+                fp16=False, grad_acc=1, grad_clip=None,double_precision=False,find_unused_parameters=False)
         else:
             optim_config = getattr(self.config, 'optimize_config')
             if 'fp16' not in optim_config.keys():
@@ -264,6 +289,8 @@ class Config:
                 self.precision=torch.DoubleTensor
             else:
                 self.precision=torch.FloatTensor
+            if 'find_unused_parameters' not in optim_config.keys():
+                optim_config['find_unused_parameters']=False
             self.paras['optimize_config'] = optim_config
         if 'gpu_config' in self.config_keys:
             warnings.warn(

@@ -124,12 +124,12 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
     test_dataset = configs['test_dataset']['backbone'](**test_data)
     test_sampler = DistributedSampler(test_dataset)
     test_dataloader = DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, sampler=test_sampler)
+        test_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, sampler=test_sampler,collate_fn=configs['test_dataset']['collate_fn'])
     if test_path is None:
         train_dataset = configs['train_dataset']['backbone'](**train_data)
         train_sampler = DistributedSampler(train_dataset)
         train_dataloader = DataLoader(
-            train_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, sampler=train_sampler)
+            train_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, sampler=train_sampler,collate_fn=configs['train_dataset']['collate_fn'])
     '''
     Create Model and optimizer/loss/scheduler
     You can change the name of net as any you want just make sure the model structure is the same one
@@ -178,7 +178,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
         ddp_training = False
     else:
         model = DistributedDataParallel(model, device_ids=[
-            local_rank], output_device=local_rank, find_unused_parameters=False)
+            local_rank], output_device=local_rank, find_unused_parameters=configs['optimize_config']['find_unused_parameters'])
         ddp_training = True
         if fsdp_env and local_rank == 0:
             logger.log(
