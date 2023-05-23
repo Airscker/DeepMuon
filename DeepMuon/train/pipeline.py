@@ -1,13 +1,27 @@
+'''
+Author: airscker
+Date: 2023-05-23 14:35:50
+LastEditors: airscker
+LastEditTime: 2023-05-23 18:16:45
+Description: NULL
+
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
+'''
 import torch
 from torch import nn
-from abc import abstractmethod,ABCMeta
 
+from abc import abstractmethod,ABCMeta
+import dgl
 class Pipeline(metaclass=ABCMeta):
     '''
     ## Initialize the model prediction pipeline
         
     ### Args:
         - model: the model instance.
+
+    ### Returns:
+        - pred: the prediction result of the model.
+        - label: the label used to evaluate the model's result.
     '''
     def __init__(self,model:nn.Module) -> None:
         self.model=model
@@ -81,3 +95,24 @@ class cnnlstm_cla(Pipeline):
         label = torch.autograd.Variable(label).cuda(device, non_blocking=True)
         pred=self.model(input,h0)
         return pred,label
+    
+class solvgnn(Pipeline):
+    '''
+    Model prediction pipeline built for SolvGNN which was implemented within DeepMuon
+    '''
+    def __init__(self, model: nn.Module) -> None:
+        super().__init__(model)
+    def generate_solvsys(self,batch_size):
+        n_solv = 2
+        solvsys = dgl.DGLGraph()
+        solvsys.add_nodes(n_solv*batch_size)
+        src = torch.arange(batch_size)
+        dst = torch.arange(batch_size,n_solv*batch_size)
+        solvsys.add_edges(torch.cat((src,dst)),torch.cat((dst,src)))
+        solvsys.add_edges(torch.arange(n_solv*batch_size),torch.arange(n_solv*batch_size))    
+        return solvsys
+    def predict(self, input, label, device, precision):
+        empty_solvsys=self.generate_solvsys(len(input['inter_hb'])).to(device)
+        output=self.model(input,empty_solvsys,device)
+        label=label.to(device)
+        return output,label

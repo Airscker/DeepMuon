@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-21 18:43:31
 LastEditors: airscker
-LastEditTime: 2023-05-18 14:00:07
+LastEditTime: 2023-05-23 16:04:03
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -90,7 +90,6 @@ setup(
                       'tensorboard',
                       'yapf',
                       'parso',
-                      'rdkit'
                       ],
     # Similar to `install_requires` above, these must be valid existing
     # projects.
