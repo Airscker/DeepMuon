@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-05-18 12:07:12
+LastEditTime: 2023-05-25 10:06:57
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -88,10 +88,12 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
     if local_rank == 0:
         logger = AirLogger.LOGT(log_dir=work_dir, logfile=log)
         '''Create work_dir'''
-        try:
-            os.makedirs(work_dir)
-        except:
-            pass
+        checkpoint_savepath=os.path.join(work_dir,'Checkpoint')
+        curve_path=os.path.join(work_dir,'Curve')
+        folders_toCreate=[work_dir,checkpoint_savepath,curve_path]
+        for folder in folders_toCreate:
+            if not os.path.exists(folder):
+                os.makedirs(folder)
         if search:
             config_info.move_config(source_code=source_code,save_path=os.path.join(work_dir,'config.py'))
         else:
@@ -221,6 +223,8 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
         # np.save(os.path.join(work_dir,'attr.npy'),all_attr)
         ts_score_val, ts_label_val = gather_score_label(
             ts_score, ts_label, local_world_size)
+        np.save(os.path.join(work_dir,'scores.npy'),ts_score_val)
+        np.save(os.path.join(work_dir,'labels.npy'),ts_label_val)
         ts_eva_metrics, _ = evaluation(
             ts_score_val, ts_label_val, configs['evaluation'], 0, 0)
         ts_eva_info = dict(mode='ts_eval')
@@ -285,7 +289,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                 logger.log(
                     f'Best Model Saved as {best_checkpoint},Best {sota_target}:{bestres}, Current Epoch: {t+1}', show=True)
             if (t + 1) % inter == 0:
-                savepath = os.path.join(work_dir, f'Epoch_{t+1}.pth')
+                savepath = os.path.join(checkpoint_savepath,f'Epoch_{t+1}.pth')
                 # dist.barrier()
                 ddp_fsdp_model_save(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn,
                                     scheduler=scheduler, path=savepath, ddp_training=ddp_training)
@@ -317,7 +321,6 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
         json_log=AirFunc.load_json_log(logger.jsonfile)
         if json_log=={}:
             return 0
-        curve_path=os.path.join(work_dir,'Curve')
         if not os.path.exists(curve_path):
             os.makedirs(curve_path)
         for mode in json_log.keys():
