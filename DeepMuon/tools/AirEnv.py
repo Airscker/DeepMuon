@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-30 21:21:31
 LastEditors: airscker
-LastEditTime: 2023-05-30 22:54:57
+LastEditTime: 2023-05-30 23:14:45
 Description: NULL
 
 Copyright (C) OpenMMLab. All rights reserved.
@@ -23,11 +23,10 @@ class EnvINFO:
         self.__init()
         
     def __get_build_config(self):
-        if self.torch_version == 'parrots':
-            from parrots.config import get_build_info
-            self.env_info['PyTorch compiling details']=get_build_info()
-        else:
+        try:
             self.env_info['PyTorch compiling details']=torch.__config__.show().rstrip('\n')
+        except:
+            pass
     def __is_rocm_pytorch(self)->bool:
         is_rocm = False
         if self.torch_version != 'parrots':
@@ -39,16 +38,16 @@ class EnvINFO:
                 pass
         return is_rocm
     def __get_cuda_home(self):
-        if self.torch_version == 'parrots':
-            from parrots.utils.build_extension import CUDA_HOME
-        else:
+        try:
             if self.__is_rocm_pytorch():
                 from torch.utils.cpp_extension import ROCM_HOME
                 CUDA_HOME = ROCM_HOME
             else:
                 from torch.utils.cpp_extension import CUDA_HOME
-        self.env_info['CUDA_HOME']=CUDA_HOME
-        self.cuda_home=CUDA_HOME
+            self.env_info['CUDA_HOME']=CUDA_HOME
+            self.cuda_home=CUDA_HOME
+        except:
+            pass
     def __get_nvcc_version(self):
         if self.cuda_home is not None and os.path.isdir(self.cuda_home):
             try:
