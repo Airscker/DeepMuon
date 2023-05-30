@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-05-29 20:03:52
+LastEditTime: 2023-05-30 22:50:08
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -19,6 +19,7 @@ from DeepMuon.tools.AirConfig import Config
 import DeepMuon.tools.AirFunc as AirFunc
 import DeepMuon.tools.AirLogger as AirLogger
 import DeepMuon.interpret.attribution as Attr
+from DeepMuon.tools.AirEnv import EnvINFO
 
 import torch
 from torch import nn
@@ -116,7 +117,9 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
         with open(msg, 'r')as f:
             msg = f.read()
         logger.log(msg)
-        logger.log(config_info)
+        env_info=EnvINFO()
+        logger.log(env_info)
+        logger.log(f'Configuration:\n{config_info}')
         if test_path is not None:
             logger.log(
                 f"Test mode enabled, model will be tested upon checkpoint {test_path}")
