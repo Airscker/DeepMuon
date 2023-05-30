@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-05-30 22:50:08
+LastEditTime: 2023-05-30 23:07:39
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -304,7 +304,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
             epoch_time = time.time() - start_time
             eta = AirFunc.format_time((epochs - 1 - t) * epoch_time)
             time_info = dict(time=epoch_time, eta=eta)
-            mem_info = AirFunc.get_mem_info(device)
+            mem_info = AirFunc.get_mem_info()
             loss_info = dict(mode='train', lr=LRn, epoch=t+1, total_epoch=epochs,
                              test_loss=test_loss, train_loss=train_loss, sota=bestres,
                              batch_size=batch_size, train_dataset_size=len(train_dataset),test_dataset_size=len(test_dataset))
