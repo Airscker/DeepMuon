@@ -10,5 +10,5 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 from .AirConfig import *
 from .AirFunc import *
 from .AirLogger import *
-from .mem_info import *
+from .sys_info import *
 from .model_info import *

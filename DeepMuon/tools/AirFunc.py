@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-05-16 22:17:43
+LastEditTime: 2023-05-30 21:14:14
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -11,6 +11,7 @@ import os
 import shutil
 import parso
 import socket
+import GPUtil
 import importlib
 import warnings
 import numpy as np
@@ -133,17 +134,18 @@ def get_mem_info(gpu_id=None):
     ### Return:
         - dict:
             - mem_left: the memory unused(in MB format)
-            - mem_used: the meory used(in MB format)
+            - mem_used: the meory used(in MB format)  
             - total_mem: the total memory of GPU(in MB format)
     '''
+    GPU_group=GPUtil.getGPUs()
     if gpu_id is None:
         gpu_id = torch.cuda.current_device()
-    mem_total = torch.cuda.get_device_properties(gpu_id).total_memory
-    mem_cached = torch.cuda.memory_reserved(gpu_id)
-    mem_allocated = torch.cuda.memory_allocated(gpu_id)
-    return dict(mem_left=f"{(mem_total-mem_cached-mem_allocated)/1024**2:0.2f} MB",
-                mem_used=f"{(mem_cached+mem_allocated)/1024**2:0.2f} MB",
-                total_mem=f"{mem_total/1024**2:0.2f} MB")
+    mem_total=GPU_group[gpu_id].memoryTotal
+    mem_left=GPU_group[gpu_id].memoryFree
+    mem_used=GPU_group[gpu_id].memoryUsed
+    return dict(mem_left=f'{mem_left} MB',
+                mem_used=f'{mem_used} MB',
+                total_mem=f'{mem_total} MB')
 
 
 def readable_dict(data: dict, i=0, show=False, indent='\t', sep='\n'):

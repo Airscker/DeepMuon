@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 14:35:50
 LastEditors: airscker
-LastEditTime: 2023-05-23 18:16:45
+LastEditTime: 2023-05-29 19:25:11
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -103,7 +103,7 @@ class solvgnn(Pipeline):
     def __init__(self, model: nn.Module) -> None:
         super().__init__(model)
     def generate_solvsys(self,batch_size):
-        n_solv = 2
+        n_solv = 1
         solvsys = dgl.DGLGraph()
         solvsys.add_nodes(n_solv*batch_size)
         src = torch.arange(batch_size)

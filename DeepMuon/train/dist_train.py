@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-05-25 10:06:57
+LastEditTime: 2023-05-29 20:03:52
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -79,7 +79,10 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
         resume = ''
     inter = configs['checkpoint_config']['save_inter']
     '''Initialize Distributed Training'''
-    group = torch.distributed.init_process_group(backend="nccl")
+    try:
+        group = torch.distributed.init_process_group(backend="nccl")
+    except:
+        group = torch.distributed.init_process_group(backend="gloo")
     local_rank = torch.distributed.get_rank()
     local_world_size = int(os.environ['LOCAL_WORLD_SIZE'])
     torch.cuda.set_device(local_rank)

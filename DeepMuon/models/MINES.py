@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 14:36:30
 LastEditors: airscker
-LastEditTime: 2023-05-23 17:53:31
+LastEditTime: 2023-05-29 19:32:30
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -60,11 +60,12 @@ class SolvGNN(nn.Module):
         super().__init__()
         self.conv1 = GraphConv(in_dim, hidden_dim)
         self.conv2 = GraphConv(hidden_dim, hidden_dim)
-        self.global_conv1 = MPNNconv(node_in_feats=hidden_dim+1,
-                                     edge_in_feats=1,
-                                     node_out_feats=hidden_dim,
-                                     edge_hidden_feats=32,
-                                     num_step_message_passing=1)
+        # self.global_conv1 = MPNNconv(node_in_feats=hidden_dim+1,
+        #                              edge_in_feats=1,
+        #                              node_out_feats=hidden_dim,
+        #                              edge_hidden_feats=32,
+        #                              num_step_message_passing=1)
+        self.global_conv1=GraphConv(hidden_dim+4,hidden_dim)
         self.regression = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
@@ -83,11 +84,12 @@ class SolvGNN(nn.Module):
             ip=solvdata['ip'][:,None].to(device)
             graph.ndata['h']=F.relu(self.conv2(graph,F.relu(self.conv1(graph,graph_ndata))))
             graph_mean=dgl.mean_nodes(graph,'h')
-            graph_mean=torch.cat([graph_mean,inter_hb],axis=1)
-            graph_mean=torch.cat([graph_mean,graph_mean])
-            inter_feature=torch.cat([inter_hb,be_salt,be_ps,ip],axis=0)
-            gh_feature=self.global_conv1(empty_solvsys,graph_mean,inter_feature)
+            graph_mean=torch.cat([graph_mean,inter_hb,be_salt,be_ps,ip],axis=1)
+            # graph_mean=torch.cat([graph_mean,graph_mean])
+            # inter_feature=torch.cat([inter_hb,be_salt,be_ps,ip],axis=0)
+            # gh_feature=self.global_conv1(empty_solvsys,graph_mean,inter_feature)
+            gh_feature=self.global_conv1(empty_solvsys,graph_mean)
             output=self.regression(gh_feature)
-            output = torch.cat((output[0:len(output)//2,:],output[len(output)//2:,:]),axis=1)
-            output=torch.mean(output,dim=1).unsqueeze(1)
+            # output = torch.cat((output[0:len(output)//2,:],output[len(output)//2:,:]),axis=1)
+            # output=torch.mean(output,dim=1).unsqueeze(1)
             return output   
