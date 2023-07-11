@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 14:35:50
 LastEditors: airscker
-LastEditTime: 2023-05-29 19:25:11
+LastEditTime: 2023-07-11 09:14:48
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -103,13 +103,13 @@ class solvgnn(Pipeline):
     def __init__(self, model: nn.Module) -> None:
         super().__init__(model)
     def generate_solvsys(self,batch_size):
-        n_solv = 1
         solvsys = dgl.DGLGraph()
-        solvsys.add_nodes(n_solv*batch_size)
+        solvsys.add_nodes(batch_size)
         src = torch.arange(batch_size)
-        dst = torch.arange(batch_size,n_solv*batch_size)
+        # dst = torch.arange(batch_size,n_solv*batch_size)
+        dst=torch.flip(src,dims=[0])
         solvsys.add_edges(torch.cat((src,dst)),torch.cat((dst,src)))
-        solvsys.add_edges(torch.arange(n_solv*batch_size),torch.arange(n_solv*batch_size))    
+        # solvsys.add_edges(torch.arange(batch_size),torch.arange(batch_size))
         return solvsys
     def predict(self, input, label, device, precision):
         empty_solvsys=self.generate_solvsys(len(input['inter_hb'])).to(device)

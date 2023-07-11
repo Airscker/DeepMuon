@@ -65,18 +65,43 @@ class ValenceDataset(Dataset):
             spectrum = info["xanes"]
             for sub_spec in spectrum.keys():
                 element = sub_spec.split("-")[-2]
-                if element == "Fe" and valences[element].is_integer() and sub_spec.endswith('K'):
+                # if element == "Fe" and valences[element].is_integer() and sub_spec.endswith('K'):
+                if element == "Fe" and sub_spec.endswith('K'):
                     self.dataset.append(
-                        [np.array(spectrum[sub_spec][1]), int(valences[element]) - 1]
+                        [np.array(spectrum[sub_spec][1]), int(valences[element])-0]
                     )
 
     def __getitem__(self, index):
         data, label = self.dataset[index]
         data = torch.from_numpy(data).type(torch.FloatTensor)
         label = torch.LongTensor([label])
+        # label=torch.Tensor([float(label)]).type(torch.FloatTensor)
         return data, label
 
     def __len__(self):
         return len(self.dataset)
     
 
+class ValenceDatasetV2(Dataset):
+    """
+    The ValenceDatasetV2 class is a PyTorch Dataset that loads and preprocesses X-ray absorption near edge structure (XANES) spectra data for machine learning tasks.
+    It takes an PKL file which contains all data samples as input, extracts the XANES spectra and corresponding valences of the elements in the spectra, and returns them as a tuple of data and label for each sample.
+
+    ## Args:
+        - annotation: the path of the annotation text file which contains the paths of data samples to be used to train/test the model.
+    """
+
+    def __init__(self, annotation=""):
+        super().__init__()
+        with open(annotation, "rb") as f:
+            self.dataset=pkl.load(f)
+
+    def __getitem__(self, index):
+        label, data = self.dataset[index]
+        data = torch.from_numpy(data).type(torch.FloatTensor)
+        label = torch.Tensor([float(label)]).type(torch.FloatTensor)
+        return data, label
+
+    def __len__(self):
+        return len(self.dataset)
+    

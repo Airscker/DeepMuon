@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-18 13:58:39
 LastEditors: airscker
-LastEditTime: 2023-05-23 18:14:22
+LastEditTime: 2023-07-06 11:05:23
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -12,6 +12,7 @@ from rdkit import Chem,DataStructs
 from rdkit.Chem.Draw import MolToFile
 from rdkit.Chem import AllChem
 import dgl
+import os
 
 import torch
 from torch.utils.data import Dataset
@@ -20,32 +21,51 @@ from .SmilesGraphUtils.atom_feat_encoding import CanonicalAtomFeaturizer
 from .SmilesGraphUtils.molecular_graph import mol_to_bigraph
 
 class SmilesGraphData(Dataset):
-    def __init__(self, information_file='',solubility_file='',start=None,end=None) -> None:
+    def __init__(self, information_file=None,solv_file='',start=None,end=None) -> None:
         super().__init__()
-        self.info_list=pd.read_csv(information_file,index_col='CID')
-        self.sol_list=pd.read_csv(solubility_file,index_col='CID')
+        if os.path.exists(information_file):
+            self.info_list=pd.read_csv(information_file,index_col='CID')
+        else:
+            self.info_list=None
+        self.sol_list=pd.read_csv(solv_file,index_col='ID')
         self.smiles=self.sol_list['CanonicalSMILES'].to_dict()
-        self.solubility=self.sol_list['Solubility_LiTFSI'].to_dict()
-        self.be_salt=self.info_list['BE_Salt'].to_dict()
-        self.be_ps=self.info_list['BE_PS'].to_dict()
-        self.ip=self.info_list['IP'].to_dict()
+        self.solubility=self.sol_list['BindingEnergy_kcal/mol'].to_dict()
+        # self.be_salt=self.info_list['BE_Salt'].to_dict()
+        # self.be_ps=self.info_list['BE_PS'].to_dict()
+        # self.ip=self.info_list['IP'].to_dict()
         self.graph_data={}
         self.sol_cid_list=self.sol_list.index.to_list()
-        self.info_cid_list=self.info_list.index.to_list()
+        if self.info_list is not None:
+            self.info_cid_list=self.info_list.index.to_list()
+        else:
+            self.info_cid_list=self.sol_cid_list
         self.cid_list=list(set(self.sol_cid_list)&set(self.info_cid_list))
+        self.add_features={}
+        if self.info_list is not None:
+            for cid in self.cid_list:
+                self.add_features[cid]=self.info_list.loc[cid].to_numpy().tolist()
         if start is None:
             start=0
         if end is None:
             end=len(self.cid_list)
         self.cid_list=self.cid_list[start:end]
         self.generate_graph()
+    def featurize_bonds(self,mol):
+        feats = []
+        bond_types = [Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE,
+                    Chem.rdchem.BondType.TRIPLE, Chem.rdchem.BondType.AROMATIC]
+        for bond in mol.GetBonds():
+            btype = bond_types.index(bond.GetBondType())
+            # One bond between atom u and v corresponds to two edges (u, v) and (v, u)
+            feats.extend([btype, btype])
+        return {'type': torch.tensor(feats).reshape(-1, 1).float()}
     def generate_graph(self):
         for cid in self.cid_list:
             mol = Chem.MolFromSmiles(self.smiles[cid])
             self.graph_data[cid] = []
-            self.graph_data[cid].append(mol_to_bigraph(mol,add_self_loop=True,
+            self.graph_data[cid].append(mol_to_bigraph(mol,add_self_loop=False,
                                                                 node_featurizer=CanonicalAtomFeaturizer(),
-                                                                edge_featurizer=None,
+                                                                edge_featurizer=self.featurize_bonds,
                                                                 canonical_atom_order=False,
                                                                 explicit_hydrogens=False,
                                                                 num_virtual_nodes=0
@@ -63,9 +83,11 @@ class SmilesGraphData(Dataset):
         cid=self.cid_list[index]
         sample['graph']=self.graph_data[cid][0]
         sample['inter_hb']=self.graph_data[cid][3]
-        sample['be_salt']=self.be_salt[cid]
-        sample['be_ps']=self.be_ps[cid]
-        sample['ip']=self.ip[cid]
+        # sample['be_salt']=self.be_salt[cid]
+        # sample['be_ps']=self.be_ps[cid]
+        # sample['ip']=self.ip[cid]
+        if self.info_list is not None:
+            sample['add_features']=self.add_features[cid]
         return sample,self.solubility[cid]
     
 def collate_solubility(batch):

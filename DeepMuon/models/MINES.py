@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 14:36:30
 LastEditors: airscker
-LastEditTime: 2023-05-29 19:32:30
+LastEditTime: 2023-07-07 09:37:34
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -21,12 +21,12 @@ class MPNNconv(nn.Module):
 
         self.project_node_feats = nn.Sequential(
             nn.Linear(node_in_feats, node_out_feats),
-            nn.ReLU()
+            nn.LeakyReLU()
         )
         self.num_step_message_passing = num_step_message_passing
         edge_network = nn.Sequential(
             nn.Linear(edge_in_feats, edge_hidden_feats),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(edge_hidden_feats, node_out_feats * node_out_feats)
         )
         self.gnn_layer = NNConv(
@@ -56,40 +56,75 @@ class MPNNconv(nn.Module):
         return node_feats
 
 class SolvGNN(nn.Module):
-    def __init__(self, in_dim=74, hidden_dim=256, n_classes=1):
+    def __init__(self, in_dim=74, hidden_dim=256, add_dim=33,edge_hidden_dim=512,n_classes=1):
         super().__init__()
-        self.conv1 = GraphConv(in_dim, hidden_dim)
-        self.conv2 = GraphConv(hidden_dim, hidden_dim)
-        # self.global_conv1 = MPNNconv(node_in_feats=hidden_dim+1,
-        #                              edge_in_feats=1,
-        #                              node_out_feats=hidden_dim,
-        #                              edge_hidden_feats=32,
-        #                              num_step_message_passing=1)
-        self.global_conv1=GraphConv(hidden_dim+4,hidden_dim)
+        self.conv1 = GraphConv(in_dim, hidden_dim,allow_zero_in_degree=True)
+        self.conv2 = GraphConv(hidden_dim, hidden_dim,allow_zero_in_degree=True)
+        self.global_conv1 = MPNNconv(node_in_feats=hidden_dim,
+                                     edge_in_feats=1,
+                                     node_out_feats=hidden_dim,
+                                     edge_hidden_feats=edge_hidden_dim,
+                                     num_step_message_passing=1)
+        # self.global_conv1=GraphConv(hidden_dim+4,hidden_dim)
+        
+        # self.add_embed_dims=[128,256,64]
+        # self.add_embed=nn.Sequential(
+        #     nn.Linear(add_dim+2,self.add_embed_dims[0]),
+        #     nn.BatchNorm1d(self.add_embed_dims[0]),
+        #     nn.LeakyReLU(),
+        #     nn.Linear(self.add_embed_dims[0],self.add_embed_dims[1]),
+        #     nn.BatchNorm1d(self.add_embed_dims[1]),
+        #     nn.LeakyReLU(),
+        #     nn.Linear(self.add_embed_dims[1],self.add_embed_dims[2])
+        # )
         self.regression = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
+            nn.Linear(257, hidden_dim),
+            nn.LeakyReLU(),
             nn.Linear(hidden_dim,hidden_dim),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(hidden_dim,n_classes)
         )
         
-    def forward(self, solvdata,empty_solvsys,device):
-        graph=solvdata['graph'].to(device)
+    # def forward(self, solvdata=None,empty_solvsys=None,device=None):
+    #     graph:dgl.DGLGraph=solvdata['graph'].to(device)
+    #     with graph.local_scope():
+    #         graph_ndata=graph.ndata['h'].float().to(device)
+    #         graph_edata=graph.edata['type'].float().to(device)
+    #         inter_hb=solvdata['inter_hb'][:,None].float().to(device)
+    #         # be_salt=solvdata['be_salt'][:,None].to(device)
+    #         # be_ps=solvdata['be_ps'][:,None].to(device) 
+    #         # ip=solvdata['ip'][:,None].to(device)
+    #         add_feature=solvdata['add_features'].float().to(device)
+    #         graph.ndata['h']=F.relu(self.conv2(graph,(F.relu(self.conv1(graph,(graph_ndata,graph_edata))),graph_edata)))
+    #         # graph_mean=torch.cat([graph_mean,inter_hb,be_salt,be_ps,ip],axis=1)
+    #         # graph_mean=torch.cat([graph_mean,graph_mean])
+    #         # inter_feature=torch.cat([inter_hb,be_salt,be_ps,ip],axis=0)
+    #         # gh_feature=self.global_conv1(empty_solvsys,node_mean,edge_mean)
+    #         graph.ndata['h']=self.global_conv1(graph,graph.ndata['h'],graph_edata)
+    #         # print(gh_feature.shape,dgl.mean_nodes(graph,'h').shape,dgl.mean_edges(graph,'type').shape)
+    #         node_mean=dgl.mean_nodes(graph,'h')
+    #         edge_mean=dgl.mean_edges(graph,'type')
+    #         # gh_feature=torch.cat([node_mean,edge_mean,inter_hb,be_salt,be_ps,ip],axis=1)
+    #         add_feature=torch.cat([edge_mean,inter_hb,add_feature],axis=1)
+    #         add_feature=self.add_embed(add_feature)
+    #         gh_feature=torch.cat([node_mean,add_feature],axis=1)
+    #         output=self.regression(gh_feature)
+    #         # output = torch.cat((output[0:len(output)//2,:],output[len(output)//2:,:]),axis=1)
+    #         # output=torch.mean(output,dim=1).unsqueeze(1)
+    #         return output
+    def forward(self, solvdata=None,empty_solvsys=None,device=None):
+        graph:dgl.DGLGraph=solvdata['graph'].to(device)
         with graph.local_scope():
-            graph_ndata=graph.ndata['h'].float()
+            graph_ndata=graph.ndata['h'].float().to(device)
+            graph_edata=graph.edata['type'].float().to(device)
             inter_hb=solvdata['inter_hb'][:,None].float().to(device)
-            be_salt=solvdata['be_salt'][:,None].to(device)
-            be_ps=solvdata['be_ps'][:,None].to(device)
-            ip=solvdata['ip'][:,None].to(device)
-            graph.ndata['h']=F.relu(self.conv2(graph,F.relu(self.conv1(graph,graph_ndata))))
-            graph_mean=dgl.mean_nodes(graph,'h')
-            graph_mean=torch.cat([graph_mean,inter_hb,be_salt,be_ps,ip],axis=1)
-            # graph_mean=torch.cat([graph_mean,graph_mean])
-            # inter_feature=torch.cat([inter_hb,be_salt,be_ps,ip],axis=0)
-            # gh_feature=self.global_conv1(empty_solvsys,graph_mean,inter_feature)
-            gh_feature=self.global_conv1(empty_solvsys,graph_mean)
+            graph.ndata['h']=F.relu(self.conv2(graph,(F.relu(self.conv1(graph,(graph_ndata,graph_edata))),graph_edata)))
+            graph.ndata['h']=self.global_conv1(graph,graph.ndata['h'],graph_edata)
+            node_mean=dgl.mean_nodes(graph,'h')
+            edge_mean=dgl.mean_edges(graph,'type')
+            # add_feature=torch.cat([edge_mean,inter_hb],axis=1)
+            # add_feature=self.add_embed(add_feature)
+            gh_feature=torch.cat([node_mean,edge_mean],axis=1)
             output=self.regression(gh_feature)
-            # output = torch.cat((output[0:len(output)//2,:],output[len(output)//2:,:]),axis=1)
-            # output=torch.mean(output,dim=1).unsqueeze(1)
-            return output   
+            return output.squeeze(-1)
+

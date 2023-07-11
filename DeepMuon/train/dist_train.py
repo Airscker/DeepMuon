@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-05-30 23:07:39
+LastEditTime: 2023-07-11 09:56:45
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -188,7 +188,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
         model = DistributedDataParallel(model, device_ids=[
             local_rank], output_device=local_rank, find_unused_parameters=configs['optimize_config']['find_unused_parameters'])
         ddp_training = True
-        if fsdp_env and local_rank == 0:
+        if not fsdp_env and local_rank == 0:
             logger.log(
                 f'WARN: FSDP is not supported at current edition of torch: {torch.__version__}, we have switched to DDP to avoid mistakes')
     '''

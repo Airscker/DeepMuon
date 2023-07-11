@@ -18,10 +18,11 @@ from .cryoFIRE import CRYOFIRE
 from .SwinTrans import SwinTransformer,EGFR_SwinT,EGFR_SwinTV2
 from .MLPMixer import MLPMixer,XASMLP
 from .MINES import SolvGNN
+from .XASG import XASGV1
 
 
 __all__ = ['MLP3','Vit_MLP', 'Vit_MLP2', 'Vit_MLP3',
            'ResMax2', 'ResMax3','UNet_VAE', 'UNet_VAE2',
            'SwinTransformer3D', 'VST', 'screening_model', 'fusion_model',
            'Dense4012FrameRNN','CRYOFIRE','SwinTransformer','EGFR_SwinT',
-           'EGFR_SwinTV2','MLPMixer','MinistModel','XASMLP','SolvGNN']
+           'EGFR_SwinTV2','MLPMixer','MinistModel','XASMLP','SolvGNN','XASGV1']
