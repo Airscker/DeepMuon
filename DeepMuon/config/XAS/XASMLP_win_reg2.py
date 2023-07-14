@@ -2,20 +2,19 @@
 Author: airscker
 Date: 2023-01-28 11:34:38
 LastEditors: airscker
-LastEditTime: 2023-07-13 12:10:50
+LastEditTime: 2023-07-13 12:28:34
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import torch
-model = dict(backbone='XASGV1',pipeline='regression',
-             params=dict(mlp_pretrained=r'',
-                         mlp_drop_out=0.3))
+model = dict(backbone='XASGV2',pipeline='regression',
+             params=dict(mlp_drop_out=0.3))
 
 train_dataset = dict(backbone='ValenceDatasetV2',params=dict(annotation=r'E:\MaterialsProject\XAS_SYN_TR_80k.pkl'))
 test_dataset = dict(backbone='ValenceDatasetV2',params=dict(annotation=r'E:\MaterialsProject\XAS_SYN_TS_20k.pkl'))
 
-work_config = dict(work_dir=r'E:\OneDrive\OneDrive - USTC\StonyBrook\XAS\workdir\SYN\XASGV1002')
+work_config = dict(work_dir=r'E:\OneDrive\OneDrive - USTC\StonyBrook\XAS\workdir\SYN\XASGV2001')
 
 checkpoint_config = dict(load_from='', resume_from='', save_inter=50)
 

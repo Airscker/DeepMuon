@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-18 13:58:39
 LastEditors: airscker
-LastEditTime: 2023-07-06 11:05:23
+LastEditTime: 2023-07-14 10:50:14
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -21,15 +21,15 @@ from .SmilesGraphUtils.atom_feat_encoding import CanonicalAtomFeaturizer
 from .SmilesGraphUtils.molecular_graph import mol_to_bigraph
 
 class SmilesGraphData(Dataset):
-    def __init__(self, information_file=None,solv_file='',start=None,end=None) -> None:
+    def __init__(self, information_file=None,solv_file='',ID_col='ID',info_keys=['CanonicalSMILES','Solubility_CO2'],start=None,end=None,add_self_loop=True) -> None:
         super().__init__()
         if os.path.exists(information_file):
-            self.info_list=pd.read_csv(information_file,index_col='CID')
+            self.info_list=pd.read_csv(information_file,index_col=ID_col)
         else:
             self.info_list=None
-        self.sol_list=pd.read_csv(solv_file,index_col='ID')
-        self.smiles=self.sol_list['CanonicalSMILES'].to_dict()
-        self.solubility=self.sol_list['BindingEnergy_kcal/mol'].to_dict()
+        self.sol_list=pd.read_csv(solv_file,index_col=ID_col)
+        self.smiles=self.sol_list[info_keys[0]].to_dict()
+        self.solubility=self.sol_list[info_keys[1]].to_dict()
         # self.be_salt=self.info_list['BE_Salt'].to_dict()
         # self.be_ps=self.info_list['BE_PS'].to_dict()
         # self.ip=self.info_list['IP'].to_dict()
@@ -49,7 +49,7 @@ class SmilesGraphData(Dataset):
         if end is None:
             end=len(self.cid_list)
         self.cid_list=self.cid_list[start:end]
-        self.generate_graph()
+        self.generate_graph(add_self_loop)
     def featurize_bonds(self,mol):
         feats = []
         bond_types = [Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE,
@@ -59,22 +59,27 @@ class SmilesGraphData(Dataset):
             # One bond between atom u and v corresponds to two edges (u, v) and (v, u)
             feats.extend([btype, btype])
         return {'type': torch.tensor(feats).reshape(-1, 1).float()}
-    def generate_graph(self):
+    def generate_graph(self,add_self_loop):
         for cid in self.cid_list:
-            mol = Chem.MolFromSmiles(self.smiles[cid])
-            self.graph_data[cid] = []
-            self.graph_data[cid].append(mol_to_bigraph(mol,add_self_loop=False,
-                                                                node_featurizer=CanonicalAtomFeaturizer(),
-                                                                edge_featurizer=self.featurize_bonds,
-                                                                canonical_atom_order=False,
-                                                                explicit_hydrogens=False,
-                                                                num_virtual_nodes=0
-                                                                ))
-            hba = Chem.rdMolDescriptors.CalcNumHBA(mol)
-            hbd = Chem.rdMolDescriptors.CalcNumHBD(mol)
-            self.graph_data[cid].append(hba)
-            self.graph_data[cid].append(hbd)
-            self.graph_data[cid].append(min(hba,hbd))
+            try:
+                mol = Chem.MolFromSmiles(self.smiles[cid])
+                self.graph_data[cid] = []
+                self.graph_data[cid].append(mol_to_bigraph(mol,add_self_loop=add_self_loop,
+                                                                    node_featurizer=CanonicalAtomFeaturizer(),
+                                                                    # edge_featurizer=self.featurize_bonds,
+                                                                    edge_featurizer=None,
+                                                                    canonical_atom_order=False,
+                                                                    explicit_hydrogens=False,
+                                                                    num_virtual_nodes=0
+                                                                    ))
+                hba = Chem.rdMolDescriptors.CalcNumHBA(mol)
+                hbd = Chem.rdMolDescriptors.CalcNumHBD(mol)
+                self.graph_data[cid].append(hba)
+                self.graph_data[cid].append(hbd)
+                self.graph_data[cid].append(min(hba,hbd))
+            except:
+                self.graph_data.pop(cid)
+        self.cid_list=list(self.graph_data.keys())
 
     def __len__(self):
         return len(self.graph_data)
