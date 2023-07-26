@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-07-11 09:56:45
+LastEditTime: 2023-07-25 18:15:12
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -18,8 +18,8 @@ import DeepMuon
 from DeepMuon.tools.AirConfig import Config
 import DeepMuon.tools.AirFunc as AirFunc
 import DeepMuon.tools.AirLogger as AirLogger
-import DeepMuon.interpret.attribution as Attr
 from DeepMuon.tools.AirEnv import EnvINFO
+import DeepMuon.interpret.attribution as Attr
 
 import torch
 from torch import nn

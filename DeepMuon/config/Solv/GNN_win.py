@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 13:46:07
 LastEditors: airscker
-LastEditTime: 2023-07-14 12:19:38
+LastEditTime: 2023-07-18 12:55:30
 Description: NULLs
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -24,8 +24,8 @@ work_config = dict(work_dir='../Hailing-Muon/MINES/GNN002_3')
 checkpoint_config = dict(load_from='E:\OneDrive\OneDrive - USTC\Muon\Hailing-Muon\MINES\GNN002\Best_loss_epoch_177.pth', resume_from='', save_inter=100)
 
 loss_fn = dict(backbone='MSELoss')
-# evaluation = dict(metrics=['f1_score', 'confusion_matrix','every_class_accuracy', 'top_k_accuracy'],
-#                   sota_target=dict(mode='max', target='top_k_accuracy'))
+# evaluation = dict(metrics=['r2_score'],
+#                   sota_target=dict(mode='max', target='r2_score'))
 
 # optimizer = dict(backbone='AdamW', params=dict(lr=1e-5, weight_decay=0.1, betas=(0.9, 0.999)))
 optimizer = dict(backbone='SGD', params=dict(lr=1e-4, momentum=0.9, nesterov=False))

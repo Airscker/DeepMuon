@@ -91,13 +91,16 @@ class ValenceDatasetV2(Dataset):
         - annotation: the path of the annotation text file which contains the paths of data samples to be used to train/test the model.
     """
 
-    def __init__(self, annotation=""):
+    def __init__(self, annotation="",xy_label=True):
         super().__init__()
+        self.xy_label=xy_label
         with open(annotation, "rb") as f:
             self.dataset=pkl.load(f)
 
     def __getitem__(self, index):
         label, data = self.dataset[index]
+        if not self.xy_label:
+            data=data[1]
         data = torch.from_numpy(data).type(torch.FloatTensor)
         label = torch.Tensor([float(label)]).type(torch.FloatTensor)
         return data, label

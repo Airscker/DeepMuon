@@ -2,14 +2,14 @@
 Author: airscker
 Date: 2023-01-31 09:28:41
 LastEditors: airscker
-LastEditTime: 2023-03-29 11:53:25
+LastEditTime: 2023-07-18 12:54:18
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import numpy as np
 from sklearn.metrics import f1_score as f1
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score,r2_score
 
 def AUC(scores,label,pos_label=1):
     new_score=[]
