@@ -1,10 +1,15 @@
 GNU GENERAL PUBLIC LICENSE Version 3
 
 Project: DeepMuon
-Interdisciplinary Deep Learning Platform
-Author: Airscker/Yufeng Wang
-Contributors: Yufeng Wang, Shendong Su
-University of Science of Technology of China
+Description: Interdisciplinary Deep Learning Platform
+Author: Airscker(Yufeng Wang)
+Contributors: Yufeng Wang, Yu Zhang, Shendong Su
+Institutions:
+  University of Science of Technology of China
+  TsingHua University
+  Stony Brook University
+  University of Florida
+
 If you want to publish thesis using DeepMuon, please add bibliography:
 @misc{deepmuon,
   author       = {Yufeng Wang},

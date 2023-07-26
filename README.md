@@ -31,21 +31,21 @@ pip install -v -e ./ --user
 
 ## CopyRight
 
-> GNU AFFERO GENERAL PUBLIC LICENSE
+> ***GNU GENERAL PUBLIC LICENSE Version 3***
 >
-> Project: DeepMuon
+> **Project:** DeepMuon
+> **Description:** Interdisciplinary Deep Learning Platform
+> **Author:** Airscker(Yufeng Wang)
+> **Contributors:** Yufeng Wang, Yu Zhang, Shendong Su
+> **Institutions:**
 >
-> Interdisciplinary Deep Learning Platform
->
-> Author: Airscker/Yufeng Wang
->
-> Contributors: Yufeng Wang, Shendong Su
->
-> University of Science of Technology of China
+> > University of Science of Technology of China
+> > TsingHua University
+> > Stony Brook University
+> > University of Florida
 >
 > If you want to publish thesis using DeepMuon, please add bibliography:
->
-> ```tex
+> ```latex
 > @misc{deepmuon,
 >   author       = {Yufeng Wang},
 >   title        = {DeepMuon: Interdisciplinary deep-learning platform},
@@ -55,4 +55,5 @@ pip install -v -e ./ --user
 >   howpublished = {\url{https://airscker.github.io/DeepMuon}},
 > }
 > ```
+>
 > Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
