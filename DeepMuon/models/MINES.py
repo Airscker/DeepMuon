@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 14:36:30
 LastEditors: airscker
-LastEditTime: 2023-07-14 11:43:15
+LastEditTime: 2023-07-28 10:44:07
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -174,5 +174,44 @@ class SolvGNNV2(nn.Module):
             # add_feature=self.add_embed(add_feature)
             # gh_feature=torch.cat([node_mean,edge_mean],axis=1)
             # print(gh_feature.shape)
+            output=self.regression(node_mean)
+            return output.squeeze(-1)
+
+class GCR(nn.Module):
+    def __init__(self,dim=256,allow_zero_in_degree=True) -> None:
+        super().__init__()
+        self.gcn1=GraphConv(dim, dim,allow_zero_in_degree=allow_zero_in_degree)
+        self.gcn2=GraphConv(dim, dim,allow_zero_in_degree=allow_zero_in_degree)
+    def forward(self,graph:dgl.DGLGraph,node_feature:torch.Tensor):
+        with graph.local_scope():
+            output=self.gcn1(graph,node_feature)
+            output=self.gcn2(graph,F.relu(output))
+            # return node_feature+F.relu(output)
+            return F.relu(output)
+
+class SolvGNNV3(nn.Module):
+    def __init__(self, in_dim=74, hidden_dim=256, gcr_layers=5 ,n_classes=1,allow_zero_in_degree=True) -> None:
+        super().__init__()
+        self.gcn=GraphConv(in_dim, hidden_dim,allow_zero_in_degree=allow_zero_in_degree)
+        self.node_gcr=nn.ModuleList(
+            [GCR(dim=hidden_dim,allow_zero_in_degree=allow_zero_in_degree) for _ in range(gcr_layers)]
+        )
+        self.hidden_dims=[1024,512]
+        self.regression = nn.Sequential(
+            nn.Linear(hidden_dim, self.hidden_dims[0]),
+            nn.LeakyReLU(),
+            nn.Linear(self.hidden_dims[0],self.hidden_dims[1]),
+            nn.LeakyReLU(),
+            nn.Linear(self.hidden_dims[1],n_classes)
+        )
+    def forward(self,solvdata=None,empty_solvsys=None,device=None):
+        graph:dgl.DGLGraph=solvdata['graph'].to(device)
+        with graph.local_scope():
+            graph_ndata=graph.ndata['h'].float().to(device)
+            feature=self.gcn(graph,graph_ndata)
+            for i in range(len(self.node_gcr)):
+                feature=self.node_gcr[i](graph,feature)
+            graph.ndata['h']=feature
+            node_mean=dgl.mean_nodes(graph,'h')
             output=self.regression(node_mean)
             return output.squeeze(-1)

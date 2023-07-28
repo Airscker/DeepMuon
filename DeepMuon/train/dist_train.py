@@ -17,6 +17,7 @@ from typing import Union
 import DeepMuon
 from DeepMuon.tools.AirConfig import Config
 import DeepMuon.tools.AirFunc as AirFunc
+import DeepMuon.tools.AirVisual as AirVisual
 import DeepMuon.tools.AirLogger as AirLogger
 from DeepMuon.tools.AirEnv import EnvINFO
 import DeepMuon.interpret.attribution as Attr
@@ -332,7 +333,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
         for mode in json_log.keys():
             for para in json_log[mode].keys():
                 try:
-                    AirFunc.plot_curve(data=json_log[mode][para],title=f'{mode}_{para}',axis_label=['epoch','para'],data_label=[f'{para}'],save=os.path.join(curve_path,f'{mode}_{para}.jpg'),mod=None)
+                    AirVisual.plot_curve(data=json_log[mode][para],title=f'{mode}_{para}',axis_label=['epoch','para'],data_label=[f'{para}'],save=os.path.join(curve_path,f'{mode}_{para}.jpg'),mod=None)
                 except:
                     pass
     return 0

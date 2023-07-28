@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-07-26 18:55:28
 LastEditors: airscker
-LastEditTime: 2023-07-26 19:19:09
+LastEditTime: 2023-07-26 20:53:39
 Description: Visualization tools
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -13,14 +13,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import warnings
 
-def ShowDGLGraph(graph, nodeLabel: str, EdgeLabel: str, show=True, save_path: str = ''):
+def ShowDGLGraph(graph, nodeLabel: str = '', EdgeLabel: str = '', show: bool = True, save_path: str = '',figsize:tuple=(5,5)):
     """
     ## Visualizes a DGLGraph using networkx and matplotlib.
 
     ### Args:
         - graph (dgl.DGLGraph): The input DGLGraph object.
-        - nodeLabel (str): The attribute name for node labels.
-        - EdgeLabel (str): The attribute name for edge labels.
+        - nodeLabel (str): The attribute name for node labels, if no feature exists, just give it ''.
+        - EdgeLabel (str): The attribute name for edge labels, if no feature exists, just give it ''.
         - show (bool, optional): Whether to display the graph. Defaults to True.
         - save_path (str, optional): The path to save the graph image. Defaults to ''.
 
@@ -38,7 +38,7 @@ def ShowDGLGraph(graph, nodeLabel: str, EdgeLabel: str, show=True, save_path: st
         warnings.warn("Python module 'dgl' is not available, please install it to enable the visualization of graph data.")
         return 0
 
-    plt.figure(figsize=(8, 8))
+    plt.figure(figsize=figsize)
     networkx_graph = graph.to_networkx(node_attrs=nodeLabel.split(), edge_attrs=EdgeLabel.split())
     nodes_pos = networkx.spring_layout(networkx_graph)
     networkx.draw(networkx_graph, nodes_pos, edge_color="grey", node_size=500, with_labels=True)

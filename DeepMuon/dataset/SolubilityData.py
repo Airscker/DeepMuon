@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-18 13:58:39
 LastEditors: airscker
-LastEditTime: 2023-07-14 10:50:14
+LastEditTime: 2023-07-28 09:08:38
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -11,6 +11,8 @@ import pandas as pd
 from rdkit import Chem,DataStructs
 from rdkit.Chem.Draw import MolToFile
 from rdkit.Chem import AllChem
+import random
+import warnings
 import dgl
 import os
 
@@ -21,12 +23,17 @@ from .SmilesGraphUtils.atom_feat_encoding import CanonicalAtomFeaturizer
 from .SmilesGraphUtils.molecular_graph import mol_to_bigraph
 
 class SmilesGraphData(Dataset):
-    def __init__(self, information_file=None,solv_file='',ID_col='ID',info_keys=['CanonicalSMILES','Solubility_CO2'],start=None,end=None,add_self_loop=True) -> None:
+    def __init__(self, information_file=None,solv_file='',ID_col='ID',info_keys=['CanonicalSMILES','Solubility_CO2'],start=None,end=None,add_self_loop=False,featurize_edge=True,shuffle=True) -> None:
         super().__init__()
         if os.path.exists(information_file):
             self.info_list=pd.read_csv(information_file,index_col=ID_col)
         else:
             self.info_list=None
+        if add_self_loop and featurize_edge:
+            warnings.warn('Self looping is forbidden when edge featurizer is enabled. We will set self looping option as false.')
+            add_self_loop=False
+        self.shuffle=shuffle
+        self.featurize_edge=featurize_edge
         self.sol_list=pd.read_csv(solv_file,index_col=ID_col)
         self.smiles=self.sol_list[info_keys[0]].to_dict()
         self.solubility=self.sol_list[info_keys[1]].to_dict()
@@ -41,6 +48,7 @@ class SmilesGraphData(Dataset):
             self.info_cid_list=self.sol_cid_list
         self.cid_list=list(set(self.sol_cid_list)&set(self.info_cid_list))
         self.add_features={}
+        self.mol_data={}
         if self.info_list is not None:
             for cid in self.cid_list:
                 self.add_features[cid]=self.info_list.loc[cid].to_numpy().tolist()
@@ -55,19 +63,22 @@ class SmilesGraphData(Dataset):
         bond_types = [Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE,
                     Chem.rdchem.BondType.TRIPLE, Chem.rdchem.BondType.AROMATIC]
         for bond in mol.GetBonds():
-            btype = bond_types.index(bond.GetBondType())
+            btype = bond_types.index(bond.GetBondType())+1
             # One bond between atom u and v corresponds to two edges (u, v) and (v, u)
             feats.extend([btype, btype])
-        return {'type': torch.tensor(feats).reshape(-1, 1).float()}
+        return {'bond_type': torch.tensor(feats).reshape(-1, 1).float()}
     def generate_graph(self,add_self_loop):
+        if self.featurize_edge:
+            edge_featurizer=self.featurize_bonds
+        else:
+            edge_featurizer=None
         for cid in self.cid_list:
             try:
                 mol = Chem.MolFromSmiles(self.smiles[cid])
                 self.graph_data[cid] = []
                 self.graph_data[cid].append(mol_to_bigraph(mol,add_self_loop=add_self_loop,
                                                                     node_featurizer=CanonicalAtomFeaturizer(),
-                                                                    # edge_featurizer=self.featurize_bonds,
-                                                                    edge_featurizer=None,
+                                                                    edge_featurizer=edge_featurizer,
                                                                     canonical_atom_order=False,
                                                                     explicit_hydrogens=False,
                                                                     num_virtual_nodes=0
@@ -77,15 +88,19 @@ class SmilesGraphData(Dataset):
                 self.graph_data[cid].append(hba)
                 self.graph_data[cid].append(hbd)
                 self.graph_data[cid].append(min(hba,hbd))
+                self.mol_data[cid]=mol
             except:
                 self.graph_data.pop(cid)
         self.cid_list=list(self.graph_data.keys())
+        if self.shuffle:
+            random.shuffle(self.cid_list)
 
     def __len__(self):
         return len(self.graph_data)
     def __getitem__(self, index):
         sample={}
         cid=self.cid_list[index]
+        # sample['mol']=self.mol_data[cid]
         sample['graph']=self.graph_data[cid][0]
         sample['inter_hb']=self.graph_data[cid][3]
         # sample['be_salt']=self.be_salt[cid]

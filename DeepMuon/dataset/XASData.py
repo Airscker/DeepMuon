@@ -49,11 +49,12 @@ class ValenceDataset(Dataset):
         - annotation: the path of the annotation text file which contains the paths of data samples to be used to train/test the model.
     """
 
-    def __init__(self, annotation=""):
+    def __init__(self, annotation="",xy_label=False):
         super().__init__()
         with open(annotation, "r") as f:
             self.mp_list = f.readlines()
         self.dataset = []
+        self.xy_label=xy_label
         self.unpack_data()
 
     def unpack_data(self):
@@ -67,8 +68,12 @@ class ValenceDataset(Dataset):
                 element = sub_spec.split("-")[-2]
                 # if element == "Fe" and valences[element].is_integer() and sub_spec.endswith('K'):
                 if element == "Fe" and sub_spec.endswith('K'):
+                    if self.xy_label:
+                        spec=np.array(spectrum[sub_spec])
+                    else:
+                        spec=np.array(spectrum[sub_spec][1])
                     self.dataset.append(
-                        [np.array(spectrum[sub_spec][1]), int(valences[element])-0]
+                        [spec, int(valences[element])-0]
                     )
 
     def __getitem__(self, index):
@@ -101,6 +106,9 @@ class ValenceDatasetV2(Dataset):
         label, data = self.dataset[index]
         if not self.xy_label:
             data=data[1]
+        else:
+            data=np.array(data)
+            data[0]=data[0]/10000.0
         data = torch.from_numpy(data).type(torch.FloatTensor)
         label = torch.Tensor([float(label)]).type(torch.FloatTensor)
         return data, label
