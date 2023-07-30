@@ -1,3 +1,13 @@
+'''
+Author: airscker
+Date: 2023-06-08 15:08:59
+LastEditors: airscker
+LastEditTime: 2023-07-30 13:06:23
+Description: Comes from DGLlife open source package.
+
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
+'''
+
 # -*- coding: utf-8 -*-
 """
 Created on Sun May 30 15:15:19 2021
@@ -148,6 +158,56 @@ def atom_type_one_hot(atom, allowable_set=None, encode_unknown=False):
                          'Fe', 'As', 'Al', 'I', 'B', 'V', 'K', 'Tl', 'Yb', 'Sb', 'Sn',
                          'Ag', 'Pd', 'Co', 'Se', 'Ti', 'Zn', 'H', 'Li', 'Ge', 'Cu', 'Au',
                          'Ni', 'Cd', 'In', 'Mn', 'Zr', 'Cr', 'Pt', 'Hg', 'Pb']
+    return one_hot_encoding(atom.GetSymbol(), allowable_set, encode_unknown)
+
+def atom_type_one_hot_alltable(atom, allowable_set=None, encode_unknown=False):
+    """One hot encoding for the type of an atom.
+
+    Parameters
+    ----------
+    atom : rdkit.Chem.rdchem.Atom
+        RDKit atom instance.
+    allowable_set : list of str
+        Atom types to consider. Default: ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
+                                        'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca',
+                                        'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn',
+                                        'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr',
+                                        'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn',
+                                        'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd',
+                                        'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb',
+                                        'Lu', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg',
+                                        'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th',
+                                        'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm',
+                                        'Md', 'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds',
+                                        'Rg', 'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
+    encode_unknown : bool
+        If True, map inputs not in the allowable set to the
+        additional last element. (Default: False)
+
+    Returns
+    -------
+    list
+        List of boolean values where at most one value is True.
+
+    See Also
+    --------
+    one_hot_encoding
+    atomic_number
+    atomic_number_one_hot
+    """
+    if allowable_set is None:
+        allowable_set = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
+                         'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca',
+                         'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn',
+                         'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr',
+                         'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn',
+                         'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd',
+                         'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb',
+                         'Lu', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg',
+                         'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th',
+                         'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm',
+                         'Md', 'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds',
+                         'Rg', 'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
     return one_hot_encoding(atom.GetSymbol(), allowable_set, encode_unknown)
 
 
@@ -1006,6 +1066,8 @@ class CanonicalAtomFeaturizer(BaseAtomFeaturizer):
     ----------
     atom_data_field : str
         Name for storing atom features in DGLGraphs, default to 'h'.
+    all_table : bool
+        Wheter to encode the atom types with whole period table.
 
     Examples
     --------
@@ -1043,10 +1105,10 @@ class CanonicalAtomFeaturizer(BaseAtomFeaturizer):
     PretrainAtomFeaturizer
     AttentiveFPAtomFeaturizer
     """
-    def __init__(self, atom_data_field='h'):
+    def __init__(self, atom_data_field='h',alltable=False):
         super(CanonicalAtomFeaturizer, self).__init__(
             featurizer_funcs={atom_data_field: ConcatFeaturizer(
-                [atom_type_one_hot,
+                [atom_type_one_hot if not alltable else atom_type_one_hot_alltable,
                  atom_degree_one_hot,
                  atom_implicit_valence_one_hot,
                  atom_formal_charge,

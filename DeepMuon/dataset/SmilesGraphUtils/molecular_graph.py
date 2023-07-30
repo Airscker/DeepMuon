@@ -5,6 +5,14 @@ Created on Sun May 30 14:49:56 2021
 @author: sqin34
 """
 
+# -*- coding: utf-8 -*-
+#
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Get molecular graphs.
+# pylint: disable= no-member, arguments-differ, invalid-name
+
 from functools import partial
 import torch
 import dgl
