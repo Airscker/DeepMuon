@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-07-30 11:20:22
+LastEditTime: 2023-08-17 22:29:42
 Description: Import configuration file and prepare configurations for experiments
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -96,7 +96,7 @@ class Config:
     >>> optimize_config = dict(fp16=False, grad_acc=8, grad_clip=0.01, double_precision=False)
     """
 
-    def __init__(self, configpath: str=None, config_module:importlib.types.ModuleType=None):
+    def __init__(self, configpath: str=None, config_module=None):
         self.paras = {'model': None,
                       'train_dataset': None,
                       'test_dataset': None,

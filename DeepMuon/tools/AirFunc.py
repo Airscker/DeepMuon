@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-07-30 11:33:59
+LastEditTime: 2023-08-17 22:29:54
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -191,7 +191,7 @@ def load_json_log(log_file: str, start_from: int = 0,unique_key:int=None):
         log_info[mod]=new_info
     return log_info
 
-def import_module(module_path: str) -> importlib.types.ModuleType:
+def import_module(module_path: str):
     '''
     ## Import python module according to the file path
 
