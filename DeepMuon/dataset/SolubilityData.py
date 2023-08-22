@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-18 13:58:39
 LastEditors: airscker
-LastEditTime: 2023-07-28 09:08:38
+LastEditTime: 2023-08-22 15:01:24
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -23,8 +23,19 @@ from .SmilesGraphUtils.atom_feat_encoding import CanonicalAtomFeaturizer
 from .SmilesGraphUtils.molecular_graph import mol_to_bigraph
 
 class SmilesGraphData(Dataset):
-    def __init__(self, information_file=None,solv_file='',ID_col='ID',info_keys=['CanonicalSMILES','Solubility_CO2'],start=None,end=None,add_self_loop=False,featurize_edge=True,shuffle=True) -> None:
+    def __init__(self,
+                information_file=None,
+                solv_file='',
+                ID_col='ID',
+                info_keys=['CanonicalSMILES','Solubility_CO2'],
+                start=None,
+                end=None,
+                add_self_loop=False,
+                featurize_edge=True,
+                shuffle=True,
+                debug=False) -> None:
         super().__init__()
+        self.debug=debug
         if os.path.exists(information_file):
             self.info_list=pd.read_csv(information_file,index_col=ID_col)
         else:
@@ -100,7 +111,8 @@ class SmilesGraphData(Dataset):
     def __getitem__(self, index):
         sample={}
         cid=self.cid_list[index]
-        # sample['mol']=self.mol_data[cid]
+        if self.debug:
+            sample['mol']=self.mol_data[cid]
         sample['graph']=self.graph_data[cid][0]
         sample['inter_hb']=self.graph_data[cid][3]
         # sample['be_salt']=self.be_salt[cid]
