@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-18 13:58:39
 LastEditors: airscker
-LastEditTime: 2023-08-22 15:01:24
+LastEditTime: 2023-08-23 15:42:50
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -21,6 +21,35 @@ from torch.utils.data import Dataset
 
 from .SmilesGraphUtils.atom_feat_encoding import CanonicalAtomFeaturizer
 from .SmilesGraphUtils.molecular_graph import mol_to_bigraph
+
+def CombineGraph(graphs:list[dgl.DGLGraph],add_global:bool=True,bi_direction:bool=True):
+    '''
+    ## Combine a list of graphs into a single graph
+
+    ### Args:
+    - graphs: list of graphs, make sure every node/edge in the graph has the same feature dimension, 
+        also, the node/edge feature dimension should be the same as the other graphs in the list.
+    - add_global: whether to add a global node to the graph, default is `True`. 
+        If enabled, every node of every subgraph in the list will be connected to the global node.
+    - bi_direction: whether to add bi-directional edges between the global node (if exists) and every other node, default is `True`. 
+        If enabled, the global node will be connected to every other node in the graph, and vice versa.
+        If disabled, the every node in the graph will be connected to the global node but not vice versa.
+    '''
+    combined_graph = dgl.batch(graphs)
+    if add_global:
+        combined_graph=dgl.add_nodes(combined_graph,1)
+        num_node=combined_graph.num_nodes()-1
+        start=[]
+        end=[]
+        for i in range(num_node):
+            start.append(i)
+            end.append(num_node)
+        if bi_direction:
+            for i in range(num_node):
+                start.append(num_node)
+                end.append(i)
+        combined_graph=dgl.add_edges(combined_graph,torch.LongTensor(start),torch.LongTensor(end))
+    return combined_graph
 
 class SmilesGraphData(Dataset):
     def __init__(self,
