@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-17 18:11:14
 LastEditors: airscker
-LastEditTime: 2023-02-27 13:35:53
+LastEditTime: 2023-08-23 13:28:51
 Description: Datasets Built for Hailing TRIDENT Project
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -11,13 +11,13 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 import numpy as np
 from tqdm import tqdm
 import pickle as pkl
-import numba
+# import numba
 
 import torch
 from torch.utils.data import Dataset
 
 
-@numba.jit
+# @numba.jit
 def pattern_data_1T(event, shape=(10, 10, 40, 3)):
     """
     ## Convert the Original Hailing Data into Pattern Image with specified shape

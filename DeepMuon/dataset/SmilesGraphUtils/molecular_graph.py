@@ -149,8 +149,8 @@ def construct_bigraph_from_mol(mol, add_self_loop=False):
     g : DGLGraph
         Empty bigraph topology of the molecule
     """
-#    g = dgl.graph(([], []), idtype=torch.int32)
-    g = dgl.DGLGraph()
+    g = dgl.graph(([], []), idtype=torch.int64)
+    # g = dgl.DGLGraph()
     # Add nodes
     num_atoms = mol.GetNumAtoms()
     g.add_nodes(num_atoms)
@@ -408,8 +408,8 @@ def construct_complete_graph_from_mol(mol, add_self_loop=False):
             if i != j or add_self_loop:
                 src.append(i)
                 dst.append(j)
-#    g = dgl.graph((torch.IntTensor(src), torch.IntTensor(dst)), idtype=torch.int32)
-    g = dgl.DGLGraph((torch.LongTensor(src), torch.LongTensor(dst)))
+    g = dgl.graph((torch.LongTensor(src), torch.LongTensor(dst)))
+    # g = dgl.DGLGraph((torch.LongTensor(src), torch.LongTensor(dst)))
 
     return g
 
@@ -863,8 +863,8 @@ def mol_to_nearest_neighbor_graph(mol,
                                             max_num_neighbors=max_num_neighbors,
                                             p_distance=p_distance,
                                             self_loops=add_self_loop)
-#    g = dgl.graph(([], []), idtype=torch.int32)
-    g = dgl.DGLGraph()
+    g = dgl.graph(([], []), idtype=torch.int64)
+    # g = dgl.DGLGraph()
     # Add nodes first since some nodes may be completely isolated
     g.add_nodes(num_atoms)
 
