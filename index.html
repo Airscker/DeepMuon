@@ -63,9 +63,9 @@
         <div class="box-item">
             <i class="ti-hand-stop"></i>
             <a href="https://github.com/Airscker/DeepMuon" target="_blank">
-                <h6 class="box-title">1.23.51 Public Alpha Edtion Released</h6>
+                <h6 class="box-title">1.23.52 Public Alpha Edtion Released</h6>
             </a>
-            <p>Prediction Pipeline system implemented!</p>
+            <p>Next-Generation AI For Science</p>
         </div>
         <!-- <div class="box-item">
             <i class="ti-search"></i>
@@ -107,7 +107,7 @@
                                     <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;font-weight:bold;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal" rowspan="5"><br><br><br><br>Latest Recommanded</td>
                                 </tr>
                                 <tr>
-                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">numba</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">prettytable</td>
                                     <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">ptflops</td>
                                     <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">torchinfo</td>
                                     <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">captum</td>
@@ -129,29 +129,32 @@
                                 </tr>
                                 <tr>
                                     <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">parso</td>
-                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal"></td>
-                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal"></td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">opencv-python</td>
+                                    <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal">rdkit</td>
                                     <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal"></td>
                                     <td style="border-color:inherit;border-style:solid;border-width:1px;font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;text-align:center;vertical-align:top;word-break:normal"></td>
                                 </tr>
                             </tbody>
                         </table>
                     </center>
-                    <p><br>Most of the prerequisites listed above will be installed automatically when installing DeepMuon, however, you need to first make sure PyTorch >= 1.12(CUDA edition) was installed properly. The lowest tolerable edition of PyTorch
-                        is 1.10.0., otherwise DeepMuon may occur fatal mistakes. We strongly suggest you install <b>torchvision</b> and <b>torchaudio</b> at the same time. What's more, you need to install <b>nni </b>manually, which is not available yet
-                        on MacOSX, as a result, the <b>Neural network hyperparameter searching (NNHS for short)</b> function will be disabled.</p>
+                    <p><br>Most of the prerequisites listed above will be installed automatically when installing DeepMuon, however, you need to first make sure <b><a href="https://pytorch.org/">PyTorch</a></b> >= 1.12(CUDA edition) was installed properly
+                        before you install DeepMuon. The lowest tolerable edition of PyTorch is 1.10.0., otherwise DeepMuon may occur fatal mistakes.</p>
+                    <p>We strongly suggest you install <b>torchvision</b> and <b>torchaudio</b> at the same time. also you need to install <b><a href="https://github.com/microsoft/nni/">nni</a></b> manually, which is not available yet on MacOSX, as a result,
+                        the <b>Neural network hyperparameter searching (NNHS for short)</b> function will be disabled without nni. What's more, the <b><a href="https://www.dgl.ai/">dgl</a></b> module is needed if you want to use the graph neural network
+                        provided by DeepMuon.
+                    </p>
                     <p>As for the python environment, the lowest edition of python should be <b>python 3.6.0</b></p>
-                    <p>DeepMuon support Windows/MacOSX/Linux platforms, we <b>recommend</b> you to install DeepMuon from source to get the best customize experience.</p>
-                    <p>DeepMuon is constructed based on latest (>=1.12) <a href="https://pytorch.org/ ">PyTorch</a>, and the supported edition should larger than 1.10. Because not all users' platform support latest pytorch, so the feature <b>Fully Sharded Data
+                    <p>DeepMuon support Windows/MacOSX/Linux platforms, we <b>recommend</b> you to install DeepMuon from source to get the best customizable experience.</p>
+                    <p>DeepMuon is constructed based on latest (>=1.12) PyTorch, and the supported edition should larger than 1.10. Because not all users' platform support latest pytorch, so the feature <b>Fully Sharded Data
                         Parallel (FSDP)</b> would be disabled if torch's edition is low (such as torch=1.10.0).</p>
-                    <h6 class="section-subtitle mb-2 ">From Source:</h6>
+                    <h6 class="section-subtitle mb-2 ">From source step by step:</h6>
                     <pre><code>git clone git@github.com:Airscker/DeepMuon.github<br>cd DeepMuon<br>pip install -v -e ./</code></pre>
-                    <h6 class="section-subtitle mb-2 ">From PyPI:</h6>
+                    <!-- <h6 class="section-subtitle mb-2 ">From PyPI:</h6>
                     <ul class="indent_list ">
                         <li>Via pip:<pre><code>pip install DeepMuon</code></pre></li>
                         <li>Via conda:<pre><code>conda install DeepMuon</code></pre></li>
                     </ul>
-                    <p>If you have occured any wrong during the installation of DeepMuon, we recommend you to install from source.</p>
+                    <p>If you have occured any wrong during the installation of DeepMuon, we recommend you to install it from source.</p> -->
                 </div>
             </div>
         </div>

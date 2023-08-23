@@ -12,6 +12,7 @@ The tutorials are classified into different blocks:
 - `Dataset` based on PyTorch
   - [What to do when adding a customized `Dataset` into DeepMuon?](dataset/dataset.md)
   - [How to add augmentation?](dataset/augment.md)
+  - [Accelerating large dataset loading speed via `MultiThreadLoader`](dataset/accelerate.md)
 - Which model fits best?
   - [From zero to infinity](models/zero_inf.md)
   - [Intrinsically supported models](models/intrinsic_models.md)

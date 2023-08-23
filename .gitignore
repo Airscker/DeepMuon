@@ -9,4 +9,11 @@ DeepMuon.egg-info
 DeepMuon/.DS_Store
 .DS_Store
 DeepMuon/model_test.py
-useless
+DeepMuon/__pycache__/
+DeepMuon/dataset/__pycache__/
+DeepMuon/dataset/SmilesGraphUtils/__pycache__/
+DeepMuon/interpret/__pycache__/
+DeepMuon/loss_fn/__pycache__/
+DeepMuon/models/__pycache__/
+DeepMuon/tools/__pycache__/
+DeepMuon/train/__pycache__/
