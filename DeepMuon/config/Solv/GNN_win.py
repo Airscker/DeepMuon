@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 13:46:07
 LastEditors: airscker
-LastEditTime: 2023-08-23 10:59:32
+LastEditTime: 2023-08-26 11:11:58
 Description: NULLs
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -14,13 +14,13 @@ model = dict(backbone='SolvGNNV3',pipeline='solvgnn',params=dict(in_dim=74, hidd
 train_dataset = dict(backbone='SmilesGraphData',collate_fn='collate_solubility',
                      params=dict(information_file='',
                                  solv_file='/data/yufeng/MINES/data/CO2_organic/solubility_co2.csv',
-                                 end=2500,ID_col='ID',info_keys=['CanonicalSMILES','Solubility_CO2'],add_self_loop=True,featurize_edge=False,shuffle=False))
+                                 end=2500,ID_col='ID',info_keys=['CanonicalSMILES','Solubility_CO2'],add_self_loop=False,featurize_edge=True,shuffle=False))
 test_dataset = dict(backbone='SmilesGraphData',collate_fn='collate_solubility',
                     params=dict(information_file='',
                                  solv_file='/data/yufeng/MINES/data/CO2_organic/solubility_co2.csv',
-                                 start=2500,ID_col='ID',info_keys=['CanonicalSMILES','Solubility_CO2'],add_self_loop=True,featurize_edge=False,shuffle=False))
+                                 start=2500,ID_col='ID',info_keys=['CanonicalSMILES','Solubility_CO2'],add_self_loop=False,featurize_edge=True,shuffle=False))
 
-work_config = dict(work_dir='/home/yufeng/workdir/MINES/CO2_SOLV/GNNV3007')
+work_config = dict(work_dir='/home/yufeng/workdir/MINES/CO2_SOLV/GNNV3008')
 
 checkpoint_config = dict(load_from='', resume_from='', save_inter=200)
 

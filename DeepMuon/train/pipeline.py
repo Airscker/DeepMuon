@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 14:35:50
 LastEditors: airscker
-LastEditTime: 2023-08-23 12:37:53
+LastEditTime: 2023-08-26 12:37:56
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -113,7 +113,8 @@ class solvgnn(Pipeline):
         # solvsys.add_edges(torch.arange(batch_size),torch.arange(batch_size))
         return solvsys
     def predict(self, input, label, device, precision):
-        empty_solvsys=self.generate_solvsys(len(input['inter_hb'])).to(device)
+        # empty_solvsys=self.generate_solvsys(len(input['inter_hb'])).to(device)
+        empty_solvsys=None
         output=self.model(input,empty_solvsys,device)
         label=label.to(device)
         return output,label

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 14:36:30
 LastEditors: airscker
-LastEditTime: 2023-07-28 10:44:07
+LastEditTime: 2023-08-26 12:40:57
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -190,7 +190,7 @@ class GCR(nn.Module):
             return F.relu(output)
 
 class SolvGNNV3(nn.Module):
-    def __init__(self, in_dim=74, hidden_dim=256, gcr_layers=5 ,n_classes=1,allow_zero_in_degree=True) -> None:
+    def __init__(self, in_dim=74, hidden_dim=256, add_dim=0, gcr_layers=5 ,n_classes=1, allow_zero_in_degree=True) -> None:
         super().__init__()
         self.gcn=GraphConv(in_dim, hidden_dim,allow_zero_in_degree=allow_zero_in_degree)
         self.node_gcr=nn.ModuleList(
@@ -198,7 +198,7 @@ class SolvGNNV3(nn.Module):
         )
         self.hidden_dims=[1024,512]
         self.regression = nn.Sequential(
-            nn.Linear(hidden_dim, self.hidden_dims[0]),
+            nn.Linear(hidden_dim+add_dim, self.hidden_dims[0]),
             nn.LeakyReLU(),
             nn.Linear(self.hidden_dims[0],self.hidden_dims[1]),
             nn.LeakyReLU(),
@@ -206,6 +206,7 @@ class SolvGNNV3(nn.Module):
         )
     def forward(self,solvdata=None,empty_solvsys=None,device=None):
         graph:dgl.DGLGraph=solvdata['graph'].to(device)
+        add_features=solvdata['add_features'].float().to(device)
         with graph.local_scope():
             graph_ndata=graph.ndata['h'].float().to(device)
             feature=self.gcn(graph,graph_ndata)
@@ -213,5 +214,6 @@ class SolvGNNV3(nn.Module):
                 feature=self.node_gcr[i](graph,feature)
             graph.ndata['h']=feature
             node_mean=dgl.mean_nodes(graph,'h')
+            output=torch.cat([node_mean,add_features],axis=1)
             output=self.regression(node_mean)
             return output.squeeze(-1)

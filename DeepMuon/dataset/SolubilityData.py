@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-18 13:58:39
 LastEditors: airscker
-LastEditTime: 2023-08-23 15:42:50
+LastEditTime: 2023-08-26 12:34:06
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -22,7 +22,7 @@ from torch.utils.data import Dataset
 from .SmilesGraphUtils.atom_feat_encoding import CanonicalAtomFeaturizer
 from .SmilesGraphUtils.molecular_graph import mol_to_bigraph
 
-def CombineGraph(graphs:list[dgl.DGLGraph],add_global:bool=True,bi_direction:bool=True):
+def CombineGraph(graphs:list[dgl.DGLGraph],add_global:bool=True,bi_direction:bool=True,add_self_loop:bool=True):
     '''
     ## Combine a list of graphs into a single graph
 
@@ -34,6 +34,7 @@ def CombineGraph(graphs:list[dgl.DGLGraph],add_global:bool=True,bi_direction:boo
     - bi_direction: whether to add bi-directional edges between the global node (if exists) and every other node, default is `True`. 
         If enabled, the global node will be connected to every other node in the graph, and vice versa.
         If disabled, the every node in the graph will be connected to the global node but not vice versa.
+    - add_self_loop: whether to add self-loop to global node in the graph, default is `True` (Self loops of subgraph nodes are not added here).
     '''
     combined_graph = dgl.batch(graphs)
     if add_global:
@@ -48,6 +49,9 @@ def CombineGraph(graphs:list[dgl.DGLGraph],add_global:bool=True,bi_direction:boo
             for i in range(num_node):
                 start.append(num_node)
                 end.append(i)
+        if add_self_loop:
+            start.append(num_node)
+            end.append(num_node)
         combined_graph=dgl.add_edges(combined_graph,torch.LongTensor(start),torch.LongTensor(end))
     return combined_graph
 
@@ -150,18 +154,102 @@ class SmilesGraphData(Dataset):
         if self.info_list is not None:
             sample['add_features']=self.add_features[cid]
         return sample,self.solubility[cid]
-    
+
+class MultiSmilesGraphData(Dataset):
+    def __init__(self,
+                smiles_info='',
+                smiles_info_col=['Abbreviation','Smiles'],
+                sample_info='',
+                start:int=None,
+                end:int=None,
+                add_self_loop=True,
+                featurize_edge=False,
+                shuffle=True) -> None:
+        super().__init__()
+        self.load_smiles_dict(smiles_info,smiles_info_col)
+        self.load_sample_dict(sample_info,start,end)
+        if add_self_loop and featurize_edge:
+            warnings.warn('Self looping is forbidden when edge featurizer is enabled. We will set self looping option as false.')
+            add_self_loop=False
+        self.add_self_loop=add_self_loop
+        self.shuffle=shuffle
+        self.featurize_edge=featurize_edge
+    def load_smiles_dict(self,smiles_info,smiles_info_col):
+        self.smiles=pd.read_csv(smiles_info,index_col=smiles_info_col[0]).to_dict()[smiles_info_col[1]]
+    def load_sample_dict(self,sample_info,start,end):
+        sample=pd.read_csv(sample_info)
+        if start is None:
+            start=0
+        if end is None:
+            end=len(sample)
+        sample=sample[start:end]
+        cation=sample['cation'].tolist()
+        anion=sample['anion'].tolist()
+        solubility=sample['x_CO2'].tolist()
+        temperature=sample['T (K)'].tolist()
+        pressure=sample['P (bar)'].tolist()
+        self.dataset=[]
+        for i in range(len(cation)):
+            cation=self.generate_graph(cation[i])
+            anion=self.generate_graph(anion[i])
+            if cation is None or anion is None:
+                continue
+            else:
+                combined_graph=CombineGraph([cation['graph'],anion['graph']],add_global=True,bi_direction=True,add_self_loop=self.add_self_loop)
+                self.dataset.append([combined_graph,temperature[i],pressure[i],solubility[i]])
+    def featurize_bonds(self,mol):
+        feats = []
+        bond_types = [Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE,
+                    Chem.rdchem.BondType.TRIPLE, Chem.rdchem.BondType.AROMATIC]
+        for bond in mol.GetBonds():
+            btype = bond_types.index(bond.GetBondType())+1
+            # One bond between atom u and v corresponds to two edges (u, v) and (v, u)
+            feats.extend([btype, btype])
+        return {'bond_type': torch.tensor(feats).reshape(-1, 1).float()}
+    def generate_graph(self,smiles):
+        if self.featurize_edge:
+            edge_featurizer=self.featurize_bonds
+        else:
+            edge_featurizer=None
+        graph_data={}
+        try:
+            mol = Chem.MolFromSmiles(smiles)
+            graph_data['graph']=mol_to_bigraph(mol=mol,
+                                           add_self_loop=self.add_self_loop,
+                                           node_featurizer=CanonicalAtomFeaturizer(),
+                                           edge_featurizer=edge_featurizer,
+                                           canonical_atom_order=False,
+                                           explicit_hydrogens=False,
+                                           num_virtual_nodes=0)
+            # Hydrogne bond acceptor and donor
+            hba = Chem.rdMolDescriptors.CalcNumHBA(mol)
+            hbd = Chem.rdMolDescriptors.CalcNumHBD(mol)
+            graph_data['hydrogen_bond']=[hba,hbd,min(hba,hbd)]
+            graph_data['mol']=mol
+        except:
+            return None
+        return graph_data
+    def __len__(self):
+        return len(self.dataset)
+    def __getitem__(self, index):
+        sample={}
+        sample['graph']=self.dataset[index][0]
+        # sample['be_salt']=self.be_salt[cid]
+        # sample['be_ps']=self.be_ps[cid]
+        # sample['ip']=self.ip[cid]
+        sample['add_features']=self.dataset[index][1:3]
+        return sample,self.dataset[index][3]
+
 def collate_solubility(batch):
     keys = list(batch[0][0].keys())[1:]
     samples=[]
-    solubilities=[]
+    labels=[]
     for info in batch:
         samples.append(info[0].values())
-        solubilities.append(info[1])
+        labels.append(info[1])
     samples = list(map(list,zip(*samples)))
     batched_sample = {}
     batched_sample['graph'] = dgl.batch(samples[0])
     for i,key in enumerate(keys):        
         batched_sample[key] = torch.tensor(samples[i+1])
-        batched_sample[key] = torch.tensor(samples[i+1])
-    return batched_sample,torch.Tensor(solubilities)
+    return batched_sample,torch.Tensor(labels)
