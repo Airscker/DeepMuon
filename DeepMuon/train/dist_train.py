@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-07-25 18:15:12
+LastEditTime: 2023-08-26 13:32:52
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -324,7 +324,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                     end_exp=False
                 nnhs_report(search=search,sota_target=sota_target,eva_metrics=[tr_eva_metrics,ts_eva_metrics],modes=['tr_eval','ts_eval'],end_exp=end_exp)
     if local_rank==0:
-        print('Ploting training information...')
+        print('Plotting training information...')
         json_log=AirFunc.load_json_log(logger.jsonfile)
         if json_log=={}:
             return 0

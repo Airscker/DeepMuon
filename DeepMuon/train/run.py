@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-07 21:35:54
 LastEditors: airscker
-LastEditTime: 2023-05-11 10:48:18
+LastEditTime: 2023-08-26 13:50:49
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -148,12 +148,12 @@ def main():
     global NNHS_enabled
     global pkg_path
     parser = argparse.ArgumentParser()
-    parser.add_argument('-g', '--gpus', nargs='+', default=0, type=int)
-    parser.add_argument('-p', '--port', default=22911, type=int)
-    parser.add_argument('-c', '--config', default='', type=str)
+    parser.add_argument('-g', '--gpus', nargs='+', default=0, type=int,help='GPU ID(s) to use, e.g. 0 1 2 3')
+    parser.add_argument('-p', '--port', default=22911, type=int,help='Port number for multi-process training, e.g. 22911')
+    parser.add_argument('-c', '--config', default='', type=str,help='Configuration file path, e.g. ./config.py')
     # parser.add_argument('-tr', '--train', default='dist_train.py', type=str)
-    parser.add_argument('-ts', '--test', default='', type=str)
-    parser.add_argument('-sr', '--search', action='store_true')
+    parser.add_argument('-ts', '--test', default='', type=str,help='If the path of tested checkpoint given, then test mode will be activated, e.g. ./checkpoint.pth')
+    parser.add_argument('-sr', '--search', action='store_true',help='If this flag is set, then neural network hyperparameter searching will be activated.')
     args = parser.parse_args()
     '''Set NNHS Configuration'''
     exp: NNHSearch = NNHSearch(args.config, args.search)

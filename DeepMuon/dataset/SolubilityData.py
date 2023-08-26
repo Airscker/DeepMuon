@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-18 13:58:39
 LastEditors: airscker
-LastEditTime: 2023-08-26 13:03:13
+LastEditTime: 2023-08-26 14:43:48
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -162,6 +162,7 @@ class MultiSmilesGraphData(Dataset):
                 sample_info='',
                 start:int=None,
                 end:int=None,
+                mode='train',
                 add_self_loop=True,
                 featurize_edge=False,
                 shuffle=True) -> None:
@@ -172,6 +173,7 @@ class MultiSmilesGraphData(Dataset):
         self.add_self_loop=add_self_loop
         self.shuffle=shuffle
         self.featurize_edge=featurize_edge
+        self.mode=mode
         self.load_smiles_dict(smiles_info,smiles_info_col)
         self.load_sample_dict(sample_info,start,end)
         
@@ -179,25 +181,41 @@ class MultiSmilesGraphData(Dataset):
         self.smiles=pd.read_csv(smiles_info,index_col=smiles_info_col[0]).to_dict()[smiles_info_col[1]]
     def load_sample_dict(self,sample_info,start,end):
         sample=pd.read_csv(sample_info)
-        if start is None:
-            start=0
-        if end is None:
-            end=len(sample)
-        sample=sample[start:end]
+        # if start is None:
+        #     start=0
+        # if end is None:
+        #     end=len(sample)
+        # sample=sample[start:end]
+        composition=sample['IL'].tolist()
         cation=sample['cation'].tolist()
         anion=sample['anion'].tolist()
         solubility=sample['x_CO2'].tolist()
         temperature=sample['T (K)'].tolist()
         pressure=sample['P (bar)'].tolist()
-        self.dataset=[]
-        for i in range(len(cation)):
-            cation_graph=self.generate_graph(self.smiles[cation[i]])
-            anion_graph=self.generate_graph(self.smiles[anion[i]])
-            if cation_graph is None or anion_graph is None:
-                continue
+        all_data=list(zip(composition,cation,anion,temperature,pressure,solubility))
+        comp_groups={}
+        for i in range(len(all_data)):
+            if all_data[i][0] not in comp_groups.keys():
+                comp_groups[all_data[i][0]]=[all_data[i][1:]]
             else:
-                combined_graph=CombineGraph([cation_graph['graph'],anion_graph['graph']],add_global=True,bi_direction=True,add_self_loop=self.add_self_loop)
-                self.dataset.append([combined_graph,temperature[i],pressure[i],solubility[i]])
+                comp_groups[all_data[i][0]].append(all_data[i][1:])
+        self.dataset=[]
+        for comp in comp_groups.keys():
+            sub_group=comp_groups[comp]
+            if self.mode=='train':
+                sub_group=sub_group[:int(len(sub_group)*0.8)]
+            else:
+                sub_group=sub_group[int(len(sub_group)*0.8):]
+            for i in range(len(sub_group)):
+                cation_graph=self.generate_graph(self.smiles[sub_group[i][0]])
+                anion_graph=self.generate_graph(self.smiles[sub_group[i][1]])
+                if cation_graph is None or anion_graph is None:
+                    continue
+                else:
+                    combined_graph=CombineGraph([cation_graph['graph'],anion_graph['graph']],add_global=True,bi_direction=True,add_self_loop=self.add_self_loop)
+                    self.dataset.append([combined_graph,sub_group[i][2],sub_group[i][3],sub_group[i][4]])
+        if self.shuffle:
+            random.shuffle(self.dataset)
     def featurize_bonds(self,mol):
         feats = []
         bond_types = [Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE,
