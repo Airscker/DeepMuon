@@ -2,33 +2,43 @@
 Author: airscker
 Date: 2023-05-23 13:46:07
 LastEditors: airscker
-LastEditTime: 2023-07-28 11:04:19
+LastEditTime: 2023-08-26 12:50:08
 Description: NULLs
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 
-model = dict(backbone='SolvGNNV2',pipeline='solvgnn',params=dict(hidden_dim=512, edge_hidden_dim=512,add_dim=0))
-# model = dict(backbone='SolvGNNV3',pipeline='solvgnn',params=dict(in_dim=74, hidden_dim=256, gcr_layers=5 ,n_classes=1,allow_zero_in_degree=True))
+# model = dict(backbone='SolvGNNV2',pipeline='solvgnn',params=dict(hidden_dim=256, edge_hidden_dim=512,add_dim=0))
+model = dict(backbone='SolvGNNV3',pipeline='solvgnn',params=dict(in_dim=74, hidden_dim=1024, add_dim=2, gcr_layers=2 ,n_classes=1,allow_zero_in_degree=True))
 
-train_dataset = dict(backbone='SmilesGraphData',collate_fn='collate_solubility',
-                     params=dict(information_file='',
-                                 solv_file=r'E:\OneDrive\OneDrive - USTC\StonyBrook\Computational Materials\SolvGNN\MINES\data\CO2_organic\solubility_co2.csv',
-                                 end=2500,ID_col='ID',info_keys=['CanonicalSMILES','Solubility_CO2'],add_self_loop=True,featurize_edge=False,shuffle=True))
-test_dataset = dict(backbone='SmilesGraphData',collate_fn='collate_solubility',
-                    params=dict(information_file='',
-                                 solv_file=r'E:\OneDrive\OneDrive - USTC\StonyBrook\Computational Materials\SolvGNN\MINES\data\CO2_organic\solubility_co2.csv',
-                                 start=2500,ID_col='ID',info_keys=['CanonicalSMILES','Solubility_CO2'],add_self_loop=True,featurize_edge=False,shuffle=True))
+train_dataset = dict(backbone='MultiSmilesGraphData',collate_fn='collate_solubility',
+                     params=dict(smiles_info='/data/yufeng/MINES/MultiGraph/smiles.csv',
+                                 smiles_info_col=['Abbreviation','Smiles'],
+                                 sample_info='/data/yufeng/MINES/MultiGraph/whole.csv',
+                                 start=0,
+                                 end=8000,
+                                 add_self_loop=False,
+                                 featurize_edge=False,
+                                 shuffle=False))
+test_dataset = dict(backbone='MultiSmilesGraphData',collate_fn='collate_solubility',
+                    params=dict(smiles_info='/data/yufeng/MINES/MultiGraph/smiles.csv',
+                                 smiles_info_col=['Abbreviation','Smiles'],
+                                 sample_info='/data/yufeng/MINES/MultiGraph/whole.csv',
+                                 start=8000,
+                                 end=None,
+                                 add_self_loop=False,
+                                 featurize_edge=False,
+                                 shuffle=False))
 
-work_config = dict(work_dir='../Hailing-Muon/MINES/GNNV2002_2_1')
+work_config = dict(work_dir='/home/yufeng/workdir/MINES/CO2_SOLV/GNNV3M001')
 
-checkpoint_config = dict(load_from=r'E:\OneDrive\OneDrive - USTC\Muon\Hailing-Muon\MINES\GNNV2002_2\Best_loss_epoch_378.pth', resume_from='', save_inter=100)
+checkpoint_config = dict(load_from='', resume_from='', save_inter=200)
 
 loss_fn = dict(backbone='MSELoss')
-# evaluation = dict(metrics=['r2_score'],
-#                   sota_target=dict(mode='max', target='r2_score'))
+evaluation = dict(metrics=['r2_score'],
+                  sota_target=dict(mode='max', target='r2_score'))
 
-optimizer = dict(backbone='AdamW', params=dict(lr=1e-5, weight_decay=0.1, betas=(0.9, 0.999)))
+optimizer = dict(backbone='AdamW', params=dict(lr=1e-4, weight_decay=0.1, betas=(0.9, 0.999)))
 # optimizer = dict(backbone='SGD', params=dict(lr=1e-4, momentum=0.9, nesterov=True))
 
 # scheduler = dict(backbone='CosineAnnealingLR', params=dict(T_max=100, eta_min=1e-5))

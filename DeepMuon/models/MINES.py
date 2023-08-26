@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 14:36:30
 LastEditors: airscker
-LastEditTime: 2023-08-26 12:40:57
+LastEditTime: 2023-08-26 13:03:35
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -214,6 +214,6 @@ class SolvGNNV3(nn.Module):
                 feature=self.node_gcr[i](graph,feature)
             graph.ndata['h']=feature
             node_mean=dgl.mean_nodes(graph,'h')
-            output=torch.cat([node_mean,add_features],axis=1)
+            node_mean=torch.cat([node_mean,add_features],axis=1)
             output=self.regression(node_mean)
             return output.squeeze(-1)

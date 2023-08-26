@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-18 13:58:39
 LastEditors: airscker
-LastEditTime: 2023-08-26 12:34:06
+LastEditTime: 2023-08-26 13:03:13
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -166,14 +166,15 @@ class MultiSmilesGraphData(Dataset):
                 featurize_edge=False,
                 shuffle=True) -> None:
         super().__init__()
-        self.load_smiles_dict(smiles_info,smiles_info_col)
-        self.load_sample_dict(sample_info,start,end)
         if add_self_loop and featurize_edge:
             warnings.warn('Self looping is forbidden when edge featurizer is enabled. We will set self looping option as false.')
             add_self_loop=False
         self.add_self_loop=add_self_loop
         self.shuffle=shuffle
         self.featurize_edge=featurize_edge
+        self.load_smiles_dict(smiles_info,smiles_info_col)
+        self.load_sample_dict(sample_info,start,end)
+        
     def load_smiles_dict(self,smiles_info,smiles_info_col):
         self.smiles=pd.read_csv(smiles_info,index_col=smiles_info_col[0]).to_dict()[smiles_info_col[1]]
     def load_sample_dict(self,sample_info,start,end):
@@ -190,12 +191,12 @@ class MultiSmilesGraphData(Dataset):
         pressure=sample['P (bar)'].tolist()
         self.dataset=[]
         for i in range(len(cation)):
-            cation=self.generate_graph(cation[i])
-            anion=self.generate_graph(anion[i])
-            if cation is None or anion is None:
+            cation_graph=self.generate_graph(self.smiles[cation[i]])
+            anion_graph=self.generate_graph(self.smiles[anion[i]])
+            if cation_graph is None or anion_graph is None:
                 continue
             else:
-                combined_graph=CombineGraph([cation['graph'],anion['graph']],add_global=True,bi_direction=True,add_self_loop=self.add_self_loop)
+                combined_graph=CombineGraph([cation_graph['graph'],anion_graph['graph']],add_global=True,bi_direction=True,add_self_loop=self.add_self_loop)
                 self.dataset.append([combined_graph,temperature[i],pressure[i],solubility[i]])
     def featurize_bonds(self,mol):
         feats = []
