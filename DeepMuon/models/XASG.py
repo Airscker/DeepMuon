@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-07-11 08:17:41
 LastEditors: airscker
-LastEditTime: 2023-07-26 12:50:39
+LastEditTime: 2023-09-02 21:23:25
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -12,7 +12,7 @@ import os
 import math
 import torch
 from torch import nn
-from monai.networks.blocks.convolutions import ResidualUnit
+from .ResidualUnit import ResidualUnit
 
 class MLPBlock(nn.Module):
     def __init__(self,input_node=100,classes=3,dropout=0.1):

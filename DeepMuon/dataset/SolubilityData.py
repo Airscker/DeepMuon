@@ -2,12 +2,13 @@
 Author: airscker
 Date: 2023-05-18 13:58:39
 LastEditors: airscker
-LastEditTime: 2023-08-26 14:43:48
+LastEditTime: 2023-09-01 23:31:44
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import pandas as pd
+import numpy as np
 from rdkit import Chem,DataStructs
 from rdkit.Chem.Draw import MolToFile
 from rdkit.Chem import AllChem
@@ -149,7 +150,7 @@ class SmilesGraphData(Dataset):
         sample['graph']=self.graph_data[cid][0]
         sample['inter_hb']=self.graph_data[cid][3]
         # sample['be_salt']=self.be_salt[cid]
-        # sample['be_ps']=self.be_ps[cid]
+        # sample['be_ps']= self.be_ps[cid]
         # sample['ip']=self.ip[cid]
         if self.info_list is not None:
             sample['add_features']=self.add_features[cid]
@@ -174,12 +175,22 @@ class MultiSmilesGraphData(Dataset):
         self.shuffle=shuffle
         self.featurize_edge=featurize_edge
         self.mode=mode
-        self.load_smiles_dict(smiles_info,smiles_info_col)
-        self.load_sample_dict(sample_info,start,end)
+        self.load_smiles_dict_old(smiles_info,smiles_info_col)
+        self.load_sample_dict_old(sample_info,start,end)
         
-    def load_smiles_dict(self,smiles_info,smiles_info_col):
+    def load_smiles_dict_old(self,smiles_info,smiles_info_col):
         self.smiles=pd.read_csv(smiles_info,index_col=smiles_info_col[0]).to_dict()[smiles_info_col[1]]
-    def load_sample_dict(self,sample_info,start,end):
+    def load_smiles_dict(self,smiles_info,smiles_info_col):
+        self.salt=pd.read_excel(smiles_info,sheet_name='Salt',index_col='Salt').to_dict()['SMILES']
+        self.solvent=pd.read_excel(smiles_info,sheet_name='Molecule',index_col='Solvent').to_dict()['SMILES']
+        new_solv={}
+        for key in self.solvent.keys():
+            new_solv[key.split(' (')[0]]=self.solvent[key]
+        new_salt={}
+        for key in self.salt.keys():
+            new_salt[key.split(' (')[0]]=self.salt[key]
+        self.smiles={**new_salt,**new_solv}
+    def load_sample_dict_old(self,sample_info,start,end):
         sample=pd.read_csv(sample_info)
         # if start is None:
         #     start=0
@@ -214,6 +225,36 @@ class MultiSmilesGraphData(Dataset):
                 else:
                     combined_graph=CombineGraph([cation_graph['graph'],anion_graph['graph']],add_global=True,bi_direction=True,add_self_loop=self.add_self_loop)
                     self.dataset.append([combined_graph,sub_group[i][2],sub_group[i][3],sub_group[i][4]])
+        if self.shuffle:
+            random.shuffle(self.dataset)
+    def load_sample_dict(self,sample_info,start,end):
+        all_data=pd.read_excel(sample_info)[start:end]
+        comp_salt=all_data['Salt'].tolist()
+        comp_solv=all_data['Solvent'].tolist()
+        composition=[]
+        for i in range(len(comp_salt)):
+            salt=comp_salt[i].split(',')
+            solv=comp_solv[i].split(',')
+            composition.append(salt+solv)
+        solv_mol=all_data[['Solvent 1 mol/L','Solvent 2 mol/L','Solvent 3 mol/L']].to_numpy()
+        salt_mol=all_data[['Salt 1 mol/L','Salt 2 mol/L','Salt 3 mol/L']].to_numpy()
+        env_info=all_data[['FC','OC','FO','InOr','F','sF','aF','O','sO','aO','C','sC','aC']].to_numpy().tolist()
+        ColumbicEfficiency=all_data['CE (%)'].tolist()
+        self.dataset=[]
+        for i in range(len(composition)):
+            graphs=[]
+            for j in range(len(composition[i])):
+                graph=self.generate_graph(self.smiles[composition[i][j]])
+                if graph is None:
+                    graphs=[]
+                    break
+                else:
+                    graphs.append(graph['graph'])
+            if len(graphs)!=0:
+                combined_graph=CombineGraph(graphs,add_global=True,bi_direction=True,add_self_loop=self.add_self_loop)
+                self.dataset.append([combined_graph,np.concatenate([solv_mol[i],salt_mol[i]]).tolist(),ColumbicEfficiency[i]])
+                # self.dataset.append([combined_graph,env_info[i],ColumbicEfficiency[i]])
+                
         if self.shuffle:
             random.shuffle(self.dataset)
     def featurize_bonds(self,mol):
@@ -253,11 +294,9 @@ class MultiSmilesGraphData(Dataset):
     def __getitem__(self, index):
         sample={}
         sample['graph']=self.dataset[index][0]
-        # sample['be_salt']=self.be_salt[cid]
-        # sample['be_ps']=self.be_ps[cid]
-        # sample['ip']=self.ip[cid]
-        sample['add_features']=self.dataset[index][1:3]
-        return sample,self.dataset[index][3]
+        sample['add_features']=self.dataset[index][1:-1]
+        return sample,self.dataset[index][-1]
+        # return torch.Tensor(self.dataset[index][1]),torch.Tensor([self.dataset[index][2]])
 
 def collate_solubility(batch):
     keys = list(batch[0][0].keys())[1:]

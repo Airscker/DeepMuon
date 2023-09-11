@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-21 18:43:31
 LastEditors: airscker
-LastEditTime: 2023-08-23 13:29:12
+LastEditTime: 2023-08-31 12:23:45
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -76,6 +76,7 @@ setup(
                       'tqdm',
                       'numpy',
                       'pandas',
+                      'openpyxl',
                       'ptflops',
                       'torchinfo',
                       'captum',

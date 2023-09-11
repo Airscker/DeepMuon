@@ -4,6 +4,15 @@
 # Licensed under The MIT License [see LICENSE for details]
 # Written by Ze Liu, Yutong Lin, Yixuan Wei
 # --------------------------------------------------------
+'''
+Author: airscker
+Date: 2023-06-08 10:51:07
+LastEditors: airscker
+LastEditTime: 2023-09-02 20:04:50
+Description: NULL
+
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
+'''
 
 import torch
 import torch.nn as nn

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 14:36:30
 LastEditors: airscker
-LastEditTime: 2023-08-26 13:03:35
+LastEditTime: 2023-09-02 15:46:23
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -190,23 +190,26 @@ class GCR(nn.Module):
             return F.relu(output)
 
 class SolvGNNV3(nn.Module):
-    def __init__(self, in_dim=74, hidden_dim=256, add_dim=0, gcr_layers=5 ,n_classes=1, allow_zero_in_degree=True) -> None:
+    def __init__(self, in_dim=74, hidden_dim=256, add_dim=0, mlp_dims=[1024,512],gcr_layers=5 ,n_classes=1, allow_zero_in_degree=True,freeze_GNN=False) -> None:
         super().__init__()
+        self.add_dim=add_dim
+        self.freeze_GNN=freeze_GNN
         self.gcn=GraphConv(in_dim, hidden_dim,allow_zero_in_degree=allow_zero_in_degree)
         self.node_gcr=nn.ModuleList(
             [GCR(dim=hidden_dim,allow_zero_in_degree=allow_zero_in_degree) for _ in range(gcr_layers)]
         )
-        self.hidden_dims=[1024,512]
-        self.regression = nn.Sequential(
-            nn.Linear(hidden_dim+add_dim, self.hidden_dims[0]),
-            nn.LeakyReLU(),
-            nn.Linear(self.hidden_dims[0],self.hidden_dims[1]),
-            nn.LeakyReLU(),
-            nn.Linear(self.hidden_dims[1],n_classes)
-        )
+        # self.regression = nn.Sequential(
+        #     nn.Linear(hidden_dim+add_dim, mlp_dims[0]),
+        #     nn.LeakyReLU(),
+        #     nn.Linear(mlp_dims[0],mlp_dims[1]),
+        #     nn.LeakyReLU(),
+        #     nn.Linear(mlp_dims[1],n_classes)
+        # )
+        self.regression=nn.Linear(hidden_dim+add_dim,n_classes)
     def forward(self,solvdata=None,empty_solvsys=None,device=None):
         graph:dgl.DGLGraph=solvdata['graph'].to(device)
-        add_features=solvdata['add_features'].float().to(device)
+        if self.add_dim>0:
+            add_features=solvdata['add_features'].float().to(device)
         with graph.local_scope():
             graph_ndata=graph.ndata['h'].float().to(device)
             feature=self.gcn(graph,graph_ndata)
@@ -214,6 +217,17 @@ class SolvGNNV3(nn.Module):
                 feature=self.node_gcr[i](graph,feature)
             graph.ndata['h']=feature
             node_mean=dgl.mean_nodes(graph,'h')
-            node_mean=torch.cat([node_mean,add_features],axis=1)
+            if self.add_dim>0:
+                node_mean=torch.cat([node_mean,add_features],axis=1)
             output=self.regression(node_mean)
             return output.squeeze(-1)
+    def freeze_GNNPart(self):
+        if self.freeze_GNN:
+            for para in self.node_gcr.parameters():
+                para.requires_grad=False
+            for para in self.gcn.parameters():
+                para.requires_grad=False
+    def train(self,mode=True):
+        super().train(mode)
+        self.freeze_GNNPart()
+        

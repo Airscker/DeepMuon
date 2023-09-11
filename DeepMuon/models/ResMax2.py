@@ -10,7 +10,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from monai.networks.blocks.convolutions import ResidualUnit
+from .ResidualUnit import ResidualUnit
 
 
 class ResMax2(nn.Module):

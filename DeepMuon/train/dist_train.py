@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-08-26 13:32:52
+LastEditTime: 2023-09-02 20:16:40
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -16,9 +16,9 @@ from typing import Union
 
 import DeepMuon
 from DeepMuon.tools.AirConfig import Config
-import DeepMuon.tools.AirFunc as AirFunc
-import DeepMuon.tools.AirVisual as AirVisual
-import DeepMuon.tools.AirLogger as AirLogger
+from DeepMuon.tools.AirFunc import save_model, load_model,format_time,get_mem_info,load_json_log,generate_nnhs_config
+from DeepMuon.tools.AirVisual import plot_curve
+from DeepMuon.tools.AirLogger import LOGT
 from DeepMuon.tools.AirEnv import EnvINFO
 import DeepMuon.interpret.attribution as Attr
 
@@ -91,7 +91,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
     device = torch.device("cuda", local_rank)
     '''Log the basic parameters'''
     if local_rank == 0:
-        logger = AirLogger.LOGT(log_dir=work_dir, logfile=log)
+        logger = LOGT(log_dir=work_dir, logfile=log)
         '''Create work_dir'''
         checkpoint_savepath=os.path.join(work_dir,'Checkpoint')
         curve_path=os.path.join(work_dir,'Curve')
@@ -152,7 +152,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
     if resume == '' and load == '':
         pass
     elif resume != '':
-        epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = AirFunc.load_model(
+        epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = load_model(
             path=resume, device=device)
         try:
             model.load_state_dict(model_c, False)
@@ -162,7 +162,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
         if local_rank == 0:
             logger.log(f'Model Resumed from {resume}, Epoch now: {epoch_now}')
     elif load != '':
-        epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = AirFunc.load_model(
+        epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = load_model(
             path=load, device=device)
         try:
             model.load_state_dict(model_c, False)
@@ -272,10 +272,11 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
             train_loss = loss_values[0].item()
             test_loss = loss_values[1].item()
             LRn = optimizer.state_dict()['param_groups'][0]['lr']
-            ts_eva_metrics, ts_target = evaluation(
-                ts_score_val, ts_label_val, configs['evaluation'], bestres, test_loss)
-            tr_eva_metrics, tr_target = evaluation(
-                tr_score_val, tr_label_val, configs['evaluation'], bestres, 0)
+            if (t+1)%eva_interval==0:
+                ts_eva_metrics, ts_target = evaluation(
+                    ts_score_val, ts_label_val, configs['evaluation'], bestres, test_loss)
+                tr_eva_metrics, tr_target = evaluation(
+                    tr_score_val, tr_label_val, configs['evaluation'], bestres, 0)
             '''Add tensorboard scalar curves'''
             writer.add_scalar('test loss', test_loss, global_step=t + 1)
             writer.add_scalar('train loss', train_loss, global_step=t + 1)
@@ -283,7 +284,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
             if (t+1) % eva_interval == 0 and sota_target != 'loss':
                 tensorboard_plot(tr_eva_metrics, t+1, writer, 'train')
                 tensorboard_plot(ts_eva_metrics, t+1, writer, 'test')
-            '''Save best model accoeding to the value of sota target'''
+            '''Save best model according to the value of sota target'''
             if ts_target != bestres and not np.isnan(ts_target):
                 bestres = ts_target
                 if os.path.exists(best_checkpoint):
@@ -294,7 +295,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                 ddp_fsdp_model_save(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn,
                                     scheduler=scheduler, path=best_checkpoint, ddp_training=ddp_training)
                 logger.log(
-                    f'Best Model Saved as {best_checkpoint},Best {sota_target}:{bestres}, Current Epoch: {t+1}', show=True)
+                    f'Best Model Saved as {best_checkpoint}, Best {sota_target}: {bestres}, Current Epoch: {t+1}', show=True)
             if (t + 1) % inter == 0:
                 savepath = os.path.join(checkpoint_savepath,f'Epoch_{t+1}.pth')
                 # dist.barrier()
@@ -303,9 +304,9 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                 logger.log(
                     f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=True)
             epoch_time = time.time() - start_time
-            eta = AirFunc.format_time((epochs - 1 - t) * epoch_time)
+            eta = format_time((epochs - 1 - t) * epoch_time)
             time_info = dict(time=epoch_time, eta=eta)
-            mem_info = AirFunc.get_mem_info()
+            mem_info = get_mem_info()
             loss_info = dict(mode='train', lr=LRn, epoch=t+1, total_epoch=epochs,
                              test_loss=test_loss, train_loss=train_loss, sota=bestres,
                              batch_size=batch_size, train_dataset_size=len(train_dataset),test_dataset_size=len(test_dataset))
@@ -325,7 +326,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                 nnhs_report(search=search,sota_target=sota_target,eva_metrics=[tr_eva_metrics,ts_eva_metrics],modes=['tr_eval','ts_eval'],end_exp=end_exp)
     if local_rank==0:
         print('Plotting training information...')
-        json_log=AirFunc.load_json_log(logger.jsonfile)
+        json_log=load_json_log(logger.jsonfile)
         if json_log=={}:
             return 0
         if not os.path.exists(curve_path):
@@ -333,7 +334,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
         for mode in json_log.keys():
             for para in json_log[mode].keys():
                 try:
-                    AirVisual.plot_curve(data=json_log[mode][para],title=f'{mode}_{para}',axis_label=['epoch','para'],data_label=[f'{para}'],save=os.path.join(curve_path,f'{mode}_{para}.jpg'),mod=None)
+                    plot_curve(data=json_log[mode][para],title=f'{mode}_{para}',axis_label=['epoch','para'],data_label=[f'{para}'],save=os.path.join(curve_path,f'{mode}_{para}.jpg'),mod=None)
                 except:
                     pass
     return 0
@@ -360,7 +361,7 @@ def nnhs_report(search:bool,sota_target:str,eva_metrics:list,modes:list,end_exp:
 def ddp_fsdp_model_save(epoch=0, model=None, optimizer=None,
                         loss_fn=None, scheduler=None, path=None, ddp_training=True):
     if ddp_training:
-        AirFunc.save_model(epoch=epoch, model=model, optimizer=optimizer,
+        save_model(epoch=epoch, model=model, optimizer=optimizer,
                            loss_fn=loss_fn, scheduler=scheduler, path=path, dist_train=ddp_training)
     else:
         save_policy = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)
@@ -534,7 +535,7 @@ def start_exp(config, test, search, main_func=main):
     source_code=None
     if search:
         new_para=nni.get_next_parameter()
-        config_module,source_code=AirFunc.generate_nnhs_config(path=config,new_params=new_para)
+        config_module,source_code=generate_nnhs_config(path=config,new_params=new_para)
         train_config = Config(config_module=config_module)
     else:
         train_config = Config(configpath=config)
