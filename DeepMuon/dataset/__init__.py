@@ -13,8 +13,9 @@ from .Pandax4TData import PandaxDataset
 from .CMRData import NIIDecodeV2
 from .XASData import ValenceDataset,ValenceDatasetV2
 from .SolubilityData import SmilesGraphData,MultiSmilesGraphData,collate_solubility
+from .XASDataV2 import XASSUMDataset
 
 __all__ = ['PandaxDataset', 'HailingDataset_Direct2',
            'HailingDataset_DirectV3', 'NIIDecodeV2',
            'ValenceDataset','ValenceDatasetV2','MinistDataset',
-           'SmilesGraphData','MultiSmilesGraphData','collate_solubility']
+           'SmilesGraphData','MultiSmilesGraphData','collate_solubility','XASSUMDataset']

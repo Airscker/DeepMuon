@@ -2,23 +2,34 @@
 Author: airscker
 Date: 2023-01-31 09:28:41
 LastEditors: airscker
-LastEditTime: 2023-07-18 12:54:18
+LastEditTime: 2023-09-03 03:16:14
 Description: NULL
 
+Copyright (C) OpenMMLab. All rights reserved.
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import numpy as np
 from sklearn.metrics import f1_score as f1
 from sklearn.metrics import roc_auc_score,r2_score
+from DeepMuon.tools.AirDecorator import EnableVisualiaztion
+from DeepMuon.tools.AirVisual import R2JointPlot
 
-def AUC(scores,label,pos_label=1):
+@EnableVisualiaztion(Name="R2 Score",NNHSReport=True,TRTensorBoard=True,TRCurve=True,TSPlotMethod=R2JointPlot)
+def R2Value(scores, labels):
+    scores=np.array(scores).reshape(-1)
+    labels=np.array(labels).reshape(-1)
+    return r2_score(labels, scores)
+
+@EnableVisualiaztion(Name="AUC Score",NNHSReport=True,TRTensorBoard=True,TRCurve=True)
+def AUC(scores,labels,pos_label=1):
     new_score=[]
-    for i in range(len(label)):
+    for i in range(len(labels)):
         new_score.append(scores[i][pos_label])
-    res=roc_auc_score(label, new_score, multi_class='ovo')
+    res=roc_auc_score(labels, new_score, multi_class='ovo')
     return res
 
-def f1_score(scores, label):
+@EnableVisualiaztion(Name="F1 Score",NNHSReport=True,TRTensorBoard=True,TRCurve=True)
+def f1_score(scores, labels):
     '''
     ## Compute overall F1 score for discrimitive tasks
 
@@ -30,17 +41,17 @@ def f1_score(scores, label):
         - float: the overall F1 score
     '''
     pred = np.argmax(scores, axis=1)
-    f1_score = f1(label, pred, average='macro')
+    f1_score = f1(labels, pred, average='macro')
     return f1_score
 
-
-def confusion_matrix(scores, y_real, normalize=None):
+@EnableVisualiaztion(Name="Confusion Matrix",NNHSReport=False,TRTensorBoard=False,TRCurve=False)
+def confusion_matrix(scores, labels, normalize=None):
     """
     ## Compute confusion matrix.
 
     ### Args:
-        - y_pred (list[int] | np.ndarray[int]): Prediction labels.
-        - y_real (list[int] | np.ndarray[int]): Ground truth labels.
+        - scores (list[int] | np.ndarray[int]): Prediction labels.
+        - label (list[int] | np.ndarray[int]): Ground truth labels.
         - normalize (str | None): Normalizes confusion matrix over the true
             (rows), predicted (columns) conditions or all the population.
             If None, confusion matrix will not be normalized. Options are
@@ -61,22 +72,22 @@ def confusion_matrix(scores, y_real, normalize=None):
     if not y_pred.dtype == np.int64:
         raise TypeError(
             f'y_pred dtype must be np.int64, but got {y_pred.dtype}')
-    if isinstance(y_real, list):
-        y_real = np.array(y_real)
-    if not isinstance(y_real, np.ndarray):
+    if isinstance(labels, list):
+        labels = np.array(labels)
+    if not isinstance(labels, np.ndarray):
         raise TypeError(
-            f'y_real must be list or np.ndarray, but got {type(y_real)}')
-    if not y_real.dtype == np.int64:
+            f'labels must be list or np.ndarray, but got {type(labels)}')
+    if not labels.dtype == np.int64:
         raise TypeError(
-            f'y_real dtype must be np.int64, but got {y_real.dtype}')
-    label_set = np.unique(np.concatenate((y_pred, y_real)))
+            f'labels dtype must be np.int64, but got {labels.dtype}')
+    label_set = np.unique(np.concatenate((y_pred, labels)))
     num_labels = len(label_set)
     max_label = label_set[-1]
     label_map = np.zeros(max_label + 1, dtype=np.int64)
-    for i, label in enumerate(label_set):
-        label_map[label] = i
+    for i, labels in enumerate(label_set):
+        label_map[labels] = i
     y_pred_mapped = label_map[y_pred]
-    y_real_mapped = label_map[y_real]
+    y_real_mapped = label_map[labels]
     confusion_mat = np.bincount(
         num_labels * y_real_mapped + y_pred_mapped,
         minlength=num_labels**2).reshape(num_labels, num_labels)
@@ -530,5 +541,4 @@ def average_precision_at_temporal_iou(ground_truth,
     for t_idx in range(len(temporal_iou_thresholds)):
         ap[t_idx] = interpolated_precision_recall(precision_cumsum[t_idx, :],
                                                   recall_cumsum[t_idx, :])
-
     return ap

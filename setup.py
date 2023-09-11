@@ -92,7 +92,8 @@ setup(
                       'tensorboard',
                       'yapf',
                       'parso',
-                      'rdkit'
+                      'rdkit',
+                      'seaborn'
                       ],
     # Similar to `install_requires` above, these must be valid existing
     # projects.

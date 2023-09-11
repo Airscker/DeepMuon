@@ -7,4 +7,4 @@ Description: Version file of DeepMuon
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
-__version__ = '1.23.52'
+__version__ = '1.23.91'

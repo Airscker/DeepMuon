@@ -2,16 +2,20 @@
 Author: airscker
 Date: 2023-07-26 18:55:28
 LastEditors: airscker
-LastEditTime: 2023-07-26 20:53:39
+LastEditTime: 2023-09-03 00:18:01
 Description: Visualization tools
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 
 import os
+import warnings
+import pandas as pd
+import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
-import warnings
+from typing import Any
+from torch.utils.tensorboard import SummaryWriter
 
 def ShowDGLGraph(graph, nodeLabel: str = '', EdgeLabel: str = '', show: bool = True, save_path: str = '',figsize:tuple=(5,5)):
     """
@@ -221,3 +225,12 @@ def plot_curve(data, title='Curve', axis_label=['Epoch', 'Loss'], data_label=['C
     if show:
         plt.show()
     plt.clf()
+
+def R2JointPlot(scores,labels,save_path:str='./',tag:str='TS'):
+    chart=pd.DataFrame({'Pedicted':scores,'True':labels})
+    plt.figure(figsize=(30,30))
+    sns.pairplot(chart)
+    plt.savefig(os.path.join(save_path,f'{tag}_R2Pair.jpg'),dpi=300)
+    sns.set(font_scale=1.5)
+    sns.jointplot(x='Pedicted',y='True',data=chart,kind='reg')
+    plt.savefig(os.path.join(save_path,f'{tag}_R2Joint.jpg'),dpi=300)

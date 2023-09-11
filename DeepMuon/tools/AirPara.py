@@ -2,17 +2,18 @@
 Author: airscker
 Date: 2022-10-05 13:35:07
 LastEditors: airscker
-LastEditTime: 2023-05-02 12:56:16
+LastEditTime: 2023-09-03 16:08:02
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import torch
+from typing import Union
 from ptflops import get_model_complexity_info
 from torchinfo import summary
 
 
-def model_para(model, datasize: list, depth=3, device='cpu', show=False):
+def model_para(model, datasize: Union[list,tuple], depth=3, device='cpu', show=False):
     """
     ## Get the number of parameters and FLOPs for a given model as well as the detailed list of layers
 
@@ -35,6 +36,7 @@ def model_para(model, datasize: list, depth=3, device='cpu', show=False):
     # model = model()
     model = model.to(device)
     model.float()
+    datasize=list(datasize)
     datasize[0] = 2
     flops, params = get_model_complexity_info(model, tuple(datasize[1:]), as_strings=True,
                                               print_per_layer_stat=False, verbose=True)

@@ -2,21 +2,18 @@
 Author: airscker
 Date: 2023-06-08 15:08:59
 LastEditors: airscker
-LastEditTime: 2023-07-30 13:06:23
+LastEditTime: 2023-09-04 14:38:37
 Description: Comes from DGLlife open source package.
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 
-# -*- coding: utf-8 -*-
 """
 Created on Sun May 30 15:15:19 2021
 
 @author: sqin34
 """
 
-# -*- coding: utf-8 -*-
-#
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -1110,12 +1107,13 @@ class CanonicalAtomFeaturizer(BaseAtomFeaturizer):
             featurizer_funcs={atom_data_field: ConcatFeaturizer(
                 [atom_type_one_hot if not alltable else atom_type_one_hot_alltable,
                  atom_degree_one_hot,
-                 atom_implicit_valence_one_hot,
-                 atom_formal_charge,
-                 atom_num_radical_electrons,
-                 atom_hybridization_one_hot,
-                 atom_is_aromatic,
-                 atom_total_num_H_one_hot]
+                #  atom_implicit_valence_one_hot,
+                #  atom_formal_charge,
+                #  atom_num_radical_electrons,
+                #  atom_hybridization_one_hot,
+                #  atom_is_aromatic,
+                #  atom_total_num_H_one_hot,
+                 ]
             )})
 
 
