@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-04 22:11:50
 LastEditors: airscker
-LastEditTime: 2023-09-11 18:01:11
+LastEditTime: 2023-09-11 18:04:00
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -33,7 +33,7 @@ class XASSUMDataset(Dataset):
                 the one-hot encoding (optional) of the edge type and the one-hot encoding (optional) of the spectrum type.
             - spectrum: The absorbing spectrum of the corresponding atom.
     '''
-    def __init__(self,folder_path:str,num_workers:int=1,xas_type:list[str]=None,bidirectional:bool=True,self_loop:bool=True,onehot_encode:bool=False):
+    def __init__(self,folder_path:str,num_workers:int=1,xas_type:list[str]=None,bidirectional:bool=True,self_loop:bool=False,onehot_encode:bool=False):
         super().__init__()
         self.xas_type=xas_type
         self.spec_types={'XANES':0,'EXAFS':1,'XAFS':2}
