@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-06-08 15:08:59
 LastEditors: airscker
-LastEditTime: 2023-09-04 14:38:37
+LastEditTime: 2023-09-11 18:48:04
 Description: Comes from DGLlife open source package.
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -1107,12 +1107,12 @@ class CanonicalAtomFeaturizer(BaseAtomFeaturizer):
             featurizer_funcs={atom_data_field: ConcatFeaturizer(
                 [atom_type_one_hot if not alltable else atom_type_one_hot_alltable,
                  atom_degree_one_hot,
-                #  atom_implicit_valence_one_hot,
-                #  atom_formal_charge,
-                #  atom_num_radical_electrons,
-                #  atom_hybridization_one_hot,
-                #  atom_is_aromatic,
-                #  atom_total_num_H_one_hot,
+                 atom_implicit_valence_one_hot,
+                 atom_formal_charge,
+                 atom_num_radical_electrons,
+                 atom_hybridization_one_hot,
+                 atom_is_aromatic,
+                 atom_total_num_H_one_hot,
                  ]
             )})
 

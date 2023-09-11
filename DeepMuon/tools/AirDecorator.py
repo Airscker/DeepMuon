@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-02 22:05:13
 LastEditors: airscker
-LastEditTime: 2023-09-03 03:03:50
+LastEditTime: 2023-09-11 18:22:31
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -11,7 +11,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 import warnings
 from functools import wraps
 from typing import Callable
-from DeepMuon.tools.AirVisual import plot_curve
+from ..tools.AirVisual import plot_curve
 
 class EnableVisualiaztion:
     """

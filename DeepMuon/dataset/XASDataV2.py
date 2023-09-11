@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-04 22:11:50
 LastEditors: airscker
-LastEditTime: 2023-09-11 18:04:00
+LastEditTime: 2023-09-11 18:45:40
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -13,8 +13,7 @@ import torch
 import numpy as np
 import pickle as pkl
 from torch.utils.data import Dataset
-from pymatgen.analysis.local_env import CrystalNN
-from DeepMuon.tools import MultiThreadLoader
+from ..tools import MultiThreadLoader
 from .SmilesGraphUtils.crystal_featurizer import MPJCrystalGraphData,one_hot_encoding
 
 class XASSUMDataset(Dataset):

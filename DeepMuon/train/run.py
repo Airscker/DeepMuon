@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-07 21:35:54
 LastEditors: airscker
-LastEditTime: 2023-08-26 13:50:49
+LastEditTime: 2023-09-11 18:25:27
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -12,7 +12,7 @@ import os
 import argparse
 import DeepMuon
 import warnings
-from DeepMuon.tools.AirFunc import import_module,check_port
+from ..tools.AirFunc import import_module,check_port
 
 pkg_path = DeepMuon.__path__[0]
 try:

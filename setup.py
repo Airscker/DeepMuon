@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-21 18:43:31
 LastEditors: airscker
-LastEditTime: 2023-08-31 12:23:45
+LastEditTime: 2023-09-11 18:44:44
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -93,7 +93,8 @@ setup(
                       'yapf',
                       'parso',
                       'rdkit',
-                      'seaborn'
+                      'seaborn',
+                      'pymatgen'
                       ],
     # Similar to `install_requires` above, these must be valid existing
     # projects.

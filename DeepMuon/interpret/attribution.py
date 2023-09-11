@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-02-13 19:20:47
 LastEditors: airscker
-LastEditTime: 2023-02-27 11:37:57
+LastEditTime: 2023-09-11 18:21:58
 Description: Get data/neuron/layer attributions
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -11,7 +11,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 import torch
 from torch import nn
 import numpy as np
-from DeepMuon.tools.AirFunc import check_device
+from ..tools.AirFunc import check_device
 from typing import Union, Tuple, Callable
 from captum.attr import IntegratedGradients, NeuronConductance, LayerConductance, GuidedGradCam, GradientShap
 

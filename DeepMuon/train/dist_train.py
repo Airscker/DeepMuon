@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-09-03 13:42:23
+LastEditTime: 2023-09-11 18:48:29
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -15,12 +15,8 @@ import functools
 from typing import Union
 
 import DeepMuon
-from DeepMuon.tools.AirConfig import Config
-from DeepMuon.tools.AirFunc import save_model, load_model,format_time,get_mem_info,load_json_log,generate_nnhs_config
-from DeepMuon.tools.AirVisual import plot_curve
-from DeepMuon.tools.AirLogger import LOGT
-from DeepMuon.tools.AirEnv import EnvINFO
-import DeepMuon.interpret.attribution as Attr
+from DeepMuon.tools import (Config,LOGT,EnvINFO,save_model,load_model,format_time,get_mem_info,load_json_log,generate_nnhs_config,plot_curve)
+from DeepMuon.interpret import GradCAM
 
 import torch
 from torch import nn
@@ -426,7 +422,7 @@ def dataattr(device, dataloader, model):
     convergence = []
     batchs = len(dataloader)
     for i, (x, y) in enumerate(dataloader):
-        res1, res2, res3 = Attr.GradCAM(
+        res1, res2, res3 = GradCAM(
             model, model.pre_mlp, x, label_dim=len(y.reshape(-1)), device=device)
         attr.append(res1)
         delta.append(res2)

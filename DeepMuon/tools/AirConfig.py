@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-08-17 22:29:42
+LastEditTime: 2023-09-11 18:22:25
 Description: Import configuration file and prepare configurations for experiments
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -14,12 +14,12 @@ import shutil
 import time
 import importlib
 from yapf.yapflib.yapf_api import FormatCode
-from DeepMuon.loss_fn import *
-from DeepMuon.interpret import *
-from DeepMuon.models import *
-from DeepMuon.dataset import *
-from DeepMuon.train.pipeline import *
-from DeepMuon.tools.AirFunc import import_module, readable_dict, module_source
+from ..loss_fn import *
+from ..interpret import *
+from ..models import *
+from ..dataset import *
+from ..train.pipeline import *
+from ..tools.AirFunc import import_module, readable_dict, module_source
 import torch
 from torch.optim import *
 from torch.optim.lr_scheduler import *

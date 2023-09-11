@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-31 09:28:41
 LastEditors: airscker
-LastEditTime: 2023-09-03 03:16:14
+LastEditTime: 2023-09-11 18:22:12
 Description: NULL
 
 Copyright (C) OpenMMLab. All rights reserved.
@@ -11,8 +11,8 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 import numpy as np
 from sklearn.metrics import f1_score as f1
 from sklearn.metrics import roc_auc_score,r2_score
-from DeepMuon.tools.AirDecorator import EnableVisualiaztion
-from DeepMuon.tools.AirVisual import R2JointPlot
+from ..tools.AirDecorator import EnableVisualiaztion
+from ..tools.AirVisual import R2JointPlot
 
 @EnableVisualiaztion(Name="R2 Score",NNHSReport=True,TRTensorBoard=True,TRCurve=True,TSPlotMethod=R2JointPlot)
 def R2Value(scores, labels):

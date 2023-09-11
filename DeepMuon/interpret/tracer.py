@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-02-15 20:13:01
 LastEditors: airscker
-LastEditTime: 2023-02-20 00:44:43
+LastEditTime: 2023-09-11 18:22:06
 Description: Trace the data flow within the model
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -10,7 +10,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 import torch
 from typing import Union
 from torch import nn
-from DeepMuon.tools.AirFunc import check_device
+from ..tools.AirFunc import check_device
 
 
 class Neuron_Flow:
