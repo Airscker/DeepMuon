@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-07-11 08:17:41
 LastEditors: airscker
-LastEditTime: 2023-09-02 21:23:25
+LastEditTime: 2023-09-13 21:06:07
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -12,38 +12,12 @@ import os
 import math
 import torch
 from torch import nn
-from .ResidualUnit import ResidualUnit
-
-class MLPBlock(nn.Module):
-    def __init__(self,input_node=100,classes=3,dropout=0.1):
-        super().__init__()
-        self.hidden_nodes=[5120,2048,1024,512]
-        self.linear=nn.Sequential(
-            nn.Linear(input_node,self.hidden_nodes[0]),
-            nn.BatchNorm1d(self.hidden_nodes[0]),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(self.hidden_nodes[0],self.hidden_nodes[1]),
-            nn.BatchNorm1d(self.hidden_nodes[1]),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(self.hidden_nodes[1],self.hidden_nodes[2]),
-            nn.BatchNorm1d(self.hidden_nodes[2]),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(self.hidden_nodes[2],self.hidden_nodes[3]),
-            nn.BatchNorm1d(self.hidden_nodes[3]),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(self.hidden_nodes[3],classes)
-        )
-    def forward(self,x):
-        return self.linear(x)
+from .base import ResidualUnit,MLPBlock
 
 class XASGV1(nn.Module):
     def __init__(self, mlp_pretrained=None,mlp_drop_out=0.1) -> None:
         super().__init__()
-        self.mlp1=MLPBlock(input_node=100,classes=1,dropout=mlp_drop_out)
+        self.mlp1=MLPBlock(dim_input=100,dim_output=1,hidden_sizes=[5120,2048,1024,512],normalization=nn.BatchNorm1d,activation=nn.ReLU,dropout_rate=mlp_drop_out,mode='NAD')
         if os.path.exists(mlp_pretrained):
             pretrained=torch.load(mlp_pretrained)['model']
             try:
@@ -61,25 +35,13 @@ class XASGV2(nn.Module):
     def __init__(self, input_node=100,mlp_drop_out=0.1,classes=1) -> None:
         super().__init__()
         self.hidden_nodes=[512,256,128,64]
-        self.mlp1=nn.Sequential(
-            nn.Linear(input_node,self.hidden_nodes[0]),
-            nn.BatchNorm1d(self.hidden_nodes[0]),
-            nn.ReLU(),
-            nn.Dropout(mlp_drop_out),
-            nn.Linear(self.hidden_nodes[0],self.hidden_nodes[1]),
-            nn.BatchNorm1d(self.hidden_nodes[1]),
-            nn.ReLU(),
-            nn.Dropout(mlp_drop_out),
-            nn.Linear(self.hidden_nodes[1],self.hidden_nodes[2]),
-            nn.BatchNorm1d(self.hidden_nodes[2]),
-            nn.ReLU(),
-            nn.Dropout(mlp_drop_out),
-            nn.Linear(self.hidden_nodes[2],self.hidden_nodes[3]),
-            nn.BatchNorm1d(self.hidden_nodes[3]),
-            nn.ReLU(),
-            nn.Dropout(mlp_drop_out),
-            nn.Linear(self.hidden_nodes[3],classes)
-        )
+        self.mlp1=MLPBlock(dim_input=input_node,
+                           dim_output=classes,
+                           hidden_sizes=self.hidden_nodes,
+                           normalization=nn.BatchNorm1d,
+                           activation=nn.ReLU,
+                           dropout_rate=mlp_drop_out,
+                           mode='NAD')
     def forward(self,x):
         return self.mlp1(x)
     
@@ -114,15 +76,12 @@ class TransXAS(nn.Module):
             nn.LeakyReLU()
         )
         self.flatten=nn.Flatten()
-        self.mlp=nn.Sequential(
-            nn.Linear(heads*y_dim*2*x_dim,hidden_size[0]),
-            nn.BatchNorm1d(hidden_size[0]),
-            nn.LeakyReLU(),
-            nn.Linear(hidden_size[0],hidden_size[1]),
-            nn.BatchNorm1d(hidden_size[1]),
-            nn.LeakyReLU(),
-            nn.Linear(hidden_size[1],out_dim)
-        )
+        self.mlp=MLPBlock(dim_input=heads*y_dim*2*x_dim,
+                          dim_output=out_dim,
+                          hidden_sizes=hidden_size,
+                          normalization=nn.BatchNorm1d,
+                          activation=nn.LeakyReLU,
+                          mode='NAD')
     def forward(self,x:torch.Tensor):
         '''x.shape: [B,X,Y]'''
         for i in range(self.heads):

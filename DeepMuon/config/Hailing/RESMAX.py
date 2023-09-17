@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 22:24:05
 LastEditors: airscker
-LastEditTime: 2023-03-01 12:29:10
+LastEditTime: 2023-09-15 15:20:12
 Description: Configuration of Hailing 1TeV MLP3_3D_Direct Model
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -11,7 +11,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 ## Specify which model to be used, all models are stored in 'models' 
 '''
-model = dict(backbone='ResMax',pipeline='regression')
+model = dict(backbone='ResMax2',pipeline='regression')
 '''
 ## Specify the dataset to load the data, all dataset are stored in 'dataset'
 '''

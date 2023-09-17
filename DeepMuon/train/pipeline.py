@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 14:35:50
 LastEditors: airscker
-LastEditTime: 2023-08-26 12:37:56
+LastEditTime: 2023-09-15 12:07:06
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -22,6 +22,9 @@ class Pipeline(metaclass=ABCMeta):
     ### Returns:
         - pred: the prediction result of the model.
         - label: the label used to evaluate the model's result.
+    
+    ### Note:
+        - Once `Pipeline` base class was succeeded, the `predict` function should be implemented, and it must returns `pred` and `label`.
     '''
     def __init__(self,model:nn.Module) -> None:
         self.model=model
@@ -118,3 +121,11 @@ class solvgnn(Pipeline):
         output=self.model(input,empty_solvsys,device)
         label=label.to(device)
         return output,label
+
+class crystalxas(Pipeline):
+    def __init__(self, model: nn.Module) -> None:
+        super().__init__(model)
+    def predict(self, input, label, device, precision):
+        pred=self.model(input,device)
+        label=label.to(device)
+        return pred,label

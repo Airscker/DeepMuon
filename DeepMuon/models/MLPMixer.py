@@ -2,32 +2,33 @@
 Author: airscker
 Date: 2023-04-30 15:39:26
 LastEditors: airscker
-LastEditTime: 2023-05-15 23:56:04
+LastEditTime: 2023-09-13 21:06:05
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import torch
+from .base import MLPBlock
 from torch import nn
 
-class MLPBlock(nn.Module):
-    def __init__(self, dim:int, hidden_size:int, dropout=0.1) -> None:
-        super().__init__()
-        self.linear=nn.Sequential(
-            nn.LayerNorm(dim),
-            nn.Linear(dim,hidden_size),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.Linear(hidden_size,dim)
-        )
-    def forward(self,x):
-        return self.linear(x)
+# class MLPBlock(nn.Module):
+#     def __init__(self, dim:int, hidden_size:int, dropout=0.1) -> None:
+#         super().__init__()
+#         self.linear=nn.Sequential(
+#             nn.LayerNorm(dim),
+#             nn.Linear(dim,hidden_size),
+#             nn.GELU(),
+#             nn.Dropout(dropout),
+#             nn.Linear(hidden_size,dim)
+#         )
+#     def forward(self,x):
+#         return self.linear(x)
 
 class MixerBlock(nn.Module):
     def __init__(self,dim:int,channel:int,token_drop=0.1,channel_drop=0.1) -> None:
         super().__init__()
-        self.token_mixer=MLPBlock(dim=dim,hidden_size=channel,dropout=token_drop)
-        self.channel_mixer=MLPBlock(dim=channel,hidden_size=dim,dropout=channel_drop)
+        self.token_mixer=MLPBlock(dim,dim,hidden_size=[channel]*2,dropout_rate=token_drop)
+        self.channel_mixer=MLPBlock(channel,channel,hidden_size=[dim]*2,dropout_rate=channel_drop)
     def forward(self,x):
         x=x+self.token_mixer(x)
         x=torch.permute(x,(0,2,1))
@@ -82,16 +83,6 @@ class XASMLP(nn.Module):
     def __init__(self,input_node=100,classes=3,dropout=0.1):
         super().__init__()
         self.hidden_nodes=[256,128]
-        self.linear=nn.Sequential(
-            nn.Linear(input_node,self.hidden_nodes[0]),
-            nn.BatchNorm1d(self.hidden_nodes[0]),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(self.hidden_nodes[0],self.hidden_nodes[1]),
-            nn.BatchNorm1d(self.hidden_nodes[1]),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(self.hidden_nodes[1],classes)
-        )
+        self.linear=MLPBlock(input_node,classes,self.hidden_nodes,dropout_rate=dropout,normalization=nn.BatchNorm1d,activation=nn.ReLU,mode='NAD')
     def forward(self,x):
         return self.linear(x)

@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-09-11 18:48:29
+LastEditTime: 2023-09-16 19:27:37
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -347,7 +347,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                              batch_size=batch_size, train_dataset_size=len(train_dataset),test_dataset_size=len(test_dataset))
             log_info = {**loss_info, **time_info, **mem_info}
             logger.log(log_info,json_log=True)
-            if (t+1) % eva_interval == 0:
+            if (t+1) % eva_interval == 0 and tr_eva_metrics != {}:
                 tr_eva_info = dict(mode='tr_eval')
                 ts_eva_info = dict(mode='ts_eval')
                 tr_eva_info = {**tr_eva_info, **tr_eva_metrics}

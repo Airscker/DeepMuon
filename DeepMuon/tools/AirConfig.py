@@ -2,28 +2,23 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-09-11 18:22:25
+LastEditTime: 2023-09-15 15:29:03
 Description: Import configuration file and prepare configurations for experiments
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 
 import os
-import warnings
-import shutil
 import time
-import importlib
-from yapf.yapflib.yapf_api import FormatCode
-from ..loss_fn import *
-from ..interpret import *
-from ..models import *
-from ..dataset import *
-from ..train.pipeline import *
-from ..tools.AirFunc import import_module, readable_dict, module_source
+import shutil
+import warnings
+
 import torch
-from torch.optim import *
-from torch.optim.lr_scheduler import *
-from torch.nn.modules.loss import *
+import DeepMuon
+
+from yapf.yapflib.yapf_api import FormatCode
+from ..tools.AirFunc import import_module, readable_dict, module_source
+
 
 class Config:
     """
@@ -66,7 +61,8 @@ class Config:
                     params=dict(n_classes=11,
                                 input_shape=(3, 130, 130),
                                 seq_dropout=search_params['seq_dropout']))
-    >>> train_dataset = dict(backbone='NIIDecodeV2',
+    >>> train_dataset = dict(filepath='',
+                            backbone='NIIDecodeV2',
                             collate_fn=None,
                             params=dict(ann_file=None,
                                         mask_ann=None,
@@ -76,7 +72,8 @@ class Config:
                                                         dict(type='SingleNorm'),
                                                         dict(type='Padding', size=(120, 120)),
                                                         dict(type='Resize', size=(130, 130))]))
-    >>> test_dataset = dict(backbone='NIIDecodeV2',
+    >>> test_dataset = dict(filepath='',
+                            backbone='NIIDecodeV2',
                             collate_fn=None,
                             params=dict(ann_file=None,
                                         mask_ann=None,
@@ -87,13 +84,13 @@ class Config:
                                                         dict(type='Resize', size=(130, 130))]))
     >>> work_config = dict(work_dir='./VST_1', logfile='log.log')
     >>> checkpoint_config = dict(load_from='', resume_from='', save_inter=50)
-    >>> loss_fn = dict(backbone='CrossEntropyLoss')
+    >>> loss_fn = dict(filepath='',backbone='CrossEntropyLoss')
     >>> evaluation = dict(interval=1, metrics=['f1_score'])
-    >>> optimizer = dict(backbone='SGD', params=dict(lr=0.0001, momentum=0.9, nesterov=True))
-    >>> scheduler = dict(backbone='CosineAnnealingLR', params=dict(T_max=10))
+    >>> optimizer = dict(filepath='',backbone='SGD', params=dict(lr=0.0001, momentum=0.9, nesterov=True))
+    >>> scheduler = dict(filepath='',backbone='CosineAnnealingLR', params=dict(T_max=10))
     >>> hyperpara = dict(epochs=2000, batch_size=7500, inputshape=[1, 3, 40, 10, 10])
     >>> fsdp_parallel=dict(enabled=True,min_num_params=1e6)
-    >>> optimize_config = dict(fp16=False, grad_acc=8, grad_clip=0.01, double_precision=False)
+    >>> optimize_config = dict(fp16=False, grad_acc=8, grad_clip=None, double_precision=False)
     """
 
     def __init__(self, configpath: str=None, config_module=None):
@@ -156,6 +153,7 @@ class Config:
 
     def __para_config(self):
         internal_env = globals()
+
         '''import the model anywhere'''
         model_info = getattr(self.config, 'model')
         if 'pipeline' not in model_info.keys():
@@ -167,8 +165,8 @@ class Config:
         else:
             model_params = model_info['params']
         if 'filepath' not in model_info.keys() or not os.path.exists(model_info['filepath']):
-            self.paras['model'] = {'backbone': internal_env[self.config.model['backbone']],
-                                   'pipeline':internal_env[pipeline],
+            self.paras['model'] = {'backbone': getattr(DeepMuon.models, model_info['backbone']),
+                                   'pipeline':getattr(DeepMuon.train.pipeline,pipeline),
                                    'params': model_params}
         else:
             imported_module=import_module(model_info['filepath'])
@@ -176,15 +174,17 @@ class Config:
                                    'pipeline':getattr(imported_module,pipeline),
                                    'params': model_params}
         # self.paras['model']={'backbone':internal_env[self.config.model['backbone']]}
+        
         '''import dataset anywhere'''
         traindataset_info = getattr(self.config, 'train_dataset')
         testdataset_info = getattr(self.config, 'test_dataset')
         if 'filepath' not in traindataset_info.keys() or not os.path.exists(traindataset_info['filepath']):
-            backbone=internal_env[self.config.train_dataset['backbone']]
+            # backbone=internal_env[self.config.train_dataset['backbone']]
+            backbone=getattr(DeepMuon.dataset,traindataset_info['backbone'])
             if 'collate_fn' not in traindataset_info.keys() or traindataset_info['collate_fn'] is None:
                 collate_fn=None
             else:
-                collate_fn=internal_env[self.config.train_dataset['collate_fn']]
+                collate_fn=getattr(DeepMuon.dataset,traindataset_info['collate_fn'])
             if 'params' not in traindataset_info:
                 params={}
             else:
@@ -202,11 +202,11 @@ class Config:
                 params=traindataset_info['params']
         self.paras['train_dataset']={'backbone':backbone,'collate_fn':collate_fn,'params':params}
         if 'filepath' not in testdataset_info.keys() or not os.path.exists(testdataset_info['filepath']):
-            backbone=internal_env[self.config.test_dataset['backbone']]
+            backbone=getattr(DeepMuon.dataset,testdataset_info['backbone'])
             if 'collate_fn' not in testdataset_info.keys() or testdataset_info['collate_fn'] is None:
                 collate_fn=None
             else:
-                collate_fn=internal_env[self.config.test_dataset['collate_fn']]
+                collate_fn=getattr(DeepMuon.dataset,testdataset_info['collate_fn'])
             if 'params' not in testdataset_info:
                 params={}
             else:
@@ -225,23 +225,30 @@ class Config:
         self.paras['test_dataset']={'backbone':backbone,'collate_fn':collate_fn,'params':params}
         # self.paras['train_dataset']={'backbone':internal_env[self.config.train_dataset['backbone']],'datapath':self.config.train_dataset['datapath']}
         # self.paras['test_dataset']={'backbone':internal_env[self.config.test_dataset['backbone']],'datapath':self.config.test_dataset['datapath']}
+
         '''import loss function anywhere'''
         if self.config.loss_fn is None:
-            self.paras['loss_fn'] = {'backbone': MSELoss, 'params': dict()}
+            self.paras['loss_fn'] = {'backbone': torch.nn.MSELoss, 'params': dict()}
         else:
             loss_info = getattr(self.config, 'loss_fn')
             if 'params' not in loss_info.keys():
                 loss_info['params'] = dict()
             if 'filepath' not in loss_info.keys() or not os.path.exists(loss_info['filepath']):
-                self.paras['loss_fn'] = {'backbone': internal_env[self.config.loss_fn['backbone']],
-                                         'params': loss_info['params']}
+                # self.paras['loss_fn'] = {'backbone': internal_env[self.config.loss_fn['backbone']],
+                #                          'params': loss_info['params']}
+                try:
+                    self.paras['loss_fn'] = {'backbone': getattr(DeepMuon.loss_fn, loss_info['backbone']),
+                                             'params': loss_info['params']}
+                except:
+                    self.paras['loss_fn'] = {'backbone': getattr(torch.nn.modules.loss, loss_info['backbone']),
+                                            'params': loss_info['params']}
             else:
                 self.paras['loss_fn'] = {'backbone': getattr(import_module(loss_info['filepath']), loss_info['backbone']),
                                          'params': loss_info['params']}
         if 'lr_config' in self.config_keys:
-            self.paras['optimizer'] = dict(backbone=SGD,
+            self.paras['optimizer'] = dict(backbone=torch.optim.SGD,
                                            params=dict(lr=self.config.lr_config['init']))
-            self.paras['scheduler'] = dict(backbone=ReduceLROnPlateau,
+            self.paras['scheduler'] = dict(backbone=torch.optim.lr_scheduler.ReduceLROnPlateau,
                                            params=dict(patience=self.config.lr_config['patience']))
             warnings.warn(
                 f"'lr_config' will be deprecated in future versions, please specify 'optimizer' and 'scheduler' in {self.configpath}, now optimizer has been set as SGD and scheduler has been set as ReduceLROnPlateau")
@@ -250,7 +257,7 @@ class Config:
             if 'params' not in optimizer_info.keys():
                 optimizer_info['params'] = dict()
             if 'filepath' not in optimizer_info.keys() or not os.path.exists(optimizer_info['filepath']):
-                self.paras['optimizer'] = dict(backbone=internal_env[optimizer_info['backbone']],
+                self.paras['optimizer'] = dict(backbone=getattr(torch.optim, optimizer_info['backbone']),
                                                params=optimizer_info['params'])
             else:
                 self.paras['optimizer'] = dict(backbone=getattr(import_module(optimizer_info['filepath']), optimizer_info['backbone']),
@@ -259,11 +266,13 @@ class Config:
             if 'params' not in scheduler_info.keys():
                 scheduler_info['params'] = dict()
             if 'filepath' not in scheduler_info.keys() or not os.path.exists(scheduler_info['filepath']):
-                self.paras['scheduler'] = dict(backbone=internal_env[scheduler_info['backbone']],
+                self.paras['scheduler'] = dict(backbone=getattr(torch.optim.lr_scheduler, scheduler_info['backbone']),
                                                params=scheduler_info['params'])
             else:
                 self.paras['scheduler'] = dict(backbone=getattr(import_module(scheduler_info['filepath']), scheduler_info['backbone']),
                                                params=scheduler_info['params'])
+
+        '''import other hyperparameters configuration'''
         self.paras['hyperpara'] = self.config.hyperpara
         self.paras['work_config'] = self.config.work_config
         if 'logfile' not in self.paras['work_config'].keys():
@@ -323,11 +332,13 @@ class Config:
             else:
                 eva_metrics = {}
                 for ops in evaluation_op['metrics']:
-                    if ops not in internal_env.keys():
+                    # if ops not in internal_env.keys():
+                    if ops not in DeepMuon.loss_fn.__dir__():
                         warnings.warn(
                             f"evaluaction metrics '{ops}' doesn't exists!")
                         continue
-                    eva_metrics[ops] = internal_env[ops]
+                    # eva_metrics[ops] = internal_env[ops]
+                    eva_metrics[ops]=getattr(DeepMuon.loss_fn,ops)
             if 'sota_target' not in evaluation_op.keys():
                 evaluation_op['sota_target'] = dict(mode='min', target=None)
             else:

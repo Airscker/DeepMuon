@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-10 17:32:44
 LastEditors: airscker
-LastEditTime: 2023-09-11 18:18:27
+LastEditTime: 2023-09-16 21:22:27
 Description: NULL
 
 Copyright (C) 2023 by Deep Graph Library, All Rights Reserved. 
@@ -12,8 +12,9 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 import os
 import torch
 import dgl
-from dgl.nn.pytorch import GINConv
+import torch.nn.functional as F
 from torch import nn
+from .base import MLPBlock, ResidualUnit
 
 
 class GINConv(nn.Module):
@@ -109,8 +110,7 @@ class GINConv(nn.Module):
         self.activation = activation
         if aggregator_type not in ("sum", "max", "mean"):
             raise KeyError(
-                "Aggregator type {} not recognized.".format(aggregator_type)
-            )
+                "Aggregator type {} not recognized.".format(aggregator_type))
         # to specify whether eps is trainable or not.
         if learn_eps:
             self.eps = torch.nn.Parameter(torch.FloatTensor([init_eps]))
@@ -168,7 +168,82 @@ class GINConv(nn.Module):
 
 
 class CrystalXASV1(nn.Module):
-    def __init__(self) -> None:
+    '''
+    ## CrystalXAS model for XAS spectrum prediction.
+
+    ### Args:
+        - gnn_hidden_dims: The hidden dimensions of the GNN layers, the depth of GNN part is `len(gnn_hidden_dims)-1`.
+        - feat_dim: The dimension of the atom features.
+        - prompt_dim: The dimension of the prompt features.
+        - mlp_hidden_dims: The hidden dimensions of the MLP layers, the depth of MLP part is `len(mlp_hidden_dims)-1`.
+        - mlp_dropout: The dropout rate of the MLP layers.
+        - xas_type: The type of XAS data to be loaded. The supported types include `XANES`, `EXAFS` and `XAFS`.
+    '''
+
+    def __init__(self,
+                 gnn_hidden_dims: list[int] = [128, 512],
+                 feat_dim: int = 6,
+                 prompt_dim: int = 2,
+                 mlp_hidden_dims: list = [1024, 512],
+                 mlp_dropout=0,
+                 xas_type: str = 'XANES'):
         super().__init__()
-    def forward(self, data):
-        pass
+        xas_types = ['XANES', 'EXAFS', 'XAFS']
+        assert xas_type in xas_types, f"'xas_type' must be in {xas_types}, but {xas_type} was given."
+        self.xas_type = xas_type
+        self.XANES = MLPBlock(gnn_hidden_dims[-1] + prompt_dim,
+                              100,
+                              mlp_hidden_dims,
+                              mode='NAD',
+                              activation=nn.ReLU,
+                              normalization=nn.BatchNorm1d,
+                              dropout_rate=mlp_dropout,
+                              bias=True)
+        self.EXAFS = MLPBlock(gnn_hidden_dims[-1] + prompt_dim,
+                              500,
+                              mlp_hidden_dims,
+                              mode='NAD',
+                              activation=nn.ReLU,
+                              normalization=nn.BatchNorm1d,
+                              dropout_rate=mlp_dropout,
+                              bias=True)
+        # self.xas_generator = nn.Sequential(
+        #     ResidualUnit(1,1,16,adn_ordering='NDA',activation=nn.ReLU,normalization=nn.BatchNorm1d),
+        #     ResidualUnit(1,16,32,adn_ordering='NDA',activation=nn.ReLU,normalization=nn.BatchNorm1d),
+        #     ResidualUnit(1,32,2,adn_ordering='NDA',activation=nn.ReLU,normalization=nn.BatchNorm1d),
+        #     )
+        self.prompt_nn = nn.Linear(prompt_dim, prompt_dim)
+        gnn_hidden_dims = [feat_dim] + gnn_hidden_dims
+        GNN_Transform = nn.ModuleList([
+            nn.Linear(gnn_hidden_dims[i], gnn_hidden_dims[i + 1])
+            for i in range(len(gnn_hidden_dims) - 1)
+        ])
+        self.GIN = nn.ModuleList([
+            GINConv(apply_func=GNN_Transform[i],
+                    aggregator_type='sum',
+                    init_eps=0,
+                    learn_eps=False,
+                    activation=F.relu)
+            for i in range(len(gnn_hidden_dims) - 1)
+        ])
+
+    def forward(self, data, device):
+        graph = data['graph'].to(device)
+        prompt = data['prompt'].to(device)
+        prompt = self.prompt_nn(prompt)
+        atom_features = graph.ndata['feat']
+        with graph.local_scope():
+            for i in range(len(self.GIN)):
+                atom_features = self.GIN[i](graph, atom_features)
+            graph.ndata['feat'] = atom_features
+            atom_features = dgl.sum_nodes(graph, 'feat')
+        if self.xas_type == 'XANES':
+            spectrum = self.XANES(torch.cat([atom_features, prompt], dim=-1))
+        elif self.xas_type == 'EXAFS':
+            spectrum = self.EXAFS(torch.cat([atom_features, prompt], dim=-1))
+        else:
+            spectrum = torch.cat([self.XANES(torch.cat([atom_features, prompt], dim=-1)),
+                                  self.EXAFS(torch.cat([atom_features, prompt], dim=-1))],
+                                  dim=-1)
+        # spectrum = self.xas_generator(spectrum.unsqueeze(1))
+        return spectrum

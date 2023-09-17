@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-12-26 21:36:52
 LastEditors: airscker
-LastEditTime: 2023-03-06 12:48:21
+LastEditTime: 2023-09-13 21:06:18
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -10,7 +10,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .ResidualUnit import ResidualUnit
+from .base import ResidualUnit,MLPBlock
 
 
 class ResMax2(nn.Module):
@@ -37,18 +37,7 @@ class ResMax2(nn.Module):
             nn.LeakyReLU(),
         )
         self.hidden_size = [1024, 256]
-        self.linear_relu_stack = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(672, self.hidden_size[0]),
-            nn.Dropout(mlp_drop_rate),
-            nn.BatchNorm1d(self.hidden_size[0]),
-            nn.LeakyReLU(),
-            nn.Linear(self.hidden_size[0], self.hidden_size[1]),
-            nn.Dropout(mlp_drop_rate),
-            nn.BatchNorm1d(self.hidden_size[1]),
-            nn.LeakyReLU(),
-            nn.Linear(self.hidden_size[1], 3),
-        )
+        self.linear_relu_stack=MLPBlock(672,3,self.hidden_size,normalization=nn.BatchNorm1d,activation=nn.LeakyReLU,dropout_rate=mlp_drop_rate)
 
     def freeze_stages(self):
         self.conv.eval()
@@ -98,18 +87,7 @@ class ResMax3(nn.Module):
         )
         self.hidden_size = [512, 128]
         self.flat=nn.Flatten()
-        self.linear_relu_stack = nn.Sequential(
-            # nn.Linear(1296,3)
-            nn.Linear(1296, self.hidden_size[0]),
-            nn.Dropout(mlp_drop_rate),
-            nn.BatchNorm1d(self.hidden_size[0]),
-            nn.LeakyReLU(),
-            nn.Linear(self.hidden_size[0], self.hidden_size[1]),
-            nn.Dropout(mlp_drop_rate),
-            nn.BatchNorm1d(self.hidden_size[1]),
-            nn.LeakyReLU(),
-            nn.Linear(self.hidden_size[1], 3),
-        )
+        self.linear_relu_stack=MLPBlock(1296,3,self.hidden_size,mode='DNA',normalization=nn.BatchNorm1d,activation=nn.LeakyReLU,dropout_rate=mlp_drop_rate)
 
     def forward(self, x:torch.Tensor):
         batch = x.shape[0]

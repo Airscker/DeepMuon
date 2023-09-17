@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 14:36:30
 LastEditors: airscker
-LastEditTime: 2023-09-02 21:51:41
+LastEditTime: 2023-09-13 21:06:02
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -13,6 +13,7 @@ import torch.nn.functional as F
 
 import dgl
 from dgl.nn.pytorch import GraphConv, NNConv
+from .base import MLPBlock
 
 class MPNNconv(nn.Module):
     def __init__(self, node_in_feats, edge_in_feats, node_out_feats=128,
@@ -77,13 +78,7 @@ class SolvGNN(nn.Module):
         #     nn.LeakyReLU(),
         #     nn.Linear(self.add_embed_dims[1],self.add_embed_dims[2])
         # )
-        self.regression = nn.Sequential(
-            nn.Linear(257, hidden_dim),
-            nn.LeakyReLU(),
-            nn.Linear(hidden_dim,hidden_dim),
-            nn.LeakyReLU(),
-            nn.Linear(hidden_dim,n_classes)
-        )
+        self.regression=MLPBlock(257,n_classes,[hidden_dim]*2,mode='NAD',activation=nn.LeakyReLU)
         
     # def forward(self, solvdata=None,empty_solvsys=None,device=None):
     #     graph:dgl.DGLGraph=solvdata['graph'].to(device)
@@ -151,13 +146,7 @@ class SolvGNNV2(nn.Module):
         #     nn.Linear(self.add_embed_dims[1],self.add_embed_dims[2])
         # )
         self.hidden_dims=[1024,512]
-        self.regression = nn.Sequential(
-            nn.Linear(hidden_dim, self.hidden_dims[0]),
-            nn.LeakyReLU(),
-            nn.Linear(self.hidden_dims[0],self.hidden_dims[1]),
-            nn.LeakyReLU(),
-            nn.Linear(self.hidden_dims[1],n_classes)
-        )
+        self.regression=MLPBlock(hidden_dim,n_classes,self.hidden_dims,mode='NAD',activation=nn.LeakyReLU)
         
     def forward(self, solvdata=None,empty_solvsys=None,device=None):
         graph:dgl.DGLGraph=solvdata['graph'].to(device)
