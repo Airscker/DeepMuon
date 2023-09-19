@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-10 17:32:44
 LastEditors: airscker
-LastEditTime: 2023-09-16 21:22:27
+LastEditTime: 2023-09-18 12:41:09
 Description: NULL
 
 Copyright (C) 2023 by Deep Graph Library, All Rights Reserved. 
@@ -14,157 +14,9 @@ import torch
 import dgl
 import torch.nn.functional as F
 from torch import nn
-from .base import MLPBlock, ResidualUnit
-
-
-class GINConv(nn.Module):
-    """
-    ## Graph Isomorphism Network layer from `How Powerful are Graph Neural Networks?` (https://arxiv.org/pdf/1810.00826.pdf).
-
-    .. math::
-        h_i^{(l+1)} = f_\Theta \left((1 + \epsilon) h_i^{l} +
-        \mathrm{aggregate}\left(\left\{h_j^{l}, j\in\mathcal{N}(i)
-        \right\}\right)\right)
-
-    If a weight tensor on each edge is provided, the weighted graph convolution is defined as:
-
-    .. math::
-        h_i^{(l+1)} = f_\Theta \left((1 + \epsilon) h_i^{l} +
-        \mathrm{aggregate}\left(\left\{e_{ji} h_j^{l}, j\in\mathcal{N}(i)
-        \right\}\right)\right)
-
-    where :math:`e_{ji}` is the weight on the edge from node :math:`j` to node :math:`i`.
-    Please make sure that `e_{ji}` is broadcastable with `h_j^{l}`.
-
-    Parameters
-    ----------
-    apply_func : callable activation function/layer or None
-        If not None, apply this function to the updated node feature,
-        the :math:`f_\Theta` in the formula, default: None.
-    aggregator_type : str
-        Aggregator type to use (``sum``, ``max`` or ``mean``), default: 'sum'.
-    init_eps : float, optional
-        Initial :math:`\epsilon` value, default: ``0``.
-    learn_eps : bool, optional
-        If True, :math:`\epsilon` will be a learnable parameter. Default: ``False``.
-    activation : callable activation function/layer or None, optional
-        If not None, applies an activation function to the updated node features.
-        Default: ``None``.
-
-    Examples
-    --------
-    >>> import dgl
-    >>> import numpy as np
-    >>> import torch as th
-    >>> from dgl.nn import GINConv
-    >>>
-    >>> g = dgl.graph(([0,1,2,3,2,5], [1,2,3,4,0,3]))
-    >>> feat = torch.ones(6, 10)
-    >>> lin = torch.nn.Linear(10, 10)
-    >>> conv = GINConv(lin, 'max')
-    >>> res = conv(g, feat)
-    >>> res
-    tensor([[-0.4821,  0.0207, -0.7665,  0.5721, -0.4682, -0.2134, -0.5236,  1.2855,
-            0.8843, -0.8764],
-            [-0.4821,  0.0207, -0.7665,  0.5721, -0.4682, -0.2134, -0.5236,  1.2855,
-            0.8843, -0.8764],
-            [-0.4821,  0.0207, -0.7665,  0.5721, -0.4682, -0.2134, -0.5236,  1.2855,
-            0.8843, -0.8764],
-            [-0.4821,  0.0207, -0.7665,  0.5721, -0.4682, -0.2134, -0.5236,  1.2855,
-            0.8843, -0.8764],
-            [-0.4821,  0.0207, -0.7665,  0.5721, -0.4682, -0.2134, -0.5236,  1.2855,
-            0.8843, -0.8764],
-            [-0.1804,  0.0758, -0.5159,  0.3569, -0.1408, -0.1395, -0.2387,  0.7773,
-            0.5266, -0.4465]], grad_fn=<AddmmBackward>)
-
-    >>> # With activation
-    >>> from torch.nn.functional import relu
-    >>> conv = GINConv(lin, 'max', activation=relu)
-    >>> res = conv(g, feat)
-    >>> res
-    tensor([[5.0118, 0.0000, 0.0000, 3.9091, 1.3371, 0.0000, 0.0000, 0.0000, 0.0000,
-             0.0000],
-            [5.0118, 0.0000, 0.0000, 3.9091, 1.3371, 0.0000, 0.0000, 0.0000, 0.0000,
-             0.0000],
-            [5.0118, 0.0000, 0.0000, 3.9091, 1.3371, 0.0000, 0.0000, 0.0000, 0.0000,
-             0.0000],
-            [5.0118, 0.0000, 0.0000, 3.9091, 1.3371, 0.0000, 0.0000, 0.0000, 0.0000,
-             0.0000],
-            [5.0118, 0.0000, 0.0000, 3.9091, 1.3371, 0.0000, 0.0000, 0.0000, 0.0000,
-             0.0000],
-            [2.5011, 0.0000, 0.0089, 2.0541, 0.8262, 0.0000, 0.0000, 0.1371, 0.0000,
-             0.0000]], grad_fn=<ReluBackward0>)
-    """
-
-    def __init__(
-        self,
-        apply_func=None,
-        aggregator_type="sum",
-        init_eps=0,
-        learn_eps=False,
-        activation=None,
-    ):
-        super(GINConv, self).__init__()
-        self.apply_func = apply_func
-        self._aggregator_type = aggregator_type
-        self.activation = activation
-        if aggregator_type not in ("sum", "max", "mean"):
-            raise KeyError(
-                "Aggregator type {} not recognized.".format(aggregator_type))
-        # to specify whether eps is trainable or not.
-        if learn_eps:
-            self.eps = torch.nn.Parameter(torch.FloatTensor([init_eps]))
-        else:
-            self.register_buffer("eps", torch.FloatTensor([init_eps]))
-
-    def forward(self, graph, feat, edge_weight=None):
-        r"""
-
-        Description
-        -----------
-        Compute Graph Isomorphism Network layer.
-
-        Parameters
-        ----------
-        graph : DGLGraph
-            The graph.
-        feat : torch.Tensor or pair of torch.Tensor
-            If a torch.Tensor is given, the input feature of shape :math:`(N, D_{in})` where
-            :math:`D_{in}` is size of input feature, :math:`N` is the number of nodes.
-            If a pair of torch.Tensor is given, the pair must contain two tensors of shape
-            :math:`(N_{in}, D_{in})` and :math:`(N_{out}, D_{in})`.
-            If ``apply_func`` is not None, :math:`D_{in}` should
-            fit the input dimensionality requirement of ``apply_func``.
-        edge_weight : torch.Tensor, optional
-            Optional tensor on the edge. If given, the convolution will weight
-            with regard to the message.
-
-        Returns
-        -------
-        torch.Tensor
-            The output feature of shape :math:`(N, D_{out})` where
-            :math:`D_{out}` is the output dimensionality of ``apply_func``.
-            If ``apply_func`` is None, :math:`D_{out}` should be the same
-            as input dimensionality.
-        """
-        _reducer = getattr(dgl.function, self._aggregator_type)
-        with graph.local_scope():
-            aggregate_fn = dgl.function.copy_u("h", "m")
-            if edge_weight is not None:
-                assert edge_weight.shape[0] == graph.num_edges()
-                graph.edata["_edge_weight"] = edge_weight
-                aggregate_fn = dgl.function.u_mul_e("h", "_edge_weight", "m")
-
-            feat_src, feat_dst = dgl.utils.expand_as_pair(feat, graph)
-            graph.srcdata["h"] = feat_src
-            graph.update_all(aggregate_fn, _reducer("m", "neigh"))
-            rst = (1 + self.eps) * feat_dst + graph.dstdata["neigh"]
-            if self.apply_func is not None:
-                rst = self.apply_func(rst)
-            # activation
-            if self.activation is not None:
-                rst = self.activation(rst)
-            return rst
+from .base import MLPBlock
+from dgl.nn.pytorch import GINConv
+from typing import Union
 
 
 class CrystalXASV1(nn.Module):
@@ -181,7 +33,9 @@ class CrystalXASV1(nn.Module):
     '''
 
     def __init__(self,
-                 gnn_hidden_dims: list[int] = [128, 512],
+                 gnn_hidden_dims: Union[list,int] = [128, 512],
+                 gnn_layers: int = 3,
+                 gnn_res_connection: bool = True,
                  feat_dim: int = 6,
                  prompt_dim: int = 2,
                  mlp_hidden_dims: list = [1024, 512],
@@ -191,6 +45,13 @@ class CrystalXASV1(nn.Module):
         xas_types = ['XANES', 'EXAFS', 'XAFS']
         assert xas_type in xas_types, f"'xas_type' must be in {xas_types}, but {xas_type} was given."
         self.xas_type = xas_type
+        if isinstance(gnn_hidden_dims, int):
+            gnn_hidden_dims = [gnn_hidden_dims] * gnn_layers
+            self.gnn_res_connection = gnn_res_connection
+        else:
+            if gnn_res_connection:
+                print('Residual connection is unavailable when `gnn_hidden_dims` is a list. That is, dimensions of GNN layers must be the same.')
+            self.gnn_res_connection = False
         self.XANES = MLPBlock(gnn_hidden_dims[-1] + prompt_dim,
                               100,
                               mlp_hidden_dims,
@@ -234,7 +95,11 @@ class CrystalXASV1(nn.Module):
         atom_features = graph.ndata['feat']
         with graph.local_scope():
             for i in range(len(self.GIN)):
-                atom_features = self.GIN[i](graph, atom_features)
+                result = self.GIN[i](graph, atom_features)
+                if self.gnn_res_connection and i != 0:
+                    atom_features = result + atom_features
+                else:
+                    atom_features = result
             graph.ndata['feat'] = atom_features
             atom_features = dgl.sum_nodes(graph, 'feat')
         if self.xas_type == 'XANES':
@@ -247,3 +112,158 @@ class CrystalXASV1(nn.Module):
                                   dim=-1)
         # spectrum = self.xas_generator(spectrum.unsqueeze(1))
         return spectrum
+
+class CrystalXASV2(nn.Module):
+    '''
+    ## CrystalXAS model for XAS spectrum prediction.
+
+    ### Args:
+        - gnn_hidden_dims: The hidden dimensions of the GNN layers, the depth of GNN part is `len(gnn_hidden_dims)-1`.
+            If integer is given, the hidden dimensions of all GNN layers will be the same.
+        - gnn_layers: The number of GNN layers, only usable when `gnn_hidden_dims` is interger.
+        - gnn_res_connection: Whether to use residual connection in GNN part.
+        - feat_dim: The dimension of the atom features.
+        - prompt_dim: The dimension of the prompt features.
+        - prompt_hidden_dim: The output dimension of the prompt NN.
+        - normnn_dim: The output dimension of the normalization NN.
+        - mlp_hidden_dims: The hidden dimensions of the MLP layers, the depth of MLP part is `len(mlp_hidden_dims)-1`.
+        - mlp_dropout: The dropout rate of the MLP layers.
+        - xas_type: The type of XAS data to be loaded. The supported types include `XANES`, `EXAFS` (NO `XAFS`).
+    '''
+
+    def __init__(self,
+                 gnn_hidden_dims: Union[list,int] = [128, 512],
+                 gnn_layers: int = 3,
+                 gnn_res_connection: bool = True,
+                 feat_dim: int = 6,
+                 prompt_dim: int = 2,
+                 prompt_hidden_dim=32,
+                 normnn_dim: int=1024,
+                 mlp_hidden_dims: list = [1024, 512],
+                 mlp_dropout=0,
+                 xas_type: str = 'XANES'):
+        super().__init__()
+        xas_types = {'XANES':100, 'EXAFS':500}
+        assert xas_type in xas_types.keys(), f"'xas_type' must be in {xas_types.keys()}, but {xas_type} was given."
+        self.xas_type = xas_type
+        if isinstance(gnn_hidden_dims, int):
+            self.gnn_hidden_dims = [gnn_hidden_dims] * gnn_layers
+            self.gnn_res_connection = gnn_res_connection
+        else:
+            if gnn_res_connection:
+                print('Residual connection is unavailable when `gnn_hidden_dims` is a list. That is, dimensions of GNN layers must be the same.')
+            self.gnn_res_connection = False
+            self.gnn_hidden_dims = gnn_hidden_dims
+        self.gnn_hidden_dims = [feat_dim] + self.gnn_hidden_dims
+        self.NormalizeNN=nn.Sequential(
+            MLPBlock(dim_input=self.gnn_hidden_dims[-1],
+                     dim_output=normnn_dim,
+                     hidden_sizes=mlp_hidden_dims,
+                     mode='NAD',
+                     activation=nn.ReLU,
+                     normalization=nn.BatchNorm1d,
+                     dropout_rate=mlp_dropout,
+                     bias=True),
+            nn.Softmax(dim=-1),
+        )
+        self.XANES =nn.ModuleList([MLPBlock(self.gnn_hidden_dims[-1] + prompt_hidden_dim,100,mlp_hidden_dims,mode='NAD',
+                                            activation=nn.ReLU,normalization=nn.BatchNorm1d,dropout_rate=mlp_dropout,bias=True),
+                                   nn.Linear(normnn_dim,100)])
+        self.EXAFS = nn.ModuleList([MLPBlock(self.gnn_hidden_dims[-1] + prompt_hidden_dim,500,mlp_hidden_dims,mode='NAD',
+                                             activation=nn.ReLU,normalization=nn.BatchNorm1d,dropout_rate=mlp_dropout,bias=True),
+                                   nn.Linear(normnn_dim,500)])
+        # self.xas_generator = nn.Sequential(
+        #     ResidualUnit(1,1,16,adn_ordering='NDA',activation=nn.ReLU,normalization=nn.BatchNorm1d),
+        #     ResidualUnit(1,16,32,adn_ordering='NDA',activation=nn.ReLU,normalization=nn.BatchNorm1d),
+        #     ResidualUnit(1,32,2,adn_ordering='NDA',activation=nn.ReLU,normalization=nn.BatchNorm1d),
+        #     )
+        self.prompt_nn = nn.Linear(prompt_dim, prompt_hidden_dim)
+        
+        GNN_Transform = nn.ModuleList([
+            nn.Linear(self.gnn_hidden_dims[i], self.gnn_hidden_dims[i + 1])
+            for i in range(len(self.gnn_hidden_dims) - 1)
+        ])
+        self.GIN = nn.ModuleList([
+            GINConv(apply_func=GNN_Transform[i],aggregator_type='sum',init_eps=0,learn_eps=False,activation=F.relu)
+            for i in range(len(self.gnn_hidden_dims) - 1)
+        ])
+    def unify_vector(self,data:torch.Tensor):
+        '''Unify the vector to [-1,1] range.'''
+        max_vals=torch.max(data,dim=1,keepdim=True)[0]
+        min_vals=torch.min(data,dim=1,keepdim=True)[0]
+        return 2.0*(data-min_vals)/(max_vals-min_vals)-1.0
+    def _generate_xas(self,atom_features,prompt):
+        norm_matrix=self.NormalizeNN(atom_features)
+        if self.xas_type == 'XANES':
+            spectrum = self.XANES[0](torch.cat([atom_features, prompt], dim=-1))
+            norm_matrix=self.XANES[1](norm_matrix)
+        elif self.xas_type == 'EXAFS':
+            spectrum = self.EXAFS[0](torch.cat([atom_features, prompt], dim=-1))
+            norm_matrix=self.EXAFS[1](atom_features)
+        spectrum=self.unify_vector(spectrum)
+        spectrum=spectrum*norm_matrix
+        return spectrum
+    def forward(self, data, device):
+        graph = data['graph'].to(device)
+        prompt = data['prompt'].to(device)
+        prompt = self.prompt_nn(prompt)
+        atom_features = graph.ndata['feat']
+        with graph.local_scope():
+            for i in range(len(self.GIN)):
+                result = self.GIN[i](graph, atom_features)
+                if self.gnn_res_connection and i != 0:
+                    atom_features = result + atom_features
+                else:
+                    atom_features = result
+            graph.ndata['feat'] = atom_features
+            atom_features = dgl.sum_nodes(graph, 'feat')
+        spectrum=self._generate_xas(atom_features,prompt)
+        return spectrum
+
+class CrystalXASV3(CrystalXASV2):
+    def __init__(self,
+                 gnn_hidden_dims: Union[list,int] = [128, 512],
+                 gnn_layers: int = 3,
+                 gnn_res_connection: bool = True,
+                 feat_dim: int = 6,
+                 prompt_dim: int = 2,
+                 prompt_hidden_dim=32,
+                 normnn_dim: int=1024,
+                 normnn_hidden_dim: list=[5120,2048],
+                 mlp_hidden_dims: list = [1024, 512],
+                 mlp_dropout=0,
+                 xas_type: str = 'XANES'):
+        super().__init__(gnn_hidden_dims,gnn_layers,gnn_res_connection,feat_dim,prompt_dim,prompt_hidden_dim,normnn_dim,mlp_hidden_dims,mlp_dropout,xas_type)
+        self.NormalizeNN=nn.Sequential(
+            MLPBlock(dim_input=self.gnn_hidden_dims[-1],
+                     dim_output=normnn_dim,
+                     hidden_sizes=normnn_hidden_dim,
+                     mode='NAD',
+                     activation=nn.ReLU,
+                     normalization=nn.BatchNorm1d,
+                     dropout_rate=mlp_dropout,
+                     bias=True),
+            nn.Softmax(dim=-1),
+        )
+
+class CrystalXASV4(CrystalXASV2):
+    def __init__(self,
+                 gnn_hidden_dims: Union[list,int] = [128, 512],
+                 gnn_layers: int = 3,
+                 gnn_res_connection: bool = True,
+                 feat_dim: int = 6,
+                 prompt_dim: int = 2,
+                 prompt_hidden_dim=32,
+                 normnn_dim: int=1024,
+                 normnn_hidden_dim: list=[5120,2048],
+                 mlp_hidden_dims: list = [1024, 512],
+                 mlp_dropout=0,
+                 xas_type: str = 'XANES'):
+        super().__init__(gnn_hidden_dims, gnn_layers, gnn_res_connection, feat_dim, prompt_dim, prompt_hidden_dim, normnn_dim, mlp_hidden_dims, mlp_dropout, xas_type)
+        del self.NormalizeNN
+        self.XANES =nn.ModuleList([MLPBlock(self.gnn_hidden_dims[-1] + prompt_hidden_dim,100,mlp_hidden_dims,mode='NAD',
+                                            activation=nn.ReLU,normalization=nn.BatchNorm1d,dropout_rate=mlp_dropout,bias=True),
+                                   nn.Linear(normnn_dim,100)])
+        self.EXAFS = nn.ModuleList([MLPBlock(self.gnn_hidden_dims[-1] + prompt_hidden_dim,500,mlp_hidden_dims,mode='NAD',
+                                             activation=nn.ReLU,normalization=nn.BatchNorm1d,dropout_rate=mlp_dropout,bias=True),
+                                   nn.Linear(normnn_dim,500)])

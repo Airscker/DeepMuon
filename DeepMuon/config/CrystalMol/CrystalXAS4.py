@@ -2,21 +2,24 @@
 Author: airscker
 Date: 2023-09-15 12:17:09
 LastEditors: airscker
-LastEditTime: 2023-09-17 12:19:19
+LastEditTime: 2023-09-18 12:48:01
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 
-model = dict(backbone='CrystalXASV1',
+model = dict(backbone='CrystalXASV4',
              pipeline='crystalxas',
              params=dict(gnn_hidden_dims=1024,
                          gnn_layers=3,
                          gnn_res_connection=True,
                          feat_dim=123,
                          prompt_dim=123,
-                         mlp_hidden_dims=[2048,1024,512],
-                         mlp_dropout=0,
+                         prompt_hidden_dim=32,
+                         normnn_dim=1024,
+                         normnn_hidden_dim=[5120, 2048],
+                         mlp_hidden_dims=[2048, 1024, 512],
+                         mlp_dropout=0.1,
                          xas_type='XANES'))
 
 train_dataset = dict(backbone='XASSUMDataset',
@@ -38,11 +41,12 @@ test_dataset = dict(backbone='XASSUMDataset',
                                 self_loop=False,
                                 onehot_encode=False))
 
-work_config = dict(work_dir='/home/yufeng/workdir/CrystalXAS/GINV1005')
+work_config = dict(work_dir='/home/yufeng/workdir/CrystalXAS/GINV3001')
 
 checkpoint_config = dict(load_from='', resume_from='', save_inter=200)
 
-loss_fn = dict(backbone='RelativeLoss',params=dict(pos_ratio=1,sharp_ratio=1e-3,smooth_ratio=1e-5))
+loss_fn = dict(backbone='RelativeLoss',
+               params=dict(pos_ratio=1, sharp_ratio=1e-3, smooth_ratio=1e-5))
 # evaluation = dict(metrics=['R2Value'],
 #                   sota_target=dict(mode='max', target='R2Value'))
 

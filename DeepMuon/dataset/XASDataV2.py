@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-04 22:11:50
 LastEditors: airscker
-LastEditTime: 2023-09-16 21:40:13
+LastEditTime: 2023-09-18 12:46:29
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -91,6 +91,8 @@ class XASSUMDataset(Dataset):
             xas_len=600
         for i in range(len(self.dataset)):
             if self.dataset[i][2].shape[-1]!=xas_len:
+                continue
+            if np.min(self.dataset[i][2][1])<-3 or np.max(self.dataset[i][2][1])>20:
                 continue
             new_dataset.append(self.dataset[i])
         self.dataset=new_dataset

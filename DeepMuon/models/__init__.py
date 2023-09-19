@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 19:32:21
 LastEditors: airscker
-LastEditTime: 2023-09-13 21:06:10
+LastEditTime: 2023-09-17 11:57:40
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -23,7 +23,7 @@ from .SwinTrans import SwinTransformer,EGFR_SwinT,EGFR_SwinTV2
 from .MLPMixer import MLPMixer,XASMLP
 from .MINES import SolvGNN,SolvGNNV2,SolvGNNV3
 from .XASG import XASGV1,XASGV2,TransXAS
-from .CrystalXAS import GINConv,CrystalXASV1
+from .CrystalXAS import GINConv,CrystalXASV1,CrystalXASV2,CrystalXASV3
 
 
 __all__ = ['MLP3','MLPBlock','ResidualUnit',
@@ -33,4 +33,4 @@ __all__ = ['MLP3','MLPBlock','ResidualUnit',
            'EGFR_SwinTV2','MLPMixer','MinistModel','XASMLP',
            'SolvGNN','SolvGNNV2','SolvGNNV3',
            'XASGV1','XASGV2','TransXAS',
-           'GINConv','CrystalXASV1']
+           'GINConv','CrystalXASV1','CrystalXASV2','CrystalXASV3']
