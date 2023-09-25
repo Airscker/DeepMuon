@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-31 09:28:41
 LastEditors: airscker
-LastEditTime: 2023-09-11 18:22:12
+LastEditTime: 2023-09-25 17:20:30
 Description: NULL
 
 Copyright (C) OpenMMLab. All rights reserved.
@@ -10,9 +10,9 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 import numpy as np
 from sklearn.metrics import f1_score as f1
-from sklearn.metrics import roc_auc_score,r2_score
+from sklearn.metrics import roc_auc_score,r2_score,confusion_matrix
 from ..tools.AirDecorator import EnableVisualiaztion
-from ..tools.AirVisual import R2JointPlot
+from ..tools.AirVisual import R2JointPlot,CMPlot
 
 @EnableVisualiaztion(Name="R2 Score",NNHSReport=True,TRTensorBoard=True,TRCurve=True,TSPlotMethod=R2JointPlot)
 def R2Value(scores, labels):
@@ -44,8 +44,8 @@ def f1_score(scores, labels):
     f1_score = f1(labels, pred, average='macro')
     return f1_score
 
-@EnableVisualiaztion(Name="Confusion Matrix",NNHSReport=False,TRTensorBoard=False,TRCurve=False)
-def confusion_matrix(scores, labels, normalize=None):
+@EnableVisualiaztion(Name="Confusion Matrix",NNHSReport=False,TRTensorBoard=False,TRCurve=False,TSPlotMethod=CMPlot)
+def ConfusionMatrix(scores, labels, normalize=None):
     """
     ## Compute confusion matrix.
 
@@ -60,48 +60,10 @@ def confusion_matrix(scores, labels, normalize=None):
     ## Returns:
         - np.ndarray: Confusion matrix.
     """
-    y_pred = np.argmax(scores, axis=1)
-    if normalize not in ['true', 'pred', 'all', None]:
-        raise ValueError("normalize must be one of {'true', 'pred', "
-                         "'all', None}")
-    if isinstance(y_pred, list):
-        y_pred = np.array(y_pred)
-    if not isinstance(y_pred, np.ndarray):
-        raise TypeError(
-            f'y_pred must be list or np.ndarray, but got {type(y_pred)}')
-    if not y_pred.dtype == np.int64:
-        raise TypeError(
-            f'y_pred dtype must be np.int64, but got {y_pred.dtype}')
-    if isinstance(labels, list):
-        labels = np.array(labels)
-    if not isinstance(labels, np.ndarray):
-        raise TypeError(
-            f'labels must be list or np.ndarray, but got {type(labels)}')
-    if not labels.dtype == np.int64:
-        raise TypeError(
-            f'labels dtype must be np.int64, but got {labels.dtype}')
-    label_set = np.unique(np.concatenate((y_pred, labels)))
-    num_labels = len(label_set)
-    max_label = label_set[-1]
-    label_map = np.zeros(max_label + 1, dtype=np.int64)
-    for i, labels in enumerate(label_set):
-        label_map[labels] = i
-    y_pred_mapped = label_map[y_pred]
-    y_real_mapped = label_map[labels]
-    confusion_mat = np.bincount(
-        num_labels * y_real_mapped + y_pred_mapped,
-        minlength=num_labels**2).reshape(num_labels, num_labels)
-    with np.errstate(all='ignore'):
-        if normalize == 'true':
-            confusion_mat = (
-                confusion_mat / confusion_mat.sum(axis=1, keepdims=True))
-        elif normalize == 'pred':
-            confusion_mat = (
-                confusion_mat / confusion_mat.sum(axis=0, keepdims=True))
-        elif normalize == 'all':
-            confusion_mat = (confusion_mat / confusion_mat.sum())
-        confusion_mat = np.nan_to_num(confusion_mat)
-    return confusion_mat
+    scores=np.array(scores)
+    labels=np.array(labels)
+    cm=confusion_matrix(labels, scores.argmax(axis=1))
+    return cm
 
 
 def every_class_accuracy(scores, labels):

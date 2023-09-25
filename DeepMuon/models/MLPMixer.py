@@ -80,9 +80,13 @@ class MLPMixer(nn.Module):
         return x
     
 class XASMLP(nn.Module):
-    def __init__(self,input_node=100,classes=3,dropout=0.1):
+    def __init__(self,
+                dim_input=100,
+                classes=2,
+                hidden_sizes=[256,1024,128],
+                mode='NDA',
+                dropout_rate=0.0):
         super().__init__()
-        self.hidden_nodes=[256,128]
-        self.linear=MLPBlock(input_node,classes,self.hidden_nodes,dropout_rate=dropout,normalization=nn.BatchNorm1d,activation=nn.ReLU,mode='NAD')
+        self.linear=MLPBlock(dim_input,classes,hidden_sizes,dropout_rate=dropout_rate,normalization=nn.BatchNorm1d,activation=nn.ReLU,mode=mode)
     def forward(self,x):
         return self.linear(x)

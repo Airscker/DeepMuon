@@ -57,7 +57,7 @@ checkpoint_config = dict(
 Specify the customized loss function to be used, if no customized loss function specified, nn.MSELoss() will be used
 '''
 loss_fn = dict(backbone='CrossEntropyLoss')
-evaluation = dict(metrics=['f1_score', 'confusion_matrix',
+evaluation = dict(metrics=['f1_score', 'ConfusionMatrix',
                            'every_class_accuracy', 'top_k_accuracy'],
                   sota_target=dict(mode='max', target='f1_score'))
 '''

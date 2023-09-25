@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-15 12:17:09
 LastEditors: airscker
-LastEditTime: 2023-09-17 12:18:51
+LastEditTime: 2023-09-21 21:39:02
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -11,7 +11,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 model = dict(backbone='CrystalXASV3',
              pipeline='crystalxas',
              params=dict(gnn_hidden_dims=1024,
-                         gnn_layers=3,
+                         gnn_layers=6,
                          gnn_res_connection=True,
                          feat_dim=123,
                          prompt_dim=123,
@@ -58,7 +58,7 @@ optimizer = dict(backbone='AdamW',
 scheduler = dict(backbone='ReduceLROnPlateau',
                  params=dict(factor=0.5, patience=100))
 
-hyperpara = dict(epochs=200, batch_size=128)
+hyperpara = dict(epochs=200, batch_size=512)
 fsdp_parallel = dict(enabled=False, min_num_params=1e4)
 optimize_config = dict(fp16=False,
                        grad_acc=1,

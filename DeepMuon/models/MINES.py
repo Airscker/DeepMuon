@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 14:36:30
 LastEditors: airscker
-LastEditTime: 2023-09-13 21:06:02
+LastEditTime: 2023-09-21 09:48:33
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -12,8 +12,12 @@ from torch import nn
 import torch.nn.functional as F
 
 import dgl
-from dgl.nn.pytorch import GraphConv, NNConv
-from .base import MLPBlock
+from dgl.nn.pytorch import GraphConv, NNConv, GINConv
+
+import numpy as np
+from rdkit import Chem
+from torch_geometric.data import Data
+from .base import MLPBlock,GNN_feature
 
 class MPNNconv(nn.Module):
     def __init__(self, node_in_feats, edge_in_feats, node_out_feats=128,
@@ -179,32 +183,38 @@ class GCR(nn.Module):
             return F.relu(output)
 
 class SolvGNNV3(nn.Module):
-    def __init__(self, in_dim=74, hidden_dim=256, add_dim=0, mlp_dims=[1024,512],gcr_layers=5 ,n_classes=1, allow_zero_in_degree=True,freeze_GNN=False) -> None:
+    def __init__(self, in_dim=74, hidden_dim=256, add_dim=0, mlp_dims=[1024,512],gcr_layers=5 ,n_classes=1, res_connection=False,allow_zero_in_degree=True,freeze_GNN=False) -> None:
         super().__init__()
         self.add_dim=add_dim
+        self.res_connection=res_connection
         self.freeze_GNN=freeze_GNN
         self.gcn=GraphConv(in_dim, hidden_dim,allow_zero_in_degree=allow_zero_in_degree)
         self.node_gcr=nn.ModuleList(
             [GCR(dim=hidden_dim,allow_zero_in_degree=allow_zero_in_degree) for _ in range(gcr_layers)]
         )
-        # self.regression = nn.Sequential(
-        #     nn.Linear(hidden_dim+add_dim, mlp_dims[0]),
-        #     nn.LeakyReLU(),
-        #     nn.Linear(mlp_dims[0],mlp_dims[1]),
-        #     nn.LeakyReLU(),
-        #     nn.Linear(mlp_dims[1],n_classes)
-        # )
-        self.regression=nn.Linear(hidden_dim+add_dim,n_classes)
+        self.regression = nn.Sequential(
+            nn.Linear(hidden_dim+add_dim, mlp_dims[0]),
+            nn.LeakyReLU(),
+            nn.Linear(mlp_dims[0],mlp_dims[1]),
+            nn.LeakyReLU(),
+            nn.Linear(mlp_dims[1],n_classes)
+        )
+        # self.regression=nn.Linear(hidden_dim+add_dim,n_classes)
     def forward(self,solvdata=None,empty_solvsys=None,device=None):
         graph:dgl.DGLGraph=solvdata['graph'].to(device)
         if self.add_dim>0:
             add_features=solvdata['add_features'].float().to(device)
+            add_features=add_features.squeeze()
         with graph.local_scope():
             graph_ndata=graph.ndata['h'].float().to(device)
-            feature=self.gcn(graph,graph_ndata)
+            node_feature=self.gcn(graph,graph_ndata)
             for i in range(len(self.node_gcr)):
-                feature=self.node_gcr[i](graph,feature)
-            graph.ndata['h']=feature
+                feature=self.node_gcr[i](graph,node_feature)
+                if self.res_connection and i>0:
+                    node_feature=node_feature+feature
+                else:
+                    node_feature=feature
+            graph.ndata['h']=node_feature
             node_mean=dgl.mean_nodes(graph,'h')
             if self.add_dim>0:
                 node_mean=torch.cat([node_mean,add_features],axis=1)
@@ -219,4 +229,57 @@ class SolvGNNV3(nn.Module):
     def train(self,mode=True):
         super().train(mode)
         self.freeze_GNNPart()
-        
+
+
+
+class SolvGNNV4(nn.Module):
+    def __init__(self, mlp_dropout=0.2,mlp_hidden_dim=[1024,512]) -> None:
+        super().__init__()
+        self.mlp=MLPBlock(300,1,mlp_hidden_dim,mode='NAD',normalization=nn.BatchNorm1d,activation=nn.ReLU,dropout_rate=mlp_dropout)
+    def forward(self,data):
+        output=self.mlp(data)
+        return output.unsqueeze(-1)
+    
+class SolvGNNV5(nn.Module):
+    def __init__(self,
+                 in_dim=74,
+                 hidden_dim=256,
+                 add_dim=0,
+                 mlp_dims=[1024,512],
+                 gcr_layers=5,
+                 n_classes=1,
+                 res_connection=False,
+                 allow_zero_in_degree=True,
+                 freeze_GNN=False) -> None:
+        super().__init__()
+        self.res_connection=res_connection
+        gnn_hidden_dims=[in_dim]+[hidden_dim]*gcr_layers
+        self.node_update=nn.ModuleList([
+            nn.Linear(gnn_hidden_dims[i],gnn_hidden_dims[i+1]) for i in range(len(gnn_hidden_dims)-1)
+        ])
+        self.gnn=nn.ModuleList([
+            GINConv(self.node_update[i],aggregator_type='sum',init_eps=0,learn_eps=False,activation=F.relu)
+            for i in range(len(gnn_hidden_dims)-1)
+        ])
+        self.add_dim=add_dim
+        self.freeze_GNN=freeze_GNN
+        self.regression=MLPBlock(hidden_dim+add_dim,n_classes,mlp_dims,mode='NAD',activation=nn.LeakyReLU,normalization=nn.BatchNorm1d)
+    def forward(self,solvdata=None,empty_solvsys=None,device=None):
+        graph:dgl.DGLGraph=solvdata['graph'].to(device)
+        if self.add_dim>0:
+            add_features=solvdata['add_features'].float().to(device)
+            add_features=add_features.squeeze()
+        with graph.local_scope():
+            graph_ndata=graph.ndata['h'].float().to(device)
+            for i in range(len(self.gnn)):
+                feature=self.gnn[i](graph,graph_ndata)
+                if self.res_connection and i>0:
+                    graph_ndata=graph_ndata+feature
+                else:
+                    graph_ndata=feature
+            graph.ndata['h']=graph_ndata
+            node_mean=dgl.mean_nodes(graph,'h')
+            if self.add_dim>0:
+                node_mean=torch.cat([node_mean,add_features],axis=1)
+            output=self.regression(node_mean)
+            return output.squeeze(-1)

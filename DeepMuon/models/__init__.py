@@ -2,14 +2,14 @@
 Author: airscker
 Date: 2022-09-20 19:32:21
 LastEditors: airscker
-LastEditTime: 2023-09-17 11:57:40
+LastEditTime: 2023-09-20 19:43:35
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 
 '''Basic block modules for constructing models'''
-from .base import MLPBlock,ResidualUnit
+from .base import MLPBlock,ResidualUnit,GNN_feature
 
 '''Models'''
 from .Pandax4T import MLP3
@@ -21,16 +21,15 @@ from .CNNLSTM import Dense4012FrameRNN
 from .cryoFIRE import CRYOFIRE
 from .SwinTrans import SwinTransformer,EGFR_SwinT,EGFR_SwinTV2
 from .MLPMixer import MLPMixer,XASMLP
-from .MINES import SolvGNN,SolvGNNV2,SolvGNNV3
-from .XASG import XASGV1,XASGV2,TransXAS
-from .CrystalXAS import GINConv,CrystalXASV1,CrystalXASV2,CrystalXASV3
+from .MINES import SolvGNN,SolvGNNV2,SolvGNNV3,SolvGNNV4,SolvGNNV5
+from .CrystalXAS import GINConv,CrystalXASV1,CrystalXASV2,CrystalXASV3,CrystalXASV4
 
 
-__all__ = ['MLP3','MLPBlock','ResidualUnit',
+__all__ = ['MLP3','MLPBlock','ResidualUnit','GNN_feature',
            'ResMax2', 'ResMax3',
            'SwinTransformer3D', 'VST', 'screening_model', 'fusion_model',
            'Dense4012FrameRNN','CRYOFIRE','SwinTransformer','EGFR_SwinT',
-           'EGFR_SwinTV2','MLPMixer','MinistModel','XASMLP',
-           'SolvGNN','SolvGNNV2','SolvGNNV3',
-           'XASGV1','XASGV2','TransXAS',
-           'GINConv','CrystalXASV1','CrystalXASV2','CrystalXASV3']
+           'EGFR_SwinTV2','MLPMixer','XASMLP','MinistModel',
+           'SolvGNN','SolvGNNV2','SolvGNNV3','SolvGNNV4','SolvGNNV5',
+           'GINConv','CrystalXASV1','CrystalXASV2','CrystalXASV3',
+           'CrystalXASV4']

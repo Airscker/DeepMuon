@@ -11,5 +11,6 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 from .MLP import MLPBlock
 from .ResidualUnit import ResidualUnit
 from .ADNBlock import ADN
+from .PGNN import GNN_feature
 
-__all__ = ['MLPBlock','ResidualUnit','ADN']
+__all__ = ['MLPBlock','ResidualUnit','ADN','GNN_feature']

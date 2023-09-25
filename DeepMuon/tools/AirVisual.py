@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-07-26 18:55:28
 LastEditors: airscker
-LastEditTime: 2023-09-03 00:18:01
+LastEditTime: 2023-09-25 17:17:15
 Description: Visualization tools
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -13,6 +13,7 @@ import warnings
 import pandas as pd
 import seaborn as sns
 import numpy as np
+from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 from typing import Any
 from torch.utils.tensorboard import SummaryWriter
@@ -234,3 +235,42 @@ def R2JointPlot(scores,labels,save_path:str='./',tag:str='TS'):
     sns.set(font_scale=1.5)
     sns.jointplot(x='Pedicted',y='True',data=chart,kind='reg')
     plt.savefig(os.path.join(save_path,f'{tag}_R2Joint.jpg'),dpi=300)
+
+def CMPlot(scores,labels,save_path:str='./',tag:str='TS',target_names=None):
+    scores=np.array(scores)
+    labels=np.array(labels)
+    cm=confusion_matrix(labels,scores.argmax(axis=1))
+    plt.figure(figsize=(10,10))
+    plt.imshow(cm,cmap='Blues')
+    plt.colorbar()
+    plt.title('Confusion Matrix')
+    confusion=cm.T
+    if target_names is None:
+        target_names=[str(i) for i in range(confusion.shape[0])]
+    font={'family':'TARIAL',
+            # 'style':'italic',
+            'weight':'normal',
+            # 'align':'center',
+            'color':'white',
+            'size':12}
+    fontb={'family':'TARIAL',
+            # 'style':'italic',
+            # 'alignment':'center',
+            'weight':'normal',
+            'color':'black',
+            'size':12}
+    if target_names is not None:
+            tick_marks = np.arange(len(target_names))
+            # plt.xticks(tick_marks, target_names, rotation=45, fontsize=12, fontname='ARIAL')
+            plt.xticks(tick_marks, target_names, fontsize=12, fontname='ARIAL')
+            plt.yticks(tick_marks, target_names, fontsize=12, fontname='ARIAL')
+    for first_index in range(len(confusion)):
+            for second_index in range(len(confusion[first_index])):
+                if confusion[first_index][second_index]<np.sum(confusion)/confusion.shape[0]:
+                    plt.text(first_index, second_index, confusion[first_index][second_index],fontdict=fontb)
+                else:
+                    plt.text(first_index, second_index, confusion[first_index][second_index],fontdict=font)
+    # plt.tight_layout()
+    plt.ylabel('True label',size=15)
+    plt.xlabel('Predicted label',size=15)
+    plt.savefig(os.path.join(save_path,f'{tag}_CM.jpg'),dpi=300)

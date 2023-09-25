@@ -94,6 +94,8 @@ class XASSUMDataset(Dataset):
                 continue
             if np.min(self.dataset[i][2][1])<-3 or np.max(self.dataset[i][2][1])>20:
                 continue
+            if np.max(self.dataset[i][2][1])<0.1 or np.min(self.dataset[i][2][1])>10:
+                continue
             new_dataset.append(self.dataset[i])
         self.dataset=new_dataset
     def convert_data(self,data:list):

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-28 11:34:38
 LastEditors: airscker
-LastEditTime: 2023-05-11 10:40:43
+LastEditTime: 2023-09-25 17:22:13
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -51,7 +51,7 @@ Specify the customized loss function to be used, if no customized loss function 
 '''
 # loss_fn=None
 loss_fn = dict(backbone='CrossEntropyLoss')
-evaluation = dict(metrics=['f1_score', 'confusion_matrix',
+evaluation = dict(metrics=['f1_score', 'ConfusionMatrix',
                            'every_class_accuracy', 'top_k_accuracy','aucroc'],
                   sota_target=dict(mode='max', target='f1_score'))
 '''

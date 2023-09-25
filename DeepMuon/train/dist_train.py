@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-09-16 19:27:37
+LastEditTime: 2023-09-25 17:16:01
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -130,15 +130,21 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
         test_dataset=PandaxDataset(IMG_XY_path=test_data)
     In the example shown above, `configs['train_dataset']['backbone']` <> `PandaxDataset`, `IMG_XY_path=train_data` <> `**train_data`
     '''
+    _test_load_time=time.time()
     test_dataset = configs['test_dataset']['backbone'](**test_data)
     test_sampler = DistributedSampler(test_dataset)
     test_dataloader = DataLoader(
         test_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, sampler=test_sampler,collate_fn=configs['test_dataset']['collate_fn'])
+    _test_load_time=time.time()-_test_load_time
     if test_path is None:
+        _train_load_time=time.time()
         train_dataset = configs['train_dataset']['backbone'](**train_data)
         train_sampler = DistributedSampler(train_dataset)
         train_dataloader = DataLoader(
             train_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, sampler=train_sampler,collate_fn=configs['train_dataset']['collate_fn'])
+        _train_load_time=time.time()-_train_load_time
+    else:
+        _train_load_time=0
 
     '''
     Create Model and optimizer/loss/scheduler
@@ -177,6 +183,8 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
 
     '''save model architecture before model parallel'''
     if local_rank == 0:
+        logger.log(f'Loading testing datasets costs {_test_load_time:.4f}s')
+        logger.log(f'Loading training datasets costs {_train_load_time:.4f}s')
         writer = SummaryWriter(os.path.join(work_dir, 'LOG'))
         # writer.add_graph(model, torch.randn(
         #     configs['hyperpara']['inputshape']).to(device))
