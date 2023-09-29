@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 13:46:07
 LastEditors: airscker
-LastEditTime: 2023-09-28 17:14:46
+LastEditTime: 2023-09-29 01:04:20
 Description: NULLs
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -10,7 +10,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 
 # model = dict(backbone='SolvGNNV2',pipeline='solvgnn',params=dict(hidden_dim=256, edge_hidden_dim=512,add_dim=0))
 model = dict(backbone='SolvGNNV3',pipeline='solvgnn',
-             params=dict(in_dim=74, hidden_dim=2048, add_dim=6, gcr_layers=10, mlp_dims=[5120,2048],dropout=0,
+             params=dict(in_dim=74, hidden_dim=2048, add_dim=6, gcr_layers=10, mlp_dims=[2048,1024],dropout=0,
                          n_classes=1,allow_zero_in_degree=True,res_connection=True,freeze_GNN=False))
 
 train_dataset = dict(backbone='MultiSmilesGraphData',collate_fn='collate_solubility',
