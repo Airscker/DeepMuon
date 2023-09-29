@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-05 18:38:28
 LastEditors: airscker
-LastEditTime: 2023-09-16 00:41:32
+LastEditTime: 2023-09-28 16:57:18
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -20,10 +20,13 @@ from pymatgen.analysis.local_env import CrystalNN
 from pymatgen.analysis.graphs import MoleculeGraph, StructureGraph
 from rdkit.Chem.rdchem import Atom
 
-def one_hot_encoding(data:int, code_length:int):
-    code=np.zeros(code_length)
-    code[data]=1
-    return code
+def one_hot_encoding(data:int, code_length:int, encode=True):
+    if encode:
+        code=np.zeros(code_length)
+        code[data]=1
+        return code
+    else:
+        return data
 
 class BaseCrystalGraphData(object,metaclass=ABCMeta):
     def __init__(self) -> None:
@@ -54,36 +57,73 @@ class MPJCrystalGraphData(BaseCrystalGraphData):
     """
     ## Crystal atom graph featurizer for crystal structures from Materials Project (https://next-gen.materialsproject.org/).
 
-    ### The atom features may include:
-        - One hot encoding of the atom type. The supported atom types include all atoms in the periodic table, which includes 118 types of atoms.
-        - Every atom's 3d coordinate in the crystal.
-        - Every atoms's mass.
-        - Every atom's degree.
+    ### Features may included:
+        - node features:
+            - One hot encoding of the atom type. The supported atom types include all atoms in the periodic table, which includes 118 types of atoms.
+            - Every atom's 3d coordinate in the crystal.
+            - Every atoms's mass (dim-1, unavailable for neighbor graph).
+            - Every atom's degree (dim-1, unavailable for neighbor graph).
+        - edge features:
+            - Every edge's image (dim-3, only available for neighbor graph).
+            - Every edge's length (dim-1, only available for neighbor graph).
+
     
     ### Args:
         - structure: The crystal structure to be featurized, if `None`, the graph will be created later using `creat_graph` function.
         - bidirectional: If `True`, the graph is bidirectional.
         - self_loop: If `True`, the graph has self loop.
         - onehot_encode: If `True`, the atom type and atom degree are one hot encoded.
+        - neighbor_graph: If `True`, the graph is a neighborhood graph (atoms within neigborhood are all connected), otherwise, the graph is a bond graph (only actual bonds exist in th graph).
+        - atom_neigh_cutoff: The cutoff radius of the neighborhood graph, only available when `neighbor_graph` is `True`, the UNIT is `A`.
     
     ### Returns:
-        - graph: A `DGLGraph` object, the graph structure of the crystal structure, which contains only node features, namely `graph.ndata['feat']`\n
-            If `bidirectional` is `True`, the graph is bidirectional, otherwise, the graph is unidirectional.\n
-            If `self_loop` is `True`, the graph has self loop, otherwise, the graph has no self loop.\n
-            If `onehot_encode` is `True`, the atom type and atom degree are one hot encoded, otherwise, the atom type and atom degree are not one hot encoded.
-            And node features' dimensions of are `123` when `onehot_encode` is `True`, otherwise, the node features' dimensions are `6`.
+        - graph: 
+            - neighbor_graph=False:
+                A `DGLGraph` object, the graph structure of the crystal structure, which contains only node features, namely `graph.ndata['feat']`\n
+                If `bidirectional` is `True`, the graph is bidirectional, otherwise, the graph is unidirectional.\n
+                If `self_loop` is `True`, the graph has self loop, otherwise, the graph has no self loop.\n
+                If `onehot_encode` is `True`, the atom type and atom degree are one hot encoded, otherwise, the atom type and atom degree are not one hot encoded.
+                And node features' dimensions are `123` when `onehot_encode` is `True`, otherwise, the node features' dimensions are `6`.
+            - neighbor_graph=True:
+                A `DGLGraph` object, the graph structure of the crystal structure, which contains node features `graph.ndata['feat']` and edge features `graph.edata['feat']`\n
+                Arg `bidirectional` is unapplicable because we consider neighborhood graph here.\n
+                If `self_loop` is `True`, the graph has self loop, otherwise, the graph has no self loop.\n
+                If `onehot_encode` is `True`, the atom type and atom degree are one hot encoded, otherwise, the atom type and atom degree are not one hot encoded.
+                And node features' dimensions are `123` when `onehot_encode` is `True`, otherwise, the node features' dimensions are `4`.
+                Also edge features' dimensions is `4`.
     """
 
-    def __init__(self,structure=None,bidirectional:bool=True,self_loop=False,onehot_encode:bool=False) -> None:
+    def __init__(self,structure=None,bidirectional:bool=True,self_loop=False,onehot_encode:bool=False,neighbor_graph=False,atom_neigh_cutoff=5) -> None:
         super().__init__()
         self.bidirectional=bidirectional
         self.self_loop=self_loop
         # self.dim_degree=dim_degree
         self.onehot_encode=onehot_encode
+        self.neighbor_graph=neighbor_graph
+        self.atom_neigh_cutoff=atom_neigh_cutoff
         self.CrystalNN=CrystalNN()
         if structure is not None:
             self.creat_graph(structure)
-    def creat_graph(self,structure:Structure=None,adj_matrix:dict=None):
+    def creat_graph(self,*args,**kwargs):
+        if self.neighbor_graph:
+            return self.neigh_graph(*args,**kwargs)
+        else:
+            return self.bond_graph(*args,**kwargs)
+    def neigh_graph(self,structure:Structure=None):
+        n_atoms = len(structure)
+        atomic_number = torch.tensor([one_hot_encoding(site.specie.Z,118,self.onehot_encode) for site in structure])
+        atom_coord = torch.tensor(structure.cart_coords)
+        # lattice = structure.lattice.matrix
+        center_index, neighbor_index, image, distance = structure.get_neighbor_list(r=self.atom_neigh_cutoff, sites=structure.sites, numerical_tol=1e-8)
+        graph=dgl.graph([],idtype=torch.int64)
+        graph.add_nodes(n_atoms,
+                        data={'feat':torch.cat([atomic_number,atom_coord],dim=-1)})
+        graph.add_edges(center_index,
+                        neighbor_index,
+                        data={'feat':torch.cat([torch.tensor(image),torch.tensor(distance)],dim=-1)})
+        self.graph=graph
+        return graph
+    def bond_graph(self,structure:Structure=None,adj_matrix:dict=None):
         '''
         ## Creat the graph of the crystal structure.
 

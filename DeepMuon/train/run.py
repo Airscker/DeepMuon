@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-07 21:35:54
 LastEditors: airscker
-LastEditTime: 2023-09-11 18:25:27
+LastEditTime: 2023-09-25 18:56:54
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -54,7 +54,7 @@ class NNHSearch:
             if 'exp_name' not in search_config.keys():
                 exp_name='DeepMuon EXP'
             else:
-                exp_name=search_config['exp_name']
+                exp_name=str(search_config['exp_name'])
             if 'concurrency' not in search_config.keys():
                 concurrency=1
             else:

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-10 17:32:44
 LastEditors: airscker
-LastEditTime: 2023-09-18 12:42:11
+LastEditTime: 2023-09-18 12:41:09
 Description: NULL
 
 Copyright (C) 2023 by Deep Graph Library, All Rights Reserved. 
@@ -261,17 +261,9 @@ class CrystalXASV4(CrystalXASV2):
                  xas_type: str = 'XANES'):
         super().__init__(gnn_hidden_dims, gnn_layers, gnn_res_connection, feat_dim, prompt_dim, prompt_hidden_dim, normnn_dim, mlp_hidden_dims, mlp_dropout, xas_type)
         del self.NormalizeNN
-        self.XANES =nn.Sequential(MLPBlock(self.gnn_hidden_dims[-1] + prompt_hidden_dim,100,mlp_hidden_dims,mode='NAD',
-                                           activation=nn.ReLU,normalization=nn.BatchNorm1d,dropout_rate=mlp_dropout,bias=True),
-                                nn.Softmax(dim=-1),
-                                nn.Linear(100,100))
-        self.EXAFS = nn.Sequential(MLPBlock(self.gnn_hidden_dims[-1] + prompt_hidden_dim,500,mlp_hidden_dims,mode='NAD',
+        self.XANES =nn.ModuleList([MLPBlock(self.gnn_hidden_dims[-1] + prompt_hidden_dim,100,mlp_hidden_dims,mode='NAD',
                                             activation=nn.ReLU,normalization=nn.BatchNorm1d,dropout_rate=mlp_dropout,bias=True),
-                                nn.Softmax(dim=-1),
-                                nn.Linear(500,500))
-    def _generate_xas(self,atom_features,prompt):
-        if self.xas_type == 'XANES':
-            spectrum = self.XANES(torch.cat([atom_features, prompt], dim=-1))
-        elif self.xas_type == 'EXAFS':
-            spectrum = self.EXAFS(torch.cat([atom_features, prompt], dim=-1))
-        return spectrum
+                                   nn.Linear(normnn_dim,100)])
+        self.EXAFS = nn.ModuleList([MLPBlock(self.gnn_hidden_dims[-1] + prompt_hidden_dim,500,mlp_hidden_dims,mode='NAD',
+                                             activation=nn.ReLU,normalization=nn.BatchNorm1d,dropout_rate=mlp_dropout,bias=True),
+                                   nn.Linear(normnn_dim,500)])

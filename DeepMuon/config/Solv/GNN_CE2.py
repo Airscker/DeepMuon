@@ -2,29 +2,52 @@
 Author: airscker
 Date: 2023-05-23 13:46:07
 LastEditors: airscker
-LastEditTime: 2023-09-20 15:32:37
+LastEditTime: 2023-09-27 16:24:11
 Description: NULLs
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 
 # model = dict(backbone='SolvGNNV2',pipeline='solvgnn',params=dict(hidden_dim=256, edge_hidden_dim=512,add_dim=0))
-# model = dict(backbone='SolvGNNV3',pipeline='solvgnn',
-#              params=dict(in_dim=74, hidden_dim=1024, add_dim=6, gcr_layers=2 ,n_classes=1,allow_zero_in_degree=True,freeze_GNN=True))
-model=dict(backbone='SolvGNNV4',pipeline='regression',params=dict(mlp_dropout=0.2,mlp_hidden_dim=[1024,512]))
+model = dict(backbone='SolvGNNV5',pipeline='solvgnn',
+             params=dict(in_dim=74,
+                         hidden_dim=2048,
+                         add_dim=6,
+                         mlp_dims=[2048,1024,512],
+                         dropout_rate=0,
+                         norm=True,
+                         gcr_layers=22,
+                         n_classes=1,
+                         res_connection=True,
+                         allow_zero_in_degree=True,
+                         freeze_GNN=False))
 
-train_dataset = dict(backbone='PreTrainedNodeEmbedding',
+train_dataset = dict(backbone='MultiSmilesGraphData',collate_fn='collate_solubility',
                      params=dict(pretrained_path='/data/yufeng/pretrained/model_gin/supervised_contextpred.pth',
+                                 pretrain_embedding=False,
+                                 pred_ce=True,
                                  smiles_info='/data/yufeng/MINES/ColumbicEfficiency/mol_data.xlsx',
+                                 smiles_info_col=['Abbreviation','Smiles'],
                                  sample_info='/data/yufeng/MINES/ColumbicEfficiency/dataset.xlsx',
-                                 mode='train'))
-test_dataset = dict(backbone='PreTrainedNodeEmbedding',
-                     params=dict(pretrained_path='/data/yufeng/pretrained/model_gin/supervised_contextpred.pth',
+                                 start=0,
+                                 end=80,
+                                 add_self_loop=False,
+                                 featurize_edge=False,
+                                 shuffle=False))
+test_dataset = dict(backbone='MultiSmilesGraphData',collate_fn='collate_solubility',
+                    params=dict(pretrained_path='/data/yufeng/pretrained/model_gin/supervised_contextpred.pth',
+                                 pretrain_embedding=False,
+                                 pred_ce=True,
                                  smiles_info='/data/yufeng/MINES/ColumbicEfficiency/mol_data.xlsx',
+                                 smiles_info_col=['Abbreviation','Smiles'],
                                  sample_info='/data/yufeng/MINES/ColumbicEfficiency/dataset.xlsx',
-                                 mode='test'))
+                                 start=80,
+                                 end=None,
+                                 add_self_loop=False,
+                                 featurize_edge=False,
+                                 shuffle=False))
 
-work_config = dict(work_dir='/home/yufeng/workdir/MINES/ColumbicEfficiency/GNNV4C001')
+work_config = dict(work_dir='/home/yufeng/workdir/MINES/ColumbicEfficiency/GNNV5C001')
 
 checkpoint_config = dict(load_from='', resume_from='', save_inter=200)
 

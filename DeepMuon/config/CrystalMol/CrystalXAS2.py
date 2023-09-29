@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-15 12:17:09
 LastEditors: airscker
-LastEditTime: 2023-09-17 01:03:58
+LastEditTime: 2023-09-28 17:00:11
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -10,14 +10,14 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 
 model = dict(backbone='CrystalXASV2',
              pipeline='crystalxas',
-             params=dict(gnn_hidden_dims=1024,
-                         gnn_layers=3,
+             params=dict(gnn_hidden_dims=2048,
+                         gnn_layers=20,
                          gnn_res_connection=True,
                          feat_dim=123,
                          prompt_dim=123,
-                         prompt_hidden_dim=32,
+                         prompt_hidden_dim=256,
                          normnn_dim=1024,
-                         mlp_hidden_dims=[2048,1024,512],
+                         mlp_hidden_dims=[2048,1024],
                          mlp_dropout=0.3,
                          xas_type='XANES'))
 
@@ -29,7 +29,9 @@ train_dataset = dict(backbone='XASSUMDataset',
                                  xas_type='XANES',
                                  bidirectional=True,
                                  self_loop=False,
-                                 onehot_encode=False))
+                                 onehot_encode=False,
+                                 neighbor_graph=True,
+                                 atom_neigh_cutoff=5))
 test_dataset = dict(backbone='XASSUMDataset',
                     collate_fn='collate_XASSUM',
                     params=dict(data_path='/data/yufeng/Graph_XAS_XANES.pkl',
@@ -38,13 +40,15 @@ test_dataset = dict(backbone='XASSUMDataset',
                                 xas_type='XANES',
                                 bidirectional=True,
                                 self_loop=False,
-                                onehot_encode=False))
+                                onehot_encode=False,
+                                neighbor_graph=True,
+                                atom_neigh_cutoff=5))
 
-work_config = dict(work_dir='/home/yufeng/workdir/CrystalXAS/GINV2001')
+work_config = dict(work_dir='/home/yufeng/workdir/CrystalXAS/GINV2002')
 
 checkpoint_config = dict(load_from='', resume_from='', save_inter=200)
 
-loss_fn = dict(backbone='RelativeLoss',params=dict(pos_ratio=1,sharp_ratio=1e-3,smooth_ratio=1e-5))
+loss_fn = dict(backbone='RelativeLoss',params=dict(pos_ratio=1,sharp_ratio=0,smooth_ratio=0))
 # evaluation = dict(metrics=['R2Value'],
 #                   sota_target=dict(mode='max', target='R2Value'))
 

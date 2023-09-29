@@ -17,3 +17,5 @@ DeepMuon/loss_fn/__pycache__/
 DeepMuon/models/__pycache__/
 DeepMuon/tools/__pycache__/
 DeepMuon/train/__pycache__/
+DeepMuon/config/XAS/__pycache__/
+DeepMuon/models/base/__pycache__/

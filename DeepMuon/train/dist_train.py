@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-09-25 17:16:01
+LastEditTime: 2023-09-27 15:30:52
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -265,8 +265,8 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
     if sota_target is None:
         sota_target = 'loss'
     sys_vis_com=dict(loss=('Loss',True,True,True,None),
-                     train_loss=('Loss',True,True,True,None),
-                     test_loss=('Loss',True,True,True,None),
+                     train_loss=('TRLoss',True,True,True,None),
+                     test_loss=('TSLoss',True,True,True,None),
                      lr=('Learning Rate',True,True,True,None),
                      sota=('SOTA',True,True,True,None),
                      time=('Time',True,True,True,None),)
@@ -320,7 +320,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                 end_exp=False
             nnhs_report(search=search,
                         sota_target=sota_target,
-                        eva_metrics=[tr_eva_metrics,ts_eva_metrics,{'tr_loss':train_loss,'ts_loss':test_loss}],
+                        eva_metrics=[{**tr_eva_metrics,'loss':train_loss},{**ts_eva_metrics,'loss':test_loss}],
                         modes=['tr_eval','ts_eval'],
                         end_exp=end_exp,
                         vis_com=vis_com)

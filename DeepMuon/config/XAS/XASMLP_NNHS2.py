@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-28 11:34:38
 LastEditors: airscker
-LastEditTime: 2023-09-25 16:21:21
+LastEditTime: 2023-09-25 18:59:24
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -11,7 +11,7 @@ import torch
 search_config=dict(search_space= {'weight1': {'_type': 'choice', '_value': [1,3,5,7,9]},
                                   'weight2': {'_type': 'choice', '_value': [1,3,5,7,9]},
                                   'dropout': {'_type': 'uniform', '_value': [0.1,0.8]},
-                                  'batch_size':{'_type':'choice','_value':[16,32,64,128]},
+                                  'batch_size':{'_type':'choice','_value':[32,64,128,256]},
                                   'weight_decay': {'_type': 'uniform', '_value': [0.01,0.2]},
                                   'lr': {'_type': 'uniform', '_value': [1e-5,1e-4]},
                                   },
@@ -21,7 +21,12 @@ search_config=dict(search_space= {'weight1': {'_type': 'choice', '_value': [1,3,
                    port=14001,
                    tuner='TPE')
 search_params=dict(weight1=5,weight2=3,dropout=0.1,weight_decay=0.1,lr=1e-3,batch_size=128)
-model = dict(backbone='XASMLP',pipeline='classify',params=dict(classes=2,dropout=search_params['dropout']))
+model = dict(backbone='XASMLP',pipeline='classify',
+             params=dict(dim_input=100,
+                         classes=2,
+                         hidden_sizes=[256,1024,128],
+                         mode='NAD',
+                         dropout_rate=search_params['dropout']))
 
 train_dataset = dict(backbone='ValenceDataset',params=dict(annotation='/data/yufeng/MP_dataset/Fe_train_dataset.txt',available_valences=[2,3]))
 test_dataset = dict(backbone='ValenceDataset',params=dict(annotation='/data/yufeng/MP_dataset/Fe_test_dataset.txt',available_valences=[2,3]))

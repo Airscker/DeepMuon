@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 14:36:30
 LastEditors: airscker
-LastEditTime: 2023-09-21 09:48:33
+LastEditTime: 2023-09-27 16:30:27
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -183,7 +183,8 @@ class GCR(nn.Module):
             return F.relu(output)
 
 class SolvGNNV3(nn.Module):
-    def __init__(self, in_dim=74, hidden_dim=256, add_dim=0, mlp_dims=[1024,512],gcr_layers=5 ,n_classes=1, res_connection=False,allow_zero_in_degree=True,freeze_GNN=False) -> None:
+    def __init__(self, in_dim=74, hidden_dim=256, add_dim=0, mlp_dims=[1024,512],dropout=0,
+                 gcr_layers=5 ,n_classes=1, res_connection=False,allow_zero_in_degree=True,freeze_GNN=False) -> None:
         super().__init__()
         self.add_dim=add_dim
         self.res_connection=res_connection
@@ -192,13 +193,14 @@ class SolvGNNV3(nn.Module):
         self.node_gcr=nn.ModuleList(
             [GCR(dim=hidden_dim,allow_zero_in_degree=allow_zero_in_degree) for _ in range(gcr_layers)]
         )
-        self.regression = nn.Sequential(
-            nn.Linear(hidden_dim+add_dim, mlp_dims[0]),
-            nn.LeakyReLU(),
-            nn.Linear(mlp_dims[0],mlp_dims[1]),
-            nn.LeakyReLU(),
-            nn.Linear(mlp_dims[1],n_classes)
-        )
+        self.regression=MLPBlock(hidden_dim+add_dim,n_classes,mlp_dims,mode='NAD',activation=nn.LeakyReLU,dropout_rate=dropout)
+        # self.regression = nn.Sequential(
+        #     nn.Linear(hidden_dim+add_dim, mlp_dims[0]),
+        #     nn.LeakyReLU(),
+        #     nn.Linear(mlp_dims[0],mlp_dims[1]),
+        #     nn.LeakyReLU(),
+        #     nn.Linear(mlp_dims[1],n_classes)
+        # )
         # self.regression=nn.Linear(hidden_dim+add_dim,n_classes)
     def forward(self,solvdata=None,empty_solvsys=None,device=None):
         graph:dgl.DGLGraph=solvdata['graph'].to(device)
@@ -243,10 +245,12 @@ class SolvGNNV4(nn.Module):
 class SolvGNNV5(nn.Module):
     def __init__(self,
                  in_dim=74,
-                 hidden_dim=256,
+                 hidden_dim=2048,
                  add_dim=0,
-                 mlp_dims=[1024,512],
-                 gcr_layers=5,
+                 mlp_dims=[2048,1024,512],
+                 dropout_rate=0,
+                 norm=True,
+                 gcr_layers=25,
                  n_classes=1,
                  res_connection=False,
                  allow_zero_in_degree=True,
@@ -263,7 +267,13 @@ class SolvGNNV5(nn.Module):
         ])
         self.add_dim=add_dim
         self.freeze_GNN=freeze_GNN
-        self.regression=MLPBlock(hidden_dim+add_dim,n_classes,mlp_dims,mode='NAD',activation=nn.LeakyReLU,normalization=nn.BatchNorm1d)
+        self.regression=MLPBlock(hidden_dim+add_dim,
+                                 n_classes,
+                                 mlp_dims,
+                                 mode='NAD',
+                                 activation=nn.LeakyReLU,
+                                 normalization=nn.BatchNorm1d if norm else None,
+                                 dropout_rate=dropout_rate)
     def forward(self,solvdata=None,empty_solvsys=None,device=None):
         graph:dgl.DGLGraph=solvdata['graph'].to(device)
         if self.add_dim>0:

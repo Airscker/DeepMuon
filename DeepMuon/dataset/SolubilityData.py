@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-18 13:58:39
 LastEditors: airscker
-LastEditTime: 2023-09-20 19:52:15
+LastEditTime: 2023-09-28 16:12:26
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -282,11 +282,13 @@ class MultiSmilesGraphData(Dataset):
             feats.extend([btype, btype])
         return {'bond_type': torch.tensor(feats).reshape(-1, 1).float()}
     def pretrained_featurizer(self,mol):
+        can_feat=CanonicalAtomFeaturizer()
         self.pretrained_node_featurizer.eval()
         graph_data=mol_to_graph_data_obj_simple(mol)
         with torch.no_grad():
             node_emb=self.pretrained_node_featurizer(graph_data)
-        return {'h':node_emb}
+        con_emb=can_feat(mol)['h']
+        return {'h':torch.cat([node_emb,con_emb],dim=-1)}
         
     def generate_graph(self,smiles):
         if self.featurize_edge:

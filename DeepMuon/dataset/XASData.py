@@ -49,13 +49,12 @@ class ValenceDataset(Dataset):
         - annotation: the path of the annotation text file which contains the paths of data samples to be used to train/test the model.
     """
 
-    def __init__(self, annotation="",xy_label=False,available_valences=[2,3]):
+    def __init__(self, annotation="",xy_label=False):
         super().__init__()
         with open(annotation, "r") as f:
             self.mp_list = f.readlines()
         self.dataset = []
         self.xy_label=xy_label
-        self.available_valences=available_valences
         self.unpack_data()
 
     def unpack_data(self):
@@ -69,14 +68,12 @@ class ValenceDataset(Dataset):
                 element = sub_spec.split("-")[-2]
                 # if element == "Fe" and valences[element].is_integer() and sub_spec.endswith('K'):
                 if element == "Fe" and sub_spec.endswith('K'):
-                    if int(valences[element]) not in self.available_valences:
-                        continue
                     if self.xy_label:
                         spec=np.array(spectrum[sub_spec])
                     else:
                         spec=np.array(spectrum[sub_spec][1])
                     self.dataset.append(
-                        [spec, int(valences[element])-min(self.available_valences)]
+                        [spec, int(valences[element])-0]
                     )
 
     def __getitem__(self, index):

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-04 22:11:50
 LastEditors: airscker
-LastEditTime: 2023-09-18 12:46:29
+LastEditTime: 2023-09-28 16:40:28
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -38,7 +38,9 @@ class XASSUMDataset(Dataset):
                 - the one-hot encoding (optional) of the edge type.
             - spectrum: The absorbing spectrum of the corresponding atom.
     '''
-    def __init__(self,data_path:str,mode:str='train',num_workers:int=1,xas_type:str='XANES',bidirectional:bool=True,self_loop:bool=False,onehot_encode:bool=False):
+    def __init__(self,data_path:str,mode:str='train',num_workers:int=1,xas_type:str='XANES',
+                 bidirectional:bool=True,self_loop:bool=False,onehot_encode:bool=False,
+                 neighbor_graph=False,atom_neigh_cutoff=5):
         super().__init__()
         self.xas_type=xas_type
         self.spec_types={'XANES':0,'EXAFS':1,'XAFS':2}
@@ -46,7 +48,11 @@ class XASSUMDataset(Dataset):
         self.bidirectional=bidirectional
         self.self_loop=self_loop
         self.onehot_encode=onehot_encode
-        self.GraphFeaturizer=MPJCrystalGraphData(bidirectional=bidirectional,self_loop=self_loop,onehot_encode=onehot_encode)
+        self.GraphFeaturizer=MPJCrystalGraphData(bidirectional=bidirectional,
+                                                 self_loop=self_loop,
+                                                 onehot_encode=onehot_encode,
+                                                 neighbor_graph=neighbor_graph,
+                                                 atom_neigh_cutoff=atom_neigh_cutoff)
         # filelist=os.listdir(folder_path)
         with open(data_path,'rb') as f:
             dataset=pkl.load(f)
