@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-07 21:35:54
 LastEditors: airscker
-LastEditTime: 2023-09-25 18:56:54
+LastEditTime: 2023-09-25 19:36:22
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -12,7 +12,9 @@ import os
 import argparse
 import DeepMuon
 import warnings
+import platform
 from ..tools.AirFunc import import_module,check_port
+OS=platform.system().lower()
 
 pkg_path = DeepMuon.__path__[0]
 try:
@@ -118,12 +120,13 @@ class NNHSearch:
         #     exp_args.train += '.py'
         file = os.path.join(pkg_path, 'train/dist_train.py')
         '''Find Usable Port, Avoid ERROR in Multi-Concurrency Searching'''
+        base_command=f'CUDA_VISIBLE_DEVICES={env} ' if OS =='linux' else ''
         if self.search and self.experiment.config.trial_concurrency>1:
             print(f"NNHS concurrency is {self.experiment.config.trial_concurrency}, which is bigger than 1, to avoid errors brought by port occupation, we set PORTs of multi concurrency NNHS experiments randomly.")
-            base_command = f'CUDA_VISIBLE_DEVICES={env} torchrun --nproc_per_node={len(exp_args.gpus)} --rdzv_backend=c10d --rdzv_endpoint=localhost:0 {file} --config {exp_args.config}'
+            base_command = base_command + f'torchrun --nproc_per_node={len(exp_args.gpus)} --rdzv_backend=c10d --rdzv_endpoint=localhost:0 {file} --config {exp_args.config}'
         else:
             exp_args.port=self.fix_port(int(exp_args.port))
-            base_command = f'CUDA_VISIBLE_DEVICES={env} torchrun --nproc_per_node={len(exp_args.gpus)} --master_port {exp_args.port} {file} --config {exp_args.config}'
+            base_command = base_command + f'torchrun --nproc_per_node={len(exp_args.gpus)} --master_port {exp_args.port} {file} --config {exp_args.config}'
         if exp_args.test!='':
             if self.search:
                 warnings.warn('Neural network hyperparameter searching is unavailable in testing mode.')

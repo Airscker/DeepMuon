@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-05 01:17:20
 LastEditors: airscker
-LastEditTime: 2023-09-29 00:46:09
+LastEditTime: 2023-09-29 14:54:07
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -13,7 +13,7 @@ from .AirEnv import EnvINFO
 from .AirLogger import LOGT
 from .AirSys import get_cpu_info,get_gpu_info,pid_info
 from .AirPara import model_para
-from .AirQuene import TaskFIFOQuene
+from .AirQuene import TaskFIFOQueueThread,TaskFIFOQueueProcess
 from .AirLoader import MultiThreadLoader
 from .AirVisual import (ShowDGLGraph,plot_3d,plot_hist_2nd,plot_curve,R2JointPlot,CMPlot)
 from .AirFunc import (check_port,fix_port,check_device,exclude_key,
@@ -23,7 +23,8 @@ from .AirFunc import (check_port,fix_port,check_device,exclude_key,
 
 __all__=['Config','EnableVisualiaztion','EnvINFO',
          'LOGT','get_cpu_info','get_gpu_info','pid_info',
-         'model_para','TaskFIFOQuene','MultiThreadLoader',
+         'model_para','TaskFIFOQueueThread','TaskFIFOQueueProcess',
+         'MultiThreadLoader',
          'ShowDGLGraph','plot_3d','plot_hist_2nd','plot_curve','R2JointPlot','CMPlot',
          'check_port','fix_port','check_device','exclude_key',
          'get_mem_info','readable_dict','unpack_json_log','load_json_log',

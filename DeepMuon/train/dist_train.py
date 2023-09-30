@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-09-29 01:28:16
+LastEditTime: 2023-09-30 01:11:20
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -15,7 +15,9 @@ import functools
 from typing import Union
 
 import DeepMuon
-from DeepMuon.tools import (Config,LOGT,EnvINFO,TaskFIFOQueue,save_model,load_model,format_time,get_mem_info,load_json_log,generate_nnhs_config,plot_curve)
+from DeepMuon.tools import (Config,LOGT,EnvINFO,TaskFIFOQueueThread,TaskFIFOQueueProcess,
+                            save_model,load_model,format_time,get_mem_info,
+                            load_json_log,generate_nnhs_config,plot_curve)
 from DeepMuon.interpret import GradCAM
 
 import torch
@@ -50,7 +52,9 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
     global msg
     global fsdp_env
     global precision
-    
+
+    # '''Using spawn instead of fork to avoid deadlocks in TaskFIFOQueueProcess/Thread'''
+    # torch.multiprocessing.set_start_method('spawn')
     '''Initialize the basic training configuration'''
     configs = config_info.paras
     batch_size = configs['hyperpara']['batch_size']
@@ -80,21 +84,21 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
 
     '''Initialize Distributed Training'''
     try:
-        group = torch.distributed.init_process_group(backend="nccl")
+        group = dist.init_process_group(backend="nccl")
     except:
-        group = torch.distributed.init_process_group(backend="gloo")
-    local_rank = torch.distributed.get_rank()
+        group = dist.init_process_group(backend="gloo")
+    local_rank = dist.get_rank()
     local_world_size = int(os.environ['LOCAL_WORLD_SIZE'])
     torch.cuda.set_device(local_rank)
     device = torch.device("cuda", local_rank)
 
     '''Log the basic parameters'''
     if local_rank == 0:
-        '''Initialize (un)sequenced model saving quene'''
-        best_model_save_quene=TaskFIFOQueue(sequenced=False,verbose=False,daemon=True)
-        checkpoint_save_quene=TaskFIFOQueue(sequenced=True,verbose=False,daemon=True)
-        best_model_save_quene.start()
-        checkpoint_save_quene.start()
+        # '''Initialize (un)sequenced model saving quene'''
+        # best_model_save_quene=TaskFIFOQueueProcess(sequenced=False,verbose=True,daemon=True)
+        # checkpoint_save_quene=TaskFIFOQueueProcess(sequenced=True,verbose=True,daemon=True)
+        # best_model_save_quene.start()
+        # checkpoint_save_quene.start()
         logger = LOGT(log_dir=work_dir, logfile=log)
         '''Create work_dir'''
         checkpoint_savepath=os.path.join(work_dir,'Checkpoint')
@@ -338,19 +342,17 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                 best_checkpoint = os.path.join(
                     work_dir, f"Best_{sota_target}_epoch_{t+1}.pth")
                 # dist.barrier()
-                best_model_save_quene.add_task(ddp_fsdp_model_save,(t,model,optimizer,loss_fn,scheduler,best_checkpoint,ddp_training))
-                # ddp_fsdp_model_save(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn,
-                #                     scheduler=scheduler, path=best_checkpoint, ddp_training=ddp_training)
+                # best_model_save_quene.add_task(ddp_fsdp_model_save,(t,model,optimizer,loss_fn,scheduler,best_checkpoint,ddp_training),t)
+                ddp_fsdp_model_save(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn,
+                                    scheduler=scheduler, path=best_checkpoint, ddp_training=ddp_training)
                 logger.log(
                     f'Best Model Saved as {best_checkpoint}, Best {sota_target}: {bestres}, Current Epoch: {t+1}', show=True)
             if (t + 1) % inter == 0:
                 savepath = os.path.join(checkpoint_savepath,f'Epoch_{t+1}.pth')
                 # dist.barrier()
-                quene_time=time.time()
-                checkpoint_save_quene.add_task(ddp_fsdp_model_save,(t,model,optimizer,loss_fn,scheduler,savepath,ddp_training))
-                print('Quene time:',time.time()-quene_time)
-                # ddp_fsdp_model_save(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn,
-                #                     scheduler=scheduler, path=savepath, ddp_training=ddp_training)
+                # checkpoint_save_quene.add_task(ddp_fsdp_model_save,(t,model,optimizer,loss_fn,scheduler,savepath,ddp_training),t)
+                ddp_fsdp_model_save(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn,
+                                    scheduler=scheduler, path=savepath, ddp_training=ddp_training)
                 logger.log(
                     f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=True)
             
@@ -389,9 +391,9 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                                data_label=[f'{Name}'],
                                save=os.path.join(curve_path,f'{mode}_{para}.jpg'),
                                mod=None)
-        print('Finishing model saving quene...')
-        best_model_save_quene.end_task()
-        checkpoint_save_quene.end_task()
+        # print('Finishing model saving quene...')
+        # best_model_save_quene.end_task()
+        # checkpoint_save_quene.end_task()
         print('Training finished!')
     return 0
 
