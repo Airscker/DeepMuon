@@ -72,8 +72,8 @@ optimize_config = dict(fp16=False, grad_acc=1, grad_clip=0.01, double_precision=
 
   Otherwise, the config loading system will find your model within the file you have specified. That is to say, if you saved model `MODEL01` in the file `cus_models.py`, you need to give the full path of this file.
 - backbone: the name of the model you want to use.
-- pipeline: the name of the prediction pipeline defined within `~/DeepMuon/train/pipeline.py.`
-- params: indicates the parameters you want to specify when creating the instance of the neural network.
+- pipeline: the name of the prediction pipeline defined within `~/DeepMuon/train/pipeline.py.`, if omitted, `regression` will be used defaultly.
+- params: indicates the parameters you want to specify when creating the instance of the neural network, can be omitted.
 
   If your model looks like this:
 
@@ -101,8 +101,8 @@ optimize_config = dict(fp16=False, grad_acc=1, grad_clip=0.01, double_precision=
 
 - filepath: indicates the path of your customized `Dataset`, nothing needs to be given if you properly put it under the installation path of DeepMuon.
 - backbone: the name of the `Dataset` to be used.
-- collate_fn: the name of the `collate_fn` to be used to construct data batches.
-- params: indicates the parameters to be used to create the instance of the `Dataset`.
+- collate_fn: the name of the `collate_fn` to be used to construct data batches, which will be found within `DeepMuon.dataset`, can be omitted if no special collate action needed.
+- params: indicates the parameters to be used to create the instance of the `Dataset`, can be omitted.
 
 ## work_config
 
@@ -118,7 +118,7 @@ optimize_config = dict(fp16=False, grad_acc=1, grad_clip=0.01, double_precision=
 
 - filepath: indicates the path of your customized loss function, you can omit it when your loss function was properly saved under the installation path of DeepMuon.
 - backbone: the name of the loss function you want to use.
-- params: parameters to be used to initialize the loss function.
+- params: parameters to be used to initialize the loss function, can be omitted.
 
 ## evaluation
 
@@ -137,24 +137,24 @@ optimize_config = dict(fp16=False, grad_acc=1, grad_clip=0.01, double_precision=
 
 - filepath: the path of your customized optimizer, can be omitted if you have properly put it under the installation path of DeepMuon.
 - backbone: the name of the optimizer to be used.
-- params: parameters to be used to initialize the optimizer.
+- params: parameters to be used to initialize the optimizer, can be omitted.
 
 ## scheduler
 
 - filepath: the path of your customized scheduler, can be omitted if you have properly put it under the installation path of DeepMuon.
 - backbone: the name of the scheduler to be used.
-- params: parameters to be used to initialize the scheduler.
+- params: parameters to be used to initialize the scheduler, can be omitted.
 
 ## fsdp_parallel
 
-Typically omitted, unless you want to train large models but your platform can't handle it using the DDP algorithm.
+Typically omitted, unless you want to train large models but your platform can't handle it by using the DDP algorithm.
 
 - enabled: whether to use the FSDP algorithm to train really large models.
-- min_num_params: minimum number of parameters distributed on every GPU.
+- min_num_params: minimum number of parameters distributed on every GPU, if omitted, FSDP will be **DISABLED** whatever `enabled` is.
 
 ## optimize_config
 
-- fp16: whether to enable mixed precision training.
+- fp16: whether to enable mixed precision training, can be omitted which will defaultly be `False`.
 - grad_acc: the number of accumulation steps of gradient, 1 means no accumulation. It's useful when your GPU restricts your `batch_size`.
 - grad_clip: the maximum value of the allowed gradient when backpropagating gradients. If `None` is given this operation will be deprecated.
 - double_precision: whether to enable double precision (64-bit tensors will be used) model training.

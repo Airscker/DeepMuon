@@ -16,20 +16,24 @@
   - [Intrinsically supported models](models/intrinsic_models.md)
 - Suitable Loss Function
   - [How to create your own loss function?](loss/loss.md)
-  - [Evaluation based on scores & labels](loss/evaluation.md)
+  - [Evaluation based on scores &amp; labels](loss/evaluation.md)
+  - [Visualize evaluation metrics using `@EnableVisualization`](loss/visualization.md)
 - Configuration Mechanism
   - [Elements of `config.py`](config/config.md)
   - [Dynamic importing mechanism](config/import.md)
 - Fully control your training/testing pipelines
-  - [Data Distributed Parallel & Fully Sharded Distributed Parallel](train_test/parallel.md)
+  - [Data Distributed Parallel &amp; Fully Sharded Distributed Parallel](train_test/parallel.md)
   - [Neural Network Hyperparameter Searching (NNHS)](train_test/nnhs.md)
-  - [16-bit float tensor & 32-bit float tensor & 64-bit double tensor](train_test/precision.md)
+  - [16-bit float tensor &amp; 32-bit float tensor &amp; 64-bit double tensor](train_test/precision.md)
   - [Prediction Pipeline](train_test/pipeline.md)
-  - [Gradient clip & Gradient accumulation](train_test/grad.md)
+  - [Gradient clipping &amp; Gradient accumulation](train_test/grad.md)
 - Auto logging system
   - [Usage of Tensorboard](log/tensorboard.md)
+  - [NNHS Report](log/NNHS_report.md)
   - [JSON log](log/json.md)
   - [Text log](log/text.md)
+  - [Plotting training curves based on JSON log](log/tr_curve.md)
+  - [Evaluation Metric Visualizing Methods](log/vis_metric.md)
 - Interpreting model
   - [Neuron Flow](interpret/neuron_flow.md)
   - [Model profiler](interpret/profiler.md)
