@@ -8,6 +8,8 @@ Description: NULL
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import queue
+import socket
+import pickle as pkl
 import multiprocessing
 from threading import Thread
 from typing import Callable,Iterable,Any
@@ -173,3 +175,95 @@ class TaskFIFOQueueProcess(multiprocessing.Process):
         self._quene.put((self.last_task_group,'TERMINATE',True))
         self.join()
         self.terminate()
+
+
+class Client(object):
+    def __init__(self, serverIP:str='127.0.0.1', serverPort:int=11000, verbose:bool=False):
+        self.serverIP = serverIP
+        self.serverPort = serverPort
+        self.verbose = verbose
+        self.base_Buffsize = 1024
+        self.ADDR = (self.serverIP, self.serverPort)
+        self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.clientSocket.connect(self.ADDR)
+        if self.verbose:
+            print(f'Connected to server {self.ADDR}')
+
+    def send(self, data):
+        data_bytes=pkl.dumps(data)
+        self.clientSocket.send(pkl.dumps(len(data_bytes)))
+        self.clientSocket.send(data_bytes)
+        if data == 'ENDPORT':
+            return 0
+        response=self.receive()
+        if self.verbose:
+            print(f'Sent data to server {self.ADDR} with {len(data_bytes)} bytes.')
+        if response == 'SUCCESS':
+            if self.verbose:
+                print('Server receivement DONE.')
+            return 1
+        else:
+            if self.verbose:
+                print('Server receivement FIALED.')
+            return 0
+    def receive(self):
+        databytes_len=self.clientSocket.recv(self.base_Buffsize)
+        data = self.clientSocket.recv(pkl.loads(databytes_len))
+        if self.verbose:
+            print(f'Received data from server {self.ADDR} with {len(data)} bytes.')
+        return pkl.loads(data)
+
+    def close(self):
+        self.send('ENDPORT')
+        self.clientSocket.close()
+
+
+class Server(object):
+    def __init__(self, serverIP:str='127.0.0.1', serverPort:int=11000, listenNum:int=1, verbose:bool=False):
+        self.serverIP = serverIP
+        self.serverPort = serverPort
+        self.verbose = verbose
+        self.base_Buffsize = 1024
+        self.ADDR = (self.serverIP, self.serverPort)
+        self.tcpSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.tcpSocket.bind(self.ADDR)
+        self.tcpSocket.listen(listenNum)
+        self.data_queue = []
+        if self.verbose:
+            print(f'Prepared to receive data from {self.ADDR}')
+        end_signal=self.receive()
+        if end_signal == 'ENDPORT':
+            self.close()
+    def send(self, data):
+        data_bytes=pkl.dumps(data)
+        self.clientSocket.send(pkl.dumps(len(data_bytes)))
+        self.clientSocket.send(data_bytes)
+    def receive(self):
+        while True:
+            self.clientSocket, self.clientAddr = self.tcpSocket.accept()
+            if self.verbose:
+                print(f'Connected from client: {self.clientAddr}')
+            while True:
+                try:
+                    databytes_len = self.clientSocket.recv(self.base_Buffsize)
+                    data=self.clientSocket.recv(pkl.loads(databytes_len))
+                    if data == pkl.dumps('ENDPORT'):
+                        return 'ENDPORT'
+                    else:
+                        try:
+                            self.data_queue.append(pkl.loads(data))
+                            self.send('SUCCESS')
+                            if self.verbose:
+                                print(f'Received data from client {self.clientAddr} with {len(data)} bytes.')
+                        except:
+                            print('Data received but not pickleable.')
+                            self.send('FAIL')
+                except IOError as e:
+                    print(e)
+                    self.clientSocket.close()
+                    break
+    def close(self):
+        if self.verbose:
+            print('Closing server...')
+        self.clientSocket.close()
+        self.tcpSocket.close()
