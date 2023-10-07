@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-13 19:24:38
 LastEditors: airscker
-LastEditTime: 2023-09-16 17:23:53
+LastEditTime: 2023-10-03 19:35:34
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -73,5 +73,12 @@ class MLPBlock(nn.Module):
                                                       activation=activation,
                                                       dropout_rate=dropout_rate,
                                                       dropout_inplace=dropout_inplace))
+        self.reset_parameters()
+    def reset_parameters(self):
+        for layer in self.mlp:
+            if isinstance(layer,nn.Linear):
+                nn.init.xavier_uniform_(layer.weight.data)
+                if layer.bias is not None:
+                    nn.init.zeros_(layer.bias.data)
     def forward(self, x:torch.Tensor):
         return self.mlp(x)

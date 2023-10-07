@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-29 00:41:08
 LastEditors: airscker
-LastEditTime: 2023-09-30 01:10:43
+LastEditTime: 2023-10-07 01:24:15
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -40,7 +40,7 @@ class TaskFIFOQueueThread(Thread):
         >>> tasks=TaskFIFOQueueThread(sequenced=False,verbose=True,daemon=True)
         >>> tasks.start()
         >>> for i in range(100):
-        >>>     tasks.add_task(save_data,(data,i),i)
+        >>>     tasks.add_task(save_data,dict(data=data,index=i),i)
         >>> tasks.end_task()
 
         Output:
@@ -58,16 +58,16 @@ class TaskFIFOQueueThread(Thread):
         self.sequenced = sequenced
         self._quene=queue.Queue()
         self.verbose=verbose
-    def add_task(self,task:Callable,args:Iterable=(),task_id:Any=None):
+    def add_task(self,task:Callable,kwargs:dict={},task_id:Any=None):
         '''
         ## Add task to quene
 
         ### Args:
             - task: [Callable] task to be added, such as `torch.save`.
-            - args: [Iterable] arguments of task, such as `(data_0,data_1)`.
+            - kwargs: [dict] arguments of task, such as `dict(a=data_0,b=data_1)`.
             - task_id: [Any] task id, such as `0`, can be omited.
         '''
-        self._quene.put(((task,*args),task_id))
+        self._quene.put(((task,kwargs),task_id))
         if self.verbose:
             print(f"Task {task_id} added")
     def run(self):
@@ -77,7 +77,8 @@ class TaskFIFOQueueThread(Thread):
                 if self._quene.qsize()>0:
                     self._quene.task_done()
                     continue
-            task[0](*task[1:])
+            print(**task[1])
+            task[0](**task[1])
             if self.verbose:
                 print(f"Task {task_id} done")
             self._quene.task_done()
@@ -111,7 +112,7 @@ class TaskFIFOQueueProcess(multiprocessing.Process):
         >>> tasks=TaskFIFOQuene(sequenced=False,verbose=True,daemon=True)
         >>> tasks.start()
         >>> for i in range(100):
-        >>>     tasks.add_task(save_data,(data,i),i)
+        >>>     tasks.add_task(save_data,dict(data=data,index=i),i)
         >>> tasks.end_task()
 
         Output:
@@ -134,21 +135,21 @@ class TaskFIFOQueueProcess(multiprocessing.Process):
         self.verbose=verbose
         self.last_task_group=None
         self.last_done_task=None
-    def add_task(self,task:Callable,args:Iterable=(),task_id:Any=None):
+    def add_task(self,task:Callable,kwargs:dict={},task_id:Any=None):
         '''
         ## Add task to quene
 
         ### Args:
             - task: [Callable] task to be added, such as `torch.save`.
-            - args: [Iterable] arguments of task, such as `(data_0,data_1)`.
+            - kwargs: [dict] arguments of task, such as `dict(a=data_0,b=data_1)`.
             - task_id: [Any] task id, such as `0`, can be omited.
         '''
-        self._quene.put(((task,*args),task_id,False))
-        self.last_task_group=(task,*args)
+        self._quene.put(((task,kwargs),task_id,False))
+        self.last_task_group=(task,kwargs)
         if self.verbose:
             print(f"Task {task_id} added")
     def run_task(self,task_group):
-        task_group[0](*task_group[1:])
+        task_group[0](**task_group[1])
         '''Clean the last task group to help verify whether at least the last task is done'''
         self.last_done_task=task_group
     def run(self):
@@ -159,7 +160,7 @@ class TaskFIFOQueueProcess(multiprocessing.Process):
                 if self.last_done_task is None:
                     if self.verbose:
                         print('Last task is skipped, we fixed it')
-                    task[0](*task[1:])
+                    task[0](**task[1])
                 if self.verbose:
                     print('Task terminated')
                 break
@@ -175,95 +176,3 @@ class TaskFIFOQueueProcess(multiprocessing.Process):
         self._quene.put((self.last_task_group,'TERMINATE',True))
         self.join()
         self.terminate()
-
-
-class Client(object):
-    def __init__(self, serverIP:str='127.0.0.1', serverPort:int=11000, verbose:bool=False):
-        self.serverIP = serverIP
-        self.serverPort = serverPort
-        self.verbose = verbose
-        self.base_Buffsize = 1024
-        self.ADDR = (self.serverIP, self.serverPort)
-        self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.clientSocket.connect(self.ADDR)
-        if self.verbose:
-            print(f'Connected to server {self.ADDR}')
-
-    def send(self, data):
-        data_bytes=pkl.dumps(data)
-        self.clientSocket.send(pkl.dumps(len(data_bytes)))
-        self.clientSocket.send(data_bytes)
-        if data == 'ENDPORT':
-            return 0
-        response=self.receive()
-        if self.verbose:
-            print(f'Sent data to server {self.ADDR} with {len(data_bytes)} bytes.')
-        if response == 'SUCCESS':
-            if self.verbose:
-                print('Server receivement DONE.')
-            return 1
-        else:
-            if self.verbose:
-                print('Server receivement FIALED.')
-            return 0
-    def receive(self):
-        databytes_len=self.clientSocket.recv(self.base_Buffsize)
-        data = self.clientSocket.recv(pkl.loads(databytes_len))
-        if self.verbose:
-            print(f'Received data from server {self.ADDR} with {len(data)} bytes.')
-        return pkl.loads(data)
-
-    def close(self):
-        self.send('ENDPORT')
-        self.clientSocket.close()
-
-
-class Server(object):
-    def __init__(self, serverIP:str='127.0.0.1', serverPort:int=11000, listenNum:int=1, verbose:bool=False):
-        self.serverIP = serverIP
-        self.serverPort = serverPort
-        self.verbose = verbose
-        self.base_Buffsize = 1024
-        self.ADDR = (self.serverIP, self.serverPort)
-        self.tcpSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.tcpSocket.bind(self.ADDR)
-        self.tcpSocket.listen(listenNum)
-        self.data_queue = []
-        if self.verbose:
-            print(f'Prepared to receive data from {self.ADDR}')
-        end_signal=self.receive()
-        if end_signal == 'ENDPORT':
-            self.close()
-    def send(self, data):
-        data_bytes=pkl.dumps(data)
-        self.clientSocket.send(pkl.dumps(len(data_bytes)))
-        self.clientSocket.send(data_bytes)
-    def receive(self):
-        while True:
-            self.clientSocket, self.clientAddr = self.tcpSocket.accept()
-            if self.verbose:
-                print(f'Connected from client: {self.clientAddr}')
-            while True:
-                try:
-                    databytes_len = self.clientSocket.recv(self.base_Buffsize)
-                    data=self.clientSocket.recv(pkl.loads(databytes_len))
-                    if data == pkl.dumps('ENDPORT'):
-                        return 'ENDPORT'
-                    else:
-                        try:
-                            self.data_queue.append(pkl.loads(data))
-                            self.send('SUCCESS')
-                            if self.verbose:
-                                print(f'Received data from client {self.clientAddr} with {len(data)} bytes.')
-                        except:
-                            print('Data received but not pickleable.')
-                            self.send('FAIL')
-                except IOError as e:
-                    print(e)
-                    self.clientSocket.close()
-                    break
-    def close(self):
-        if self.verbose:
-            print('Closing server...')
-        self.clientSocket.close()
-        self.tcpSocket.close()

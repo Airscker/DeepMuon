@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-09-15 15:29:03
+LastEditTime: 2023-10-04 16:09:46
 Description: Import configuration file and prepare configurations for experiments
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -150,6 +150,21 @@ class Config:
             error.remove('evaluation')
         assert len(
             error) == 0, f'These basic configurations are not specified in {self.configpath}:\n{error}'
+    def __load_dataset(self,dataset_info,dataset_module):
+        backbone=getattr(dataset_module,dataset_info['backbone'])
+        if 'collate_fn' not in dataset_info.keys() or dataset_info['collate_fn'] is None:
+            collate_fn=None
+        else:
+            collate_fn=getattr(dataset_module,dataset_info['collate_fn'])
+        if 'params' not in dataset_info:
+            params={}
+        else:
+            params=dataset_info['params']
+        if 'num_workers' not in params.keys():
+            num_workers=0
+        else:
+            num_workers=params['num_workers']
+        return backbone,collate_fn,params,num_workers
 
     def __para_config(self):
         internal_env = globals()
@@ -180,49 +195,19 @@ class Config:
         testdataset_info = getattr(self.config, 'test_dataset')
         if 'filepath' not in traindataset_info.keys() or not os.path.exists(traindataset_info['filepath']):
             # backbone=internal_env[self.config.train_dataset['backbone']]
-            backbone=getattr(DeepMuon.dataset,traindataset_info['backbone'])
-            if 'collate_fn' not in traindataset_info.keys() or traindataset_info['collate_fn'] is None:
-                collate_fn=None
-            else:
-                collate_fn=getattr(DeepMuon.dataset,traindataset_info['collate_fn'])
-            if 'params' not in traindataset_info:
-                params={}
-            else:
-                params=traindataset_info['params']
+            dataset_module=DeepMuon.dataset
+            backbone,collate_fn,params,num_workers=self.__load_dataset(traindataset_info,dataset_module)
         else:
             imported_module=import_module(traindataset_info['filepath'])
-            backbone=getattr(imported_module,traindataset_info['backbone'])
-            if 'collate_fn' not in traindataset_info.keys() or traindataset_info['collate_fn'] is None:
-                collate_fn=None
-            else:
-                collate_fn=getattr(imported_module,traindataset_info['collate_fn'])
-            if 'params' not in traindataset_info:
-                params={}
-            else:
-                params=traindataset_info['params']
-        self.paras['train_dataset']={'backbone':backbone,'collate_fn':collate_fn,'params':params}
+            backbone,collate_fn,params,num_workers=self.__load_dataset(traindataset_info,imported_module)
+        self.paras['train_dataset']={'backbone':backbone,'collate_fn':collate_fn,'num_workers':num_workers,'params':params}
         if 'filepath' not in testdataset_info.keys() or not os.path.exists(testdataset_info['filepath']):
-            backbone=getattr(DeepMuon.dataset,testdataset_info['backbone'])
-            if 'collate_fn' not in testdataset_info.keys() or testdataset_info['collate_fn'] is None:
-                collate_fn=None
-            else:
-                collate_fn=getattr(DeepMuon.dataset,testdataset_info['collate_fn'])
-            if 'params' not in testdataset_info:
-                params={}
-            else:
-                params=testdataset_info['params']
+            dataset_module=DeepMuon.dataset
+            backbone,collate_fn,params,num_workers=self.__load_dataset(testdataset_info,dataset_module)
         else:
             imported_module=import_module(testdataset_info['filepath'])
-            backbone=getattr(imported_module,traindataset_info['backbone'])
-            if 'collate_fn' not in testdataset_info.keys() or testdataset_info['collate_fn'] is None:
-                collate_fn=None
-            else:
-                collate_fn=getattr(imported_module,testdataset_info['collate_fn'])
-            if 'params' not in testdataset_info:
-                params={}
-            else:
-                params=testdataset_info['params']
-        self.paras['test_dataset']={'backbone':backbone,'collate_fn':collate_fn,'params':params}
+            backbone,collate_fn,params,num_workers=self.__load_dataset(testdataset_info,imported_module)
+        self.paras['test_dataset']={'backbone':backbone,'collate_fn':collate_fn,'num_workers':num_workers,'params':params}
         # self.paras['train_dataset']={'backbone':internal_env[self.config.train_dataset['backbone']],'datapath':self.config.train_dataset['datapath']}
         # self.paras['test_dataset']={'backbone':internal_env[self.config.test_dataset['backbone']],'datapath':self.config.test_dataset['datapath']}
 

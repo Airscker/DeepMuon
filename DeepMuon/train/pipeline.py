@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 14:35:50
 LastEditors: airscker
-LastEditTime: 2023-09-15 12:07:06
+LastEditTime: 2023-10-04 15:17:51
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -128,4 +128,11 @@ class crystalxas(Pipeline):
     def predict(self, input, label, device, precision):
         pred=self.model(input,device)
         label=label.to(device)
+        return pred,label
+class molpretrain(Pipeline):
+    def __init__(self, model: nn.Module) -> None:
+        super().__init__(model)
+    def predict(self, input, label, device, precision):
+        pred=self.model(input,device)
+        label=label.squeeze().to(device)
         return pred,label

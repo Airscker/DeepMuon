@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-15 12:17:09
 LastEditors: airscker
-LastEditTime: 2023-09-21 21:39:02
+LastEditTime: 2023-10-01 22:46:56
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -12,7 +12,7 @@ model = dict(backbone='CrystalXASV3',
              pipeline='crystalxas',
              params=dict(gnn_hidden_dims=1024,
                          gnn_layers=6,
-                         gnn_res_connection=True,
+                         gnn_res_connection=1,
                          feat_dim=123,
                          prompt_dim=123,
                          prompt_hidden_dim=32,

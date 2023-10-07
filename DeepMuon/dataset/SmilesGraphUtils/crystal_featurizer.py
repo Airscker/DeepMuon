@@ -20,6 +20,14 @@ from pymatgen.analysis.local_env import CrystalNN
 from pymatgen.analysis.graphs import MoleculeGraph, StructureGraph
 from rdkit.Chem.rdchem import Atom
 
+def de_one_hot_encoding(data:Any):
+    if isinstance(data,np.ndarray):
+        return np.argmax(data)
+    elif isinstance(data,torch.Tensor):
+        return torch.argmax(data)
+    elif isinstance(data,list):
+        return data.index(1)
+
 def one_hot_encoding(data:int, code_length:int, encode=True):
     if encode:
         code=np.zeros(code_length)

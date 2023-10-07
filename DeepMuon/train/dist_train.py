@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-09-30 01:11:20
+LastEditTime: 2023-10-07 14:27:56
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -12,7 +12,10 @@ import os
 import click
 import numpy as np
 import functools
+import pickle as pkl
 from typing import Union
+from multiprocessing import shared_memory
+from multiprocessing.managers import SharedMemoryManager
 
 import DeepMuon
 from DeepMuon.tools import (Config,LOGT,EnvINFO,TaskFIFOQueueThread,TaskFIFOQueueProcess,
@@ -59,8 +62,10 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
     configs = config_info.paras
     batch_size = configs['hyperpara']['batch_size']
     epochs = configs['hyperpara']['epochs']
-    train_data = configs['train_dataset']['params']
-    test_data = configs['test_dataset']['params']
+    train_params = configs['train_dataset']['params']
+    train_num_workers = configs['train_dataset']['num_workers']
+    test_params = configs['test_dataset']['params']
+    test_num_workers = configs['test_dataset']['num_workers']
     work_dir = configs['work_config']['work_dir']
     if search:
         trail_id=nni.get_trial_id()
@@ -136,21 +141,31 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
     '''
     Load datasets
     eg. train_dataset=PandaxDataset(IMG_XY_path=train_data)
-        test_dataset=PandaxDataset(IMG_XY_path=test_data)
+        test_dataset=PandaxDataset(IMG_XY_path=test_params)
     In the example shown above, `configs['train_dataset']['backbone']` <> `PandaxDataset`, `IMG_XY_path=train_data` <> `**train_data`
     '''
     _test_load_time=time.time()
-    test_dataset = configs['test_dataset']['backbone'](**test_data)
+    test_dataset = configs['test_dataset']['backbone'](**test_params)
     test_sampler = DistributedSampler(test_dataset)
-    test_dataloader = DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, sampler=test_sampler,collate_fn=configs['test_dataset']['collate_fn'])
+    test_dataloader = DataLoader(test_dataset,
+                                 num_workers=test_num_workers,
+                                 batch_size=batch_size,
+                                 shuffle=False,
+                                 pin_memory=True,
+                                 sampler=test_sampler,
+                                 collate_fn=configs['test_dataset']['collate_fn'])
     _test_load_time=time.time()-_test_load_time
     if test_path is None:
         _train_load_time=time.time()
-        train_dataset = configs['train_dataset']['backbone'](**train_data)
+        train_dataset = configs['train_dataset']['backbone'](**train_params)
         train_sampler = DistributedSampler(train_dataset)
-        train_dataloader = DataLoader(
-            train_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, sampler=train_sampler,collate_fn=configs['train_dataset']['collate_fn'])
+        train_dataloader = DataLoader(train_dataset,
+                                      num_workers=train_num_workers,
+                                      batch_size=batch_size,
+                                      shuffle=False,
+                                      pin_memory=True,
+                                      sampler=train_sampler,
+                                      collate_fn=configs['train_dataset']['collate_fn'])
         _train_load_time=time.time()-_train_load_time
     else:
         _train_load_time=0
@@ -424,6 +439,14 @@ def tensorboard_plot(metrics: dict, epoch: int, writer:SummaryWriter, tag:str, v
 def ddp_fsdp_model_save(epoch=0, model=None, optimizer=None,
                         loss_fn=None, scheduler=None, path=None, ddp_training=True):
     if ddp_training:
+        # model_data=model.module.cpu().state_dict()
+        # model_bytes=pkl.dumps(model_data)
+        # shared_mem=shared_memory.SharedMemory(name='MAIN00X1',create=True,size=len(model_bytes))
+        # shared_mem.buf[:]=model_bytes
+        # print('TIME SLEEPING FOR 2s')
+        # time.sleep(2)
+        # shared_mem.close()
+        # shared_mem.unlink()
         save_model(epoch=epoch, model=model, optimizer=optimizer,
                            loss_fn=loss_fn, scheduler=scheduler, path=path, dist_train=ddp_training)
     else:

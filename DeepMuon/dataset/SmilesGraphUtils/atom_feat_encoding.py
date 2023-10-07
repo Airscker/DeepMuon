@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-06-08 15:08:59
 LastEditors: airscker
-LastEditTime: 2023-09-11 18:48:04
+LastEditTime: 2023-10-06 00:44:15
 Description: Comes from DGLlife open source package.
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -1092,7 +1092,7 @@ class CanonicalAtomFeaturizer(BaseAtomFeaturizer):
                       0., 0.]])}
 
     >>> # Get feature size for nodes
-    >>> print(atom_featurizer.feat_size('feat'))
+    >>> print(atom_featurizer.feat_size('feat')) # if alltable is True and encode_unknown is False(True -> +1), the size will be 149
     74
 
     See Also
@@ -1102,7 +1102,7 @@ class CanonicalAtomFeaturizer(BaseAtomFeaturizer):
     PretrainAtomFeaturizer
     AttentiveFPAtomFeaturizer
     """
-    def __init__(self, atom_data_field='h',alltable=False):
+    def __init__(self, atom_data_field='h',alltable=False,encode_unknown=False):
         super(CanonicalAtomFeaturizer, self).__init__(
             featurizer_funcs={atom_data_field: ConcatFeaturizer(
                 [atom_type_one_hot if not alltable else atom_type_one_hot_alltable,
@@ -1110,7 +1110,7 @@ class CanonicalAtomFeaturizer(BaseAtomFeaturizer):
                  atom_implicit_valence_one_hot,
                  atom_formal_charge,
                  atom_num_radical_electrons,
-                 atom_hybridization_one_hot,
+                 atom_hybridization_one_hot if not encode_unknown else partial(atom_hybridization_one_hot, encode_unknown=True),
                  atom_is_aromatic,
                  atom_total_num_H_one_hot,
                  ]

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 14:36:30
 LastEditors: airscker
-LastEditTime: 2023-09-27 16:30:27
+LastEditTime: 2023-10-02 00:13:36
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -16,6 +16,7 @@ from dgl.nn.pytorch import GraphConv, NNConv, GINConv
 
 import numpy as np
 from rdkit import Chem
+from typing import Union
 from torch_geometric.data import Data
 from .base import MLPBlock,GNN_feature
 
@@ -183,11 +184,13 @@ class GCR(nn.Module):
             return F.relu(output)
 
 class SolvGNNV3(nn.Module):
-    def __init__(self, in_dim=74, hidden_dim=256, add_dim=0, mlp_dims=[1024,512],dropout=0,
-                 gcr_layers=5 ,n_classes=1, res_connection=False,allow_zero_in_degree=True,freeze_GNN=False) -> None:
+    def __init__(self, in_dim=74, hidden_dim=256, add_dim=0,
+                 mlp_dims=[1024,512],dropout=0, gcr_layers=5,
+                 n_classes=1, res_connection:Union[int,bool]=0,
+                 allow_zero_in_degree=True,freeze_GNN=False) -> None:
         super().__init__()
         self.add_dim=add_dim
-        self.res_connection=res_connection
+        self.res_connection=int(res_connection)
         self.freeze_GNN=freeze_GNN
         self.gcn=GraphConv(in_dim, hidden_dim,allow_zero_in_degree=allow_zero_in_degree)
         self.node_gcr=nn.ModuleList(
@@ -212,7 +215,7 @@ class SolvGNNV3(nn.Module):
             node_feature=self.gcn(graph,graph_ndata)
             for i in range(len(self.node_gcr)):
                 feature=self.node_gcr[i](graph,node_feature)
-                if self.res_connection and i>0:
+                if self.res_connection>0 and i>0 and (i+1)%self.res_connection==0:
                     node_feature=node_feature+feature
                 else:
                     node_feature=feature
@@ -220,8 +223,8 @@ class SolvGNNV3(nn.Module):
             node_mean=dgl.mean_nodes(graph,'h')
             if self.add_dim>0:
                 node_mean=torch.cat([node_mean,add_features],axis=1)
-            output=self.regression(node_mean)
-            return output.squeeze(-1)
+            output=self.regression(node_mean).squeeze(-1)
+            return output
     def freeze_GNNPart(self):
         if self.freeze_GNN:
             for para in self.node_gcr.parameters():
@@ -231,6 +234,42 @@ class SolvGNNV3(nn.Module):
     def train(self,mode=True):
         super().train(mode)
         self.freeze_GNNPart()
+
+class SolvGNNV3Norm(SolvGNNV3):
+    def __init__(self, in_dim=74, hidden_dim=256, add_dim=0,
+                 mlp_dims=[1024, 512], dropout=0, gcr_layers=5,
+                 n_classes=1, res_connection: Union[int,bool] = 0,
+                 allow_zero_in_degree=True, freeze_GNN=False, norm_output=True) -> None:
+        super().__init__(in_dim, hidden_dim, add_dim, mlp_dims, dropout, gcr_layers,
+                         n_classes, res_connection, allow_zero_in_degree, freeze_GNN)
+        self.normnn=nn.Sequential(
+            MLPBlock(hidden_dim+add_dim,mlp_dims[-1],mlp_dims,mode='NAD',activation=nn.LeakyReLU,dropout_rate=dropout),
+            nn.Softmax(dim=1),
+            nn.Linear(mlp_dims[-1],n_classes),
+            )
+    def forward(self,solvdata=None,empty_solvsys=None,device=None):
+        graph:dgl.DGLGraph=solvdata['graph'].to(device)
+        if self.add_dim>0:
+            add_features=solvdata['add_features'].float().to(device)
+            add_features=add_features.squeeze()
+        with graph.local_scope():
+            graph_ndata=graph.ndata['h'].float().to(device)
+            node_feature=self.gcn(graph,graph_ndata)
+            for i in range(len(self.node_gcr)):
+                feature=self.node_gcr[i](graph,node_feature)
+                if self.res_connection>0 and i>0 and (i+1)%self.res_connection==0:
+                    node_feature=node_feature+feature
+                else:
+                    node_feature=feature
+            graph.ndata['h']=node_feature
+            node_mean=dgl.mean_nodes(graph,'h')
+            if self.add_dim>0:
+                node_mean=torch.cat([node_mean,add_features],axis=1)
+            output=self.regression(node_mean)
+            norm_output=self.normnn(node_mean)
+            output=output*norm_output
+            return output.squeeze(-1)
+
 
 
 
@@ -252,11 +291,11 @@ class SolvGNNV5(nn.Module):
                  norm=True,
                  gcr_layers=25,
                  n_classes=1,
-                 res_connection=False,
+                 res_connection:Union[int,bool]=0,
                  allow_zero_in_degree=True,
                  freeze_GNN=False) -> None:
         super().__init__()
-        self.res_connection=res_connection
+        self.res_connection=int(res_connection)
         gnn_hidden_dims=[in_dim]+[hidden_dim]*gcr_layers
         self.node_update=nn.ModuleList([
             nn.Linear(gnn_hidden_dims[i],gnn_hidden_dims[i+1]) for i in range(len(gnn_hidden_dims)-1)
@@ -283,7 +322,7 @@ class SolvGNNV5(nn.Module):
             graph_ndata=graph.ndata['h'].float().to(device)
             for i in range(len(self.gnn)):
                 feature=self.gnn[i](graph,graph_ndata)
-                if self.res_connection and i>0:
+                if self.res_connection>0 and i>0 and (i+1)%self.res_connection==0:
                     graph_ndata=graph_ndata+feature
                 else:
                     graph_ndata=feature

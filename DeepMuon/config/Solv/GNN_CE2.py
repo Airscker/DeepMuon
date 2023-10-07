@@ -18,7 +18,7 @@ model = dict(backbone='SolvGNNV5',pipeline='solvgnn',
                          norm=True,
                          gcr_layers=22,
                          n_classes=1,
-                         res_connection=True,
+                         res_connection=1,
                          allow_zero_in_degree=True,
                          freeze_GNN=False))
 
