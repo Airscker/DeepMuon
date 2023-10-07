@@ -2,12 +2,13 @@
 Author: airscker
 Date: 2022-10-05 01:17:20
 LastEditors: airscker
-LastEditTime: 2023-10-07 00:15:04
+LastEditTime: 2023-10-07 15:58:49
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 from .AirServer.FileSaving import FileSavingServer,FileSavingClient
+from .AirServer.shared_memory import SharedMemory,ShareableList
 from .AirConfig import Config
 from .AirDecorator import EnableVisualiaztion
 from .AirEnv import EnvINFO
@@ -22,7 +23,7 @@ from .AirFunc import (check_port,fix_port,check_device,exclude_key,
                       import_module,module_source,parse_config,generate_nnhs_config,
                       format_time,save_model,load_model,del_pycache)
 
-__all__=['FileSavingServer','FileSavingClient',
+__all__=['FileSavingServer','FileSavingClient','SharedMemory','ShareableList',
          'Config','EnableVisualiaztion','EnvINFO',
          'LOGT','get_cpu_info','get_gpu_info','pid_info',
          'model_para','TaskFIFOQueueThread','TaskFIFOQueueProcess',

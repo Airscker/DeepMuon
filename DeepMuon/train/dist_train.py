@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-10-07 14:27:56
+LastEditTime: 2023-10-07 16:00:57
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -14,11 +14,10 @@ import numpy as np
 import functools
 import pickle as pkl
 from typing import Union
-from multiprocessing import shared_memory
 from multiprocessing.managers import SharedMemoryManager
 
 import DeepMuon
-from DeepMuon.tools import (Config,LOGT,EnvINFO,TaskFIFOQueueThread,TaskFIFOQueueProcess,
+from DeepMuon.tools import (Config,LOGT,EnvINFO,TaskFIFOQueueThread,TaskFIFOQueueProcess,SharedMemory,
                             save_model,load_model,format_time,get_mem_info,
                             load_json_log,generate_nnhs_config,plot_curve)
 from DeepMuon.interpret import GradCAM
@@ -439,14 +438,14 @@ def tensorboard_plot(metrics: dict, epoch: int, writer:SummaryWriter, tag:str, v
 def ddp_fsdp_model_save(epoch=0, model=None, optimizer=None,
                         loss_fn=None, scheduler=None, path=None, ddp_training=True):
     if ddp_training:
-        # model_data=model.module.cpu().state_dict()
-        # model_bytes=pkl.dumps(model_data)
-        # shared_mem=shared_memory.SharedMemory(name='MAIN00X1',create=True,size=len(model_bytes))
-        # shared_mem.buf[:]=model_bytes
-        # print('TIME SLEEPING FOR 2s')
-        # time.sleep(2)
-        # shared_mem.close()
-        # shared_mem.unlink()
+        model_data=model.module.state_dict()
+        model_bytes=pkl.dumps(model_data)
+        shared_mem=SharedMemory(name='MAIN00X1',create=True,size=len(model_bytes))
+        shared_mem.buf[:]=model_bytes
+        print('TIME SLEEPING FOR 2s')
+        time.sleep(10)
+        shared_mem.close()
+        shared_mem.unlink()
         save_model(epoch=epoch, model=model, optimizer=optimizer,
                            loss_fn=loss_fn, scheduler=scheduler, path=path, dist_train=ddp_training)
     else:

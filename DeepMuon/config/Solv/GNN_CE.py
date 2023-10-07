@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 13:46:07
 LastEditors: airscker
-LastEditTime: 2023-10-02 00:04:36
+LastEditTime: 2023-10-07 16:06:50
 Description: NULLs
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -52,6 +52,6 @@ optimizer = dict(backbone='AdamW', params=dict(lr=1e-4, weight_decay=0.1, betas=
 # scheduler = dict(backbone='CosineAnnealingLR', params=dict(T_max=100, eta_min=1e-5))
 scheduler = dict(backbone='ReduceLROnPlateau', params=dict(factor=0.5, patience=100))
 
-hyperpara = dict(epochs=500, batch_size=32)
+hyperpara = dict(epochs=5, batch_size=32)
 fsdp_parallel = dict(enabled=False, min_num_params=1e4)
 optimize_config = dict(fp16=False, grad_acc=1, grad_clip=None, double_precision=False,find_unused_parameters=False)
