@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-08-17 22:29:54
+LastEditTime: 2023-10-08 01:06:32
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -16,11 +16,18 @@ import importlib
 import warnings
 import numpy as np
 from typing import Union
+from collections import OrderedDict 
 import matplotlib.pyplot as plt
 from yapf.yapflib.yapf_api import FormatCode
 
 import torch
 from torch import nn
+
+try:
+    from torch.distributed.fsdp import FullyShardedDataParallel as FSDP, FullStateDictConfig, StateDictType
+    from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy
+except:
+    pass
 
 def check_port(ip:str='127.0.0.1',port:int=8080):
     '''check the socket port's availability'''
@@ -307,25 +314,23 @@ def format_time(second):
     return f'{hours}:{minutes:02d}:{second:02d}'
 
 
-def save_model(epoch: int, model: nn.Module, optimizer, loss_fn, scheduler, path, dist_train=False):
+def save_model(epoch: int, model: Union[nn.Module,OrderedDict], path:str='', dist_train:bool=False):
     """
     ## Save a model to disk, Only their state_dict()
 
     ### Args:
         - epoch
         - model
-        - optimizer
-        - loss_fn
-        - scheduler
         - path
         - dist_train
     """
+    if isinstance(model, nn.Module):
+        model_state_dict = model.state_dict() if dist_train == False else model.module.state_dict()
+    elif isinstance(model, OrderedDict):
+        model_state_dict = model
     torch.save({
         'epoch': epoch,
-        'model': model.state_dict() if dist_train == False else model.module.state_dict(),
-        'optimizer': optimizer.state_dict(),
-        'loss_fn': loss_fn.state_dict(),
-        'scheduler': scheduler.state_dict(),
+        'model': model_state_dict,
     }, path)
 
 
@@ -338,10 +343,7 @@ def load_model(path: str, device: torch.device):
 
     ### Returns:
         - epoch: last trained epoch
-        - model_dic
-        - optimizer_dic
-        - scheduler_dic
-        - loss_fn_dic
+        - model_dic: the model state_dict
     """
     checkpoint = torch.load(path, map_location=device)
     try:
@@ -349,23 +351,22 @@ def load_model(path: str, device: torch.device):
     except:
         model_dic=checkpoint
     try:
-        optimizer_dic = checkpoint['optimizer']
-    except:
-        optimizer_dic=None
-    try:
-        scheduler_dic = checkpoint['scheduler']
-    except:
-        scheduler_dic = None
-    try:
         epoch = checkpoint['epoch']
     except:
         epoch=0
-    try:
-        loss_fn_dic = checkpoint['loss_fn']
-    except:
-        loss_fn_dic=None
-    return epoch, model_dic, optimizer_dic, scheduler_dic, loss_fn_dic
+    return epoch, model_dic
 
+def ddp_fsdp_model_save(epoch=0, model=None, path=None, ddp_training=True):
+    if ddp_training:
+        save_model(epoch=epoch, model=model, path=path, dist_train=ddp_training)
+    else:
+        save_policy = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)
+        with FSDP.state_dict_type(model, StateDictType.FULL_STATE_DICT, save_policy):
+            cpu_state = model.state_dict()
+        torch.save({
+            'epoch': epoch,
+            'model': cpu_state,
+        }, path)
 
 def del_pycache(path='./'):
     """

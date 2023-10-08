@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-07 21:35:54
 LastEditors: airscker
-LastEditTime: 2023-09-25 19:36:22
+LastEditTime: 2023-10-08 02:25:41
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -13,7 +13,11 @@ import argparse
 import DeepMuon
 import warnings
 import platform
+import subprocess
+from multiprocessing import Process
+from functools import partial
 from ..tools.AirFunc import import_module,check_port
+from ..tools.AirServer.FileSaving import FileSavingServer
 OS=platform.system().lower()
 
 pkg_path = DeepMuon.__path__[0]
@@ -143,7 +147,16 @@ class NNHSearch:
                 self.experiment.stop()
                 return 0
             else:
-                os.system(base_command)
+                if exp_args.server:
+                    base_command=base_command+' --server'
+                    run_model=Process(target=os.system,args=(base_command,))
+                    run_server=Process(target=partial(FileSavingServer,verbose=False,workdir=self.config_info.work_config['work_dir']),args=())
+                    run_server.start()
+                    run_model.start()
+                    run_model.join()
+                    run_server.join()
+                else:
+                    os.system(base_command)
                 return 0
 
 
@@ -154,9 +167,9 @@ def main():
     parser.add_argument('-g', '--gpus', nargs='+', default=0, type=int,help='GPU ID(s) to use, e.g. 0 1 2 3')
     parser.add_argument('-p', '--port', default=22911, type=int,help='Port number for multi-process training, e.g. 22911')
     parser.add_argument('-c', '--config', default='', type=str,help='Configuration file path, e.g. ./config.py')
-    # parser.add_argument('-tr', '--train', default='dist_train.py', type=str)
     parser.add_argument('-ts', '--test', default='', type=str,help='If the path of tested checkpoint given, then test mode will be activated, e.g. ./checkpoint.pth')
     parser.add_argument('-sr', '--search', action='store_true',help='If this flag is set, then neural network hyperparameter searching will be activated.')
+    parser.add_argument('-sv', '--server', action='store_true',help='If this flag is set, then the file saving server will be started.')
     args = parser.parse_args()
     '''Set NNHS Configuration'''
     exp: NNHSearch = NNHSearch(args.config, args.search)

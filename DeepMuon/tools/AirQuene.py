@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-29 00:41:08
 LastEditors: airscker
-LastEditTime: 2023-10-07 01:24:15
+LastEditTime: 2023-10-08 01:50:56
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -70,6 +70,7 @@ class TaskFIFOQueueThread(Thread):
         self._quene.put(((task,kwargs),task_id))
         if self.verbose:
             print(f"Task {task_id} added")
+        
     def run(self):
         while True:
             task,task_id = self._quene.get()
@@ -77,7 +78,6 @@ class TaskFIFOQueueThread(Thread):
                 if self._quene.qsize()>0:
                     self._quene.task_done()
                     continue
-            print(**task[1])
             task[0](**task[1])
             if self.verbose:
                 print(f"Task {task_id} done")

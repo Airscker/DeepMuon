@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-10-07 16:00:57
+LastEditTime: 2023-10-08 03:31:22
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -13,13 +13,14 @@ import click
 import numpy as np
 import functools
 import pickle as pkl
-from typing import Union
-from multiprocessing.managers import SharedMemoryManager
+from typing import Union,Any
+# from multiprocessing.managers import SharedMemoryManager
 
 import DeepMuon
-from DeepMuon.tools import (Config,LOGT,EnvINFO,TaskFIFOQueueThread,TaskFIFOQueueProcess,SharedMemory,
+from DeepMuon.tools import (Config,LOGT,EnvINFO,SharedMemory,FileSavingClient,
                             save_model,load_model,format_time,get_mem_info,
-                            load_json_log,generate_nnhs_config,plot_curve)
+                            load_json_log,generate_nnhs_config,plot_curve,
+                            ddp_fsdp_model_save)
 from DeepMuon.interpret import GradCAM
 
 import torch
@@ -50,7 +51,7 @@ pkg_path = DeepMuon.__path__[0]
 msg = os.path.join(pkg_path.split('DeepMuon')[0], 'LICENSE.txt')
 precision=torch.FloatTensor
 
-def main(config_info:Config, test_path:str=None, search:bool=False, source_code:str=None):
+def main(config_info:Config, test_path:str=None, search:bool=False, source_code:str=None, server:bool=True):
     global msg
     global fsdp_env
     global precision
@@ -98,12 +99,17 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
 
     '''Log the basic parameters'''
     if local_rank == 0:
-        # '''Initialize (un)sequenced model saving quene'''
-        # best_model_save_quene=TaskFIFOQueueProcess(sequenced=False,verbose=True,daemon=True)
-        # checkpoint_save_quene=TaskFIFOQueueProcess(sequenced=True,verbose=True,daemon=True)
-        # best_model_save_quene.start()
-        # checkpoint_save_quene.start()
         logger = LOGT(log_dir=work_dir, logfile=log)
+        while test_path is None and server:
+            if os.path.exists(os.path.join(work_dir,'Server','ServerInfo.pkl')):
+                try:
+                    with open(os.path.join(work_dir,'Server','ServerInfo.pkl'),'rb') as f:
+                        server_info=pkl.load(f)
+                    FIFOsaver=FileSavingClient(verbose=False,workdir=work_dir,serverIP=server_info[0],serverPort=server_info[1])
+                    logger.log(f'Connected to file saving server {server_info[0]}:{server_info[1]}')
+                    break
+                except:
+                    pass
         '''Create work_dir'''
         checkpoint_savepath=os.path.join(work_dir,'Checkpoint')
         curve_path=os.path.join(work_dir,'Figure')
@@ -117,8 +123,8 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
             config_info.move_config()
         log = os.path.join(work_dir, log)
         '''show hyperparameters'''
-        logger.log(
-            f'========= Current Time: {time.ctime()} Current PID: {os.getpid()} =========')
+        PID=os.getpid()
+        logger.log(f'========= Current Time: {time.ctime()} Current PID: {PID} =========')
         logger.log(f'LOCAL WORLD SIZE: {local_world_size}')
         logger.log(f"PORT: {os.environ['MASTER_PORT']}")
         if search:
@@ -134,8 +140,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
         logger.log(env_info)
         logger.log(f'Configuration:\n{config_info}')
         if test_path is not None:
-            logger.log(
-                f"Test mode enabled, model will be tested upon checkpoint {test_path}")
+            logger.log(f"Test mode enabled, model will be tested upon checkpoint {test_path}")
 
     '''
     Load datasets
@@ -182,7 +187,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
     if resume == '' and load == '':
         pass
     elif resume != '':
-        epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = load_model(
+        epoch_c, model_c = load_model(
             path=resume, device=device)
         try:
             model.load_state_dict(model_c, False)
@@ -192,7 +197,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
         if local_rank == 0:
             logger.log(f'Model Resumed from {resume}, Epoch now: {epoch_now}')
     elif load != '':
-        epoch_c, model_c, optimizer_c, scheduler_c, loss_fn_c = load_model(
+        epoch_c, model_c= load_model(
             path=load, device=device)
         try:
             model.load_state_dict(model_c, False)
@@ -200,8 +205,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
             pass
         epoch_now = 0
         if local_rank == 0:
-            logger.log(
-                f'Pretrained Model Loaded from {load}, Epoch now: {epoch_now}')
+            logger.log(f'Pretrained Model Loaded from {load}, Epoch now: {epoch_now}')
     epochs += epoch_now
 
     '''save model architecture before model parallel'''
@@ -224,8 +228,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
             local_rank], output_device=local_rank, find_unused_parameters=configs['optimize_config']['find_unused_parameters'])
         ddp_training = True
         if not fsdp_env and local_rank == 0:
-            logger.log(
-                f'WARN: FSDP is not supported at current edition of torch: {torch.__version__}, we have switched to DDP to avoid mistakes')
+            logger.log(f'WARN: FSDP is not supported at current edition of torch: {torch.__version__}, we have switched to DDP to avoid mistakes')
 
     '''
     Initialize loss/optimizer/scheduler
@@ -254,8 +257,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
         logger.log(f'Loss Function: {loss_fn}')
         if test_path is None:
             logger.log(f'Optimizer:\n{optimizer}')
-            logger.log(
-                f'Scheduler: \n\t{scheduler.__class__.__name__}:\n\t{scheduler.state_dict()}')
+            logger.log(f'Scheduler: \n\t{scheduler.__class__.__name__}:\n\t{scheduler.state_dict()}')
 
     '''Start testing, only if test_path!=None'''
     model_pipeline=configs['model']['pipeline'](model)
@@ -351,24 +353,30 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
             '''Save best model according to the value of sota target'''
             if ts_target != bestres and not np.isnan(ts_target):
                 bestres = ts_target
-                if os.path.exists(best_checkpoint):
-                    os.remove(best_checkpoint)
+                # if os.path.exists(best_checkpoint):
+                #     os.remove(best_checkpoint)
                 best_checkpoint = os.path.join(
                     work_dir, f"Best_{sota_target}_epoch_{t+1}.pth")
                 # dist.barrier()
-                # best_model_save_quene.add_task(ddp_fsdp_model_save,(t,model,optimizer,loss_fn,scheduler,best_checkpoint,ddp_training),t)
-                ddp_fsdp_model_save(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn,
-                                    scheduler=scheduler, path=best_checkpoint, ddp_training=ddp_training)
-                logger.log(
-                    f'Best Model Saved as {best_checkpoint}, Best {sota_target}: {bestres}, Current Epoch: {t+1}', show=True)
+                if server:
+                    share_memory(data=['BestModel',
+                                    dict(epoch=t, model=model.state_dict(), path=best_checkpoint, ddp_training=ddp_training)],
+                                name=f'{PID}_E{t}B',
+                                client=FIFOsaver)
+                else:
+                    ddp_fsdp_model_save(epoch=t, model=model, path=best_checkpoint, ddp_training=ddp_training)
+                logger.log(f'Best Model Saved as {best_checkpoint}, Best {sota_target}: {bestres}, Current Epoch: {t+1}', show=True)
             if (t + 1) % inter == 0:
                 savepath = os.path.join(checkpoint_savepath,f'Epoch_{t+1}.pth')
                 # dist.barrier()
-                # checkpoint_save_quene.add_task(ddp_fsdp_model_save,(t,model,optimizer,loss_fn,scheduler,savepath,ddp_training),t)
-                ddp_fsdp_model_save(epoch=t, model=model, optimizer=optimizer, loss_fn=loss_fn,
-                                    scheduler=scheduler, path=savepath, ddp_training=ddp_training)
-                logger.log(
-                    f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=True)
+                if server:
+                    share_memory(data=['Checkpoint',
+                                    dict(epoch=t, model=model.state_dict(), path=savepath, ddp_training=ddp_training)],
+                                name=f'{PID}_E{t}C',
+                                client=FIFOsaver)
+                else:
+                    ddp_fsdp_model_save(epoch=t, model=model, path=savepath, ddp_training=ddp_training)
+                logger.log(f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=True)
             
             '''Record the training information in the log file'''
             epoch_time = time.time() - start_time
@@ -405,9 +413,8 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                                data_label=[f'{Name}'],
                                save=os.path.join(curve_path,f'{mode}_{para}.jpg'),
                                mod=None)
-        # print('Finishing model saving quene...')
-        # best_model_save_quene.end_task()
-        # checkpoint_save_quene.end_task()
+        if server:
+            FIFOsaver.close(close_server=True)
         print('Training finished!')
     return 0
 
@@ -435,30 +442,16 @@ def tensorboard_plot(metrics: dict, epoch: int, writer:SummaryWriter, tag:str, v
         if vis_com[key][2]:
             writer.add_scalar(f'{tag}_{vis_com[key][0]}', metrics[key], global_step=epoch)
 
-def ddp_fsdp_model_save(epoch=0, model=None, optimizer=None,
-                        loss_fn=None, scheduler=None, path=None, ddp_training=True):
-    if ddp_training:
-        model_data=model.module.state_dict()
-        model_bytes=pkl.dumps(model_data)
-        shared_mem=SharedMemory(name='MAIN00X1',create=True,size=len(model_bytes))
-        shared_mem.buf[:]=model_bytes
-        print('TIME SLEEPING FOR 2s')
-        time.sleep(10)
-        shared_mem.close()
-        shared_mem.unlink()
-        save_model(epoch=epoch, model=model, optimizer=optimizer,
-                           loss_fn=loss_fn, scheduler=scheduler, path=path, dist_train=ddp_training)
-    else:
-        save_policy = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)
-        with FSDP.state_dict_type(model, StateDictType.FULL_STATE_DICT, save_policy):
-            cpu_state = model.state_dict()
-        torch.save({
-            'epoch': epoch,
-            'model': cpu_state,
-            'optimizer': optimizer.state_dict(),
-            'loss_fn': loss_fn.state_dict(),
-            'scheduler': scheduler.state_dict(),
-        }, path)
+def share_memory(data:Any,name:str,client:FileSavingClient):
+    # name='MAIN00X1'
+    data_bytes=pkl.dumps(data[1])
+    shm=SharedMemory(name=name,create=True,size=len(data_bytes))
+    shm.buf[:]=data_bytes
+    # print(f'Created shared memory for 10s, name: {name}')
+    # time.sleep(20)
+    client.send(f'{data[0]}*{name}')
+    shm.close()
+    shm.unlink()
 
 
 def dataattr(device, dataloader, model):
@@ -649,7 +642,8 @@ def test(device:Union[int, str, torch.device],
 @click.option('--config', default='', help='Specify the path of configuartion file')
 @click.option('--test', default='', help='Specify the path of checkpoint used to test the model performance, if nothing given the test mode will be disabled')
 @click.option('--search',is_flag=True,help='Specify whether to use Neural Network Hyperparameter Searching (NNHS for short)')
-def start_exp(config, test, search, main_func=main):
+@click.option('--server',is_flag=True,help='Specify whether to use File Saving Server to save the model checkpoints')
+def start_exp(config, test, search, server):
     global NNHS_enabled
     if not NNHS_enabled:
         search=False
@@ -666,7 +660,7 @@ def start_exp(config, test, search, main_func=main):
         return 0
     elif test == '':
         test = None
-    main_func(train_config, test, search, source_code)
+    main(train_config, test, search, source_code, server)
 
  
 if __name__ == '__main__':

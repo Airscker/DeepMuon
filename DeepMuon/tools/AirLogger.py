@@ -2,13 +2,14 @@
 Author: Airscker
 Date: 2022-08-26 21:23:01
 LastEditors: airscker
-LastEditTime: 2023-05-16 00:56:57
+LastEditTime: 2023-10-07 22:19:08
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 import os
 import json
+import datetime
 import numpy as np
 from typing import Union
 from prettytable import PrettyTable
@@ -42,7 +43,7 @@ class LOGT(object):
             if os.path.exists(self.jsonfile):
                 os.remove(self.jsonfile)
 
-    def log(self, message:Union[dict,str], show=True, json_log=False):
+    def log(self, message:Union[dict,str], show=True, json_log=False, timer=False):
         """
         ## write a message to the logfile
 
@@ -63,9 +64,12 @@ class LOGT(object):
             with open(self.jsonfile, 'a+')as f:
                 f.write(f"{message_json}\n")
             f.close()
+        if isinstance(message,dict):
+            message=convert_table(message)
+        if timer:
+            log_time=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            message=f'{log_time} | {message}'
         if show == True:
-            if isinstance(message,dict):
-                message=convert_table(message)
             print(message)
         with open(self.logfile, 'a+')as f:
             f.write(f'{message}\n')

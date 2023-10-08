@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-05 01:17:20
 LastEditors: airscker
-LastEditTime: 2023-10-07 15:58:49
+LastEditTime: 2023-10-08 00:42:52
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -21,7 +21,7 @@ from .AirVisual import (ShowDGLGraph,plot_3d,plot_hist_2nd,plot_curve,R2JointPlo
 from .AirFunc import (check_port,fix_port,check_device,exclude_key,
                       get_mem_info,readable_dict,unpack_json_log,load_json_log,
                       import_module,module_source,parse_config,generate_nnhs_config,
-                      format_time,save_model,load_model,del_pycache)
+                      format_time,save_model,load_model,del_pycache,ddp_fsdp_model_save)
 
 __all__=['FileSavingServer','FileSavingClient','SharedMemory','ShareableList',
          'Config','EnableVisualiaztion','EnvINFO',
@@ -32,4 +32,4 @@ __all__=['FileSavingServer','FileSavingClient','SharedMemory','ShareableList',
          'check_port','fix_port','check_device','exclude_key',
          'get_mem_info','readable_dict','unpack_json_log','load_json_log',
          'import_module','module_source','parse_config','generate_nnhs_config',
-         'format_time','save_model','load_model','del_pycache']
+         'format_time','save_model','load_model','del_pycache','ddp_fsdp_model_save']
