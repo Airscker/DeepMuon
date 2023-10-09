@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-07-26 18:55:28
 LastEditors: airscker
-LastEditTime: 2023-10-01 15:18:11
+LastEditTime: 2023-10-08 21:10:26
 Description: Visualization tools
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -247,13 +247,13 @@ def CMPlot(scores,labels,save_path:str='./',tag:str='TS',target_names=None):
     confusion=cm.T
     if target_names is None:
         target_names=[str(i) for i in range(confusion.shape[0])]
-    font={'family':'TARIAL',
+    font={#'family':'TARIAL',
             # 'style':'italic',
             'weight':'normal',
             # 'align':'center',
             'color':'white',
             'size':12}
-    fontb={'family':'TARIAL',
+    fontb={#'family':'TARIAL',
             # 'style':'italic',
             # 'alignment':'center',
             'weight':'normal',

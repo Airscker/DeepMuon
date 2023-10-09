@@ -147,16 +147,17 @@ class NNHSearch:
                 self.experiment.stop()
                 return 0
             else:
-                if exp_args.server:
-                    base_command=base_command+' --server'
-                    run_model=Process(target=os.system,args=(base_command,))
-                    run_server=Process(target=partial(FileSavingServer,verbose=False,workdir=self.config_info.work_config['work_dir']),args=())
-                    run_server.start()
-                    run_model.start()
-                    run_model.join()
-                    run_server.join()
-                else:
-                    os.system(base_command)
+                os.system(base_command)
+                # if exp_args.server:
+                #     base_command=base_command+' --server'
+                #     run_model=Process(target=os.system,args=(base_command,))
+                #     run_server=Process(target=partial(FileSavingServer,verbose=False,workdir=self.config_info.work_config['work_dir']),args=())
+                #     run_server.start()
+                #     run_model.start()
+                #     run_model.join()
+                #     run_server.join()
+                # else:
+                #     os.system(base_command)
                 return 0
 
 

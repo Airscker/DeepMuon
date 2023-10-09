@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-06-08 15:08:59
 LastEditors: airscker
-LastEditTime: 2023-10-06 00:44:15
+LastEditTime: 2023-10-08 12:29:24
 Description: Comes from DGLlife open source package.
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -1886,7 +1886,7 @@ class CanonicalBondFeaturizer(BaseBondFeaturizer):
                      [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1.]])}
     >>> # Get feature size
     >>> bond_featurizer.feat_size('feat')
-    13
+    12
 
     See Also
     --------

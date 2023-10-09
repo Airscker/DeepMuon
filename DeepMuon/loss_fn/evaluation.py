@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-31 09:28:41
 LastEditors: airscker
-LastEditTime: 2023-09-25 17:20:30
+LastEditTime: 2023-10-08 22:38:17
 Description: NULL
 
 Copyright (C) OpenMMLab. All rights reserved.
@@ -85,6 +85,7 @@ def every_class_accuracy(scores, labels):
     return every_class_acc
 
 
+@EnableVisualiaztion(Name="Top 1 ACC",NNHSReport=True,TRTensorBoard=True,TRCurve=True)
 def top_k_accuracy(scores, labels, topk=(1, )):
     """
     ## Calculate top k accuracy score.

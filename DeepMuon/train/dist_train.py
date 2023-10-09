@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-10-08 03:31:22
+LastEditTime: 2023-10-08 17:55:22
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -10,6 +10,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 import time
 import os
 import click
+import shutil
 import numpy as np
 import functools
 import pickle as pkl
@@ -56,8 +57,6 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
     global fsdp_env
     global precision
 
-    # '''Using spawn instead of fork to avoid deadlocks in TaskFIFOQueueProcess/Thread'''
-    # torch.multiprocessing.set_start_method('spawn')
     '''Initialize the basic training configuration'''
     configs = config_info.paras
     batch_size = configs['hyperpara']['batch_size']
@@ -100,16 +99,16 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
     '''Log the basic parameters'''
     if local_rank == 0:
         logger = LOGT(log_dir=work_dir, logfile=log)
-        while test_path is None and server:
-            if os.path.exists(os.path.join(work_dir,'Server','ServerInfo.pkl')):
-                try:
-                    with open(os.path.join(work_dir,'Server','ServerInfo.pkl'),'rb') as f:
-                        server_info=pkl.load(f)
-                    FIFOsaver=FileSavingClient(verbose=False,workdir=work_dir,serverIP=server_info[0],serverPort=server_info[1])
-                    logger.log(f'Connected to file saving server {server_info[0]}:{server_info[1]}')
-                    break
-                except:
-                    pass
+        # while test_path is None and server:
+        #     if os.path.exists(os.path.join(work_dir,'Server','ServerInfo.pkl')):
+        #         try:
+        #             with open(os.path.join(work_dir,'Server','ServerInfo.pkl'),'rb') as f:
+        #                 server_info=pkl.load(f)
+        #             FIFOsaver=FileSavingClient(verbose=False,workdir=work_dir,serverIP=server_info[0],serverPort=server_info[1])
+        #             logger.log(f'Connected to file saving server {server_info[0]}:{server_info[1]}')
+        #             break
+        #         except:
+        #             pass
         '''Create work_dir'''
         checkpoint_savepath=os.path.join(work_dir,'Checkpoint')
         curve_path=os.path.join(work_dir,'Figure')
@@ -297,6 +296,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                      time=('Time',True,True,True,None),)
     ts_eva_metrics={}
     tr_eva_metrics={}
+    best_epoch=0
     for t in range(epoch_now, epochs):
         start_time = time.time()
         train_dataloader.sampler.set_epoch(t)
@@ -349,31 +349,36 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                         modes=['tr_eval','ts_eval'],
                         end_exp=end_exp,
                         vis_com=vis_com)
-
+            
             '''Save best model according to the value of sota target'''
             if ts_target != bestres and not np.isnan(ts_target):
                 bestres = ts_target
-                # if os.path.exists(best_checkpoint):
-                #     os.remove(best_checkpoint)
-                best_checkpoint = os.path.join(
-                    work_dir, f"Best_{sota_target}_epoch_{t+1}.pth")
+                best_epoch=t+1
+                if os.path.exists(best_checkpoint):
+                    os.remove(best_checkpoint)
+                best_checkpoint = os.path.join(work_dir, f"Best_{sota_target}_epoch_{best_epoch}.pth")
                 # dist.barrier()
-                if server:
-                    share_memory(data=['BestModel',
-                                    dict(epoch=t, model=model.state_dict(), path=best_checkpoint, ddp_training=ddp_training)],
-                                name=f'{PID}_E{t}B',
-                                client=FIFOsaver)
-                else:
-                    ddp_fsdp_model_save(epoch=t, model=model, path=best_checkpoint, ddp_training=ddp_training)
+                # if server:
+                #     share_memory(data=['BestModel',
+                #                     dict(epoch=t, model=model.state_dict(), path=best_checkpoint, ddp_training=ddp_training)],
+                #                 name=f'{PID}_E{t}B',
+                #                 client=FIFOsaver)
+                # else:
+                #     ddp_fsdp_model_save(epoch=t, model=model, path=best_checkpoint, ddp_training=ddp_training)
+                ddp_fsdp_model_save(epoch=t, model=model, path=best_checkpoint, ddp_training=ddp_training)
                 logger.log(f'Best Model Saved as {best_checkpoint}, Best {sota_target}: {bestres}, Current Epoch: {t+1}', show=True)
             if (t + 1) % inter == 0:
                 savepath = os.path.join(checkpoint_savepath,f'Epoch_{t+1}.pth')
                 # dist.barrier()
-                if server:
-                    share_memory(data=['Checkpoint',
-                                    dict(epoch=t, model=model.state_dict(), path=savepath, ddp_training=ddp_training)],
-                                name=f'{PID}_E{t}C',
-                                client=FIFOsaver)
+                # if server:
+                #     share_memory(data=['Checkpoint',
+                #                     dict(epoch=t, model=model.state_dict(), path=savepath, ddp_training=ddp_training)],
+                #                 name=f'{PID}_E{t}C',
+                #                 client=FIFOsaver)
+                # else:
+                #     ddp_fsdp_model_save(epoch=t, model=model, path=savepath, ddp_training=ddp_training)
+                if best_epoch==(t+1):
+                    shutil.copyfile(best_checkpoint,savepath)
                 else:
                     ddp_fsdp_model_save(epoch=t, model=model, path=savepath, ddp_training=ddp_training)
                 logger.log(f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=True)
@@ -413,8 +418,8 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                                data_label=[f'{Name}'],
                                save=os.path.join(curve_path,f'{mode}_{para}.jpg'),
                                mod=None)
-        if server:
-            FIFOsaver.close(close_server=True)
+        # if server:
+        #     FIFOsaver.close(close_server=True)
         print('Training finished!')
     return 0
 
@@ -442,16 +447,13 @@ def tensorboard_plot(metrics: dict, epoch: int, writer:SummaryWriter, tag:str, v
         if vis_com[key][2]:
             writer.add_scalar(f'{tag}_{vis_com[key][0]}', metrics[key], global_step=epoch)
 
-def share_memory(data:Any,name:str,client:FileSavingClient):
-    # name='MAIN00X1'
-    data_bytes=pkl.dumps(data[1])
-    shm=SharedMemory(name=name,create=True,size=len(data_bytes))
-    shm.buf[:]=data_bytes
-    # print(f'Created shared memory for 10s, name: {name}')
-    # time.sleep(20)
-    client.send(f'{data[0]}*{name}')
-    shm.close()
-    shm.unlink()
+# def share_memory(data:Any,name:str,client:FileSavingClient):
+#     data_bytes=pkl.dumps(data[1])
+#     shm=SharedMemory(name=name,create=True,size=len(data_bytes))
+#     shm.buf[:]=data_bytes
+#     client.send(f'{data[0]}*{name}')
+#     shm.close()
+#     shm.unlink()
 
 
 def dataattr(device, dataloader, model):
@@ -614,7 +616,7 @@ def train(device: Union[int, str, torch.device],
         labels.append(label.detach().cpu().numpy())
         train_loss += loss.item()*gradient_accumulation
     scheduler.step(train_loss/batchs)
-    release_cache()
+    # release_cache()
     return train_loss/batchs, np.concatenate(predictions, axis=0), np.concatenate(labels, axis=0)
 
 
@@ -634,7 +636,7 @@ def test(device:Union[int, str, torch.device],
             labels.append(label.detach().cpu().numpy())
             test_loss += loss_fn(pred, label).item()
     test_loss /= num_batches
-    release_cache()
+    # release_cache()
     return test_loss, np.concatenate(predictions, axis=0), np.concatenate(labels, axis=0)
 
 

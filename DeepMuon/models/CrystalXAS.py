@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-10 17:32:44
 LastEditors: airscker
-LastEditTime: 2023-09-18 12:42:11
+LastEditTime: 2023-10-01 22:52:52
 Description: NULL
 
 Copyright (C) 2023 by Deep Graph Library, All Rights Reserved. 
@@ -35,7 +35,7 @@ class CrystalXASV1(nn.Module):
     def __init__(self,
                  gnn_hidden_dims: Union[list,int] = [128, 512],
                  gnn_layers: int = 3,
-                 gnn_res_connection: bool = True,
+                 gnn_res_connection: Union[int,bool] = 0,
                  feat_dim: int = 6,
                  prompt_dim: int = 2,
                  mlp_hidden_dims: list = [1024, 512],
@@ -45,13 +45,14 @@ class CrystalXASV1(nn.Module):
         xas_types = ['XANES', 'EXAFS', 'XAFS']
         assert xas_type in xas_types, f"'xas_type' must be in {xas_types}, but {xas_type} was given."
         self.xas_type = xas_type
+        gnn_res_connection=int(gnn_res_connection)
         if isinstance(gnn_hidden_dims, int):
             gnn_hidden_dims = [gnn_hidden_dims] * gnn_layers
             self.gnn_res_connection = gnn_res_connection
         else:
             if gnn_res_connection:
                 print('Residual connection is unavailable when `gnn_hidden_dims` is a list. That is, dimensions of GNN layers must be the same.')
-            self.gnn_res_connection = False
+            self.gnn_res_connection = 0
         self.XANES = MLPBlock(gnn_hidden_dims[-1] + prompt_dim,
                               100,
                               mlp_hidden_dims,
@@ -96,7 +97,7 @@ class CrystalXASV1(nn.Module):
         with graph.local_scope():
             for i in range(len(self.GIN)):
                 result = self.GIN[i](graph, atom_features)
-                if self.gnn_res_connection and i != 0:
+                if self.gnn_res_connection>0 and i != 0 and (i+1)%self.gnn_res_connection==0:
                     atom_features = result + atom_features
                 else:
                     atom_features = result
@@ -121,7 +122,7 @@ class CrystalXASV2(nn.Module):
         - gnn_hidden_dims: The hidden dimensions of the GNN layers, the depth of GNN part is `len(gnn_hidden_dims)-1`.
             If integer is given, the hidden dimensions of all GNN layers will be the same.
         - gnn_layers: The number of GNN layers, only usable when `gnn_hidden_dims` is interger.
-        - gnn_res_connection: Whether to use residual connection in GNN part.
+        - gnn_res_connection: Specify the interval of residual connection. If `gnn_res_connection` is 0, no residual connection will be used.
         - feat_dim: The dimension of the atom features.
         - prompt_dim: The dimension of the prompt features.
         - prompt_hidden_dim: The output dimension of the prompt NN.
@@ -134,7 +135,7 @@ class CrystalXASV2(nn.Module):
     def __init__(self,
                  gnn_hidden_dims: Union[list,int] = [128, 512],
                  gnn_layers: int = 3,
-                 gnn_res_connection: bool = True,
+                 gnn_res_connection: Union[int,bool] = 0,
                  feat_dim: int = 6,
                  prompt_dim: int = 2,
                  prompt_hidden_dim=32,
@@ -146,13 +147,14 @@ class CrystalXASV2(nn.Module):
         xas_types = {'XANES':100, 'EXAFS':500}
         assert xas_type in xas_types.keys(), f"'xas_type' must be in {xas_types.keys()}, but {xas_type} was given."
         self.xas_type = xas_type
+        gnn_res_connection=int(gnn_res_connection)
         if isinstance(gnn_hidden_dims, int):
             self.gnn_hidden_dims = [gnn_hidden_dims] * gnn_layers
             self.gnn_res_connection = gnn_res_connection
         else:
-            if gnn_res_connection:
+            if gnn_res_connection>0:
                 print('Residual connection is unavailable when `gnn_hidden_dims` is a list. That is, dimensions of GNN layers must be the same.')
-            self.gnn_res_connection = False
+            self.gnn_res_connection = 0
             self.gnn_hidden_dims = gnn_hidden_dims
         self.gnn_hidden_dims = [feat_dim] + self.gnn_hidden_dims
         self.NormalizeNN=nn.Sequential(
@@ -211,7 +213,7 @@ class CrystalXASV2(nn.Module):
         with graph.local_scope():
             for i in range(len(self.GIN)):
                 result = self.GIN[i](graph, atom_features)
-                if self.gnn_res_connection and i != 0:
+                if self.gnn_res_connection>0 and i != 0 and (i+1)%self.gnn_res_connection==0:
                     atom_features = result + atom_features
                 else:
                     atom_features = result
@@ -224,7 +226,7 @@ class CrystalXASV3(CrystalXASV2):
     def __init__(self,
                  gnn_hidden_dims: Union[list,int] = [128, 512],
                  gnn_layers: int = 3,
-                 gnn_res_connection: bool = True,
+                 gnn_res_connection: Union[int,bool] = 0,
                  feat_dim: int = 6,
                  prompt_dim: int = 2,
                  prompt_hidden_dim=32,
@@ -250,7 +252,7 @@ class CrystalXASV4(CrystalXASV2):
     def __init__(self,
                  gnn_hidden_dims: Union[list,int] = [128, 512],
                  gnn_layers: int = 3,
-                 gnn_res_connection: bool = True,
+                 gnn_res_connection: Union[int,bool] = 0,
                  feat_dim: int = 6,
                  prompt_dim: int = 2,
                  prompt_hidden_dim=32,

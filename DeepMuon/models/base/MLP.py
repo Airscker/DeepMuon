@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-13 19:24:38
 LastEditors: airscker
-LastEditTime: 2023-10-03 19:35:34
+LastEditTime: 2023-10-08 15:12:48
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -57,7 +57,7 @@ class MLPBlock(nn.Module):
         self.dropout_inplace=dropout_inplace
         if not (0 <= dropout_rate <= 1):
             raise ValueError("dropout_rate should be between 0 and 1.")
-        if hidden_sizes is None:
+        if hidden_sizes is None or len(hidden_sizes)==0:
             self.mlp=nn.Linear(dim_input,dim_output)
         else:
             self.mlp=nn.Sequential()
@@ -75,10 +75,15 @@ class MLPBlock(nn.Module):
                                                       dropout_inplace=dropout_inplace))
         self.reset_parameters()
     def reset_parameters(self):
-        for layer in self.mlp:
-            if isinstance(layer,nn.Linear):
-                nn.init.xavier_uniform_(layer.weight.data)
-                if layer.bias is not None:
-                    nn.init.zeros_(layer.bias.data)
+        if isinstance(self.mlp,nn.Linear):
+            nn.init.xavier_uniform_(self.mlp.weight.data)
+            if self.mlp.bias is not None:
+                nn.init.zeros_(self.mlp.bias.data)
+        else:
+            for layer in self.mlp:
+                if isinstance(layer,nn.Linear):
+                    nn.init.xavier_uniform_(layer.weight.data)
+                    if layer.bias is not None:
+                        nn.init.zeros_(layer.bias.data)
     def forward(self, x:torch.Tensor):
         return self.mlp(x)

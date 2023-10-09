@@ -2,14 +2,14 @@
 Author: airscker
 Date: 2022-09-20 20:03:40
 LastEditors: airscker
-LastEditTime: 2023-10-06 02:10:39
+LastEditTime: 2023-10-08 12:18:08
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 
 '''Basic dataset utils'''
-from .SmilesGraphUtils.crystal_featurizer import MPJCrystalGraphData, one_hot_encoding, de_one_hot_encoding
+from .SmilesGraphUtils.crystal_featurizer import MPJCrystalGraphData, one_hot_encoding, one_hot_decoding
 from .SmilesGraphUtils.atom_feat_encoding import CanonicalAtomFeaturizer,CanonicalBondFeaturizer
 from .SmilesGraphUtils.molecular_graph import mol_to_bigraph,construct_bigraph_from_mol
 
@@ -24,7 +24,8 @@ from .XASDataV2 import XASSUMDataset, collate_XASSUM
 from .AtomEmbedData import AtomMasking, collate_atom_masking
 
 __all__ = [
-    'MPJCrystalGraphData', 'one_hot_encoding', 'de_one_hot_encoding' ,'CanonicalAtomFeaturizer','CanonicalBondFeaturizer',
+    'MPJCrystalGraphData', 'one_hot_encoding', 'one_hot_decoding' ,
+    'CanonicalAtomFeaturizer','CanonicalBondFeaturizer','mol_to_bigraph','construct_bigraph_from_mol',
     'PandaxDataset', 'HailingDataset_Direct2', 'HailingDataset_DirectV3',
     'NIIDecodeV2', 'ValenceDataset', 'ValenceDatasetV2', 'MinistDataset',
     'SmilesGraphData', 'MultiSmilesGraphData', 'collate_solubility',

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-05 18:38:28
 LastEditors: airscker
-LastEditTime: 2023-09-28 16:57:18
+LastEditTime: 2023-10-08 12:23:42
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -20,18 +20,18 @@ from pymatgen.analysis.local_env import CrystalNN
 from pymatgen.analysis.graphs import MoleculeGraph, StructureGraph
 from rdkit.Chem.rdchem import Atom
 
-def de_one_hot_encoding(data:Any):
+def one_hot_decoding(data:Any):
     if isinstance(data,np.ndarray):
-        return np.argmax(data)
+        return np.argmax(data)+1
     elif isinstance(data,torch.Tensor):
-        return torch.argmax(data)
+        return torch.argmax(data)+1
     elif isinstance(data,list):
-        return data.index(1)
+        return data.index(1)+1
 
 def one_hot_encoding(data:int, code_length:int, encode=True):
     if encode:
         code=np.zeros(code_length)
-        code[data]=1
+        code[data-1]=1
         return code
     else:
         return data

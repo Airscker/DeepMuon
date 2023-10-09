@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-10-04 13:23:27
 LastEditors: airscker
-LastEditTime: 2023-10-04 16:17:36
+LastEditTime: 2023-10-08 17:47:08
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -11,22 +11,22 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 
 model = dict(backbone='AtomEmbedding',
              pipeline='molpretrain',
-             params=dict(emb_dim=300,gnn_layers=5,mlp_dims=[]))
+             params=dict(atom_feat_dim=150,bond_feat_dim=12,emb_dim=300,gnn_layers=5,mlp_dims=[],res_connection=1))
 
 train_dataset = dict(backbone='AtomMasking',
                      collate_fn='collate_atom_masking',
-                     num_workers=12,
-                     params=dict(datapath='/data/yufeng/CollectedDataset/QM9/qm9_mol_graph.pkl',preprocessed=True,
-                                 bidirectional=True,mask_ratio=None,mask_num=1,datatype='qm9',randomize=True,mode='train'))
+                     num_workers=64,
+                     params=dict(datapath='/data/yufeng/CollectedDataset/SMILES/all_smiles.txt',size=100000,
+                                 mask_ratio=0.15,mask_num=None,randomize=False,mode='train'))
 test_dataset = dict(backbone='AtomMasking',
                      collate_fn='collate_atom_masking',
-                     num_workers=12,
-                     params=dict(datapath='/data/yufeng/CollectedDataset/QM9/qm9_mol_graph.pkl',preprocessed=True,
-                                 bidirectional=True,mask_ratio=None,mask_num=1,datatype='qm9',randomize=True,mode='test'))
+                     num_workers=64,
+                     params=dict(datapath='/data/yufeng/CollectedDataset/SMILES/all_smiles.txt',size=100000,
+                                 mask_ratio=0.15,mask_num=None,randomize=False,mode='test'))
 
-work_config = dict(work_dir='/home/yufeng/workdir/MolPT/GINV1001')
+work_config = dict(work_dir='/home/yufeng/workdir/MolPT/GINV1004')
 
-checkpoint_config = dict(load_from='', resume_from='', save_inter=200)
+checkpoint_config = dict(load_from='', resume_from='', save_inter=100)
 
 loss_fn = dict(backbone='CrossEntropyLoss')
 evaluation = dict(metrics=['f1_score', 'ConfusionMatrix', 'top_k_accuracy'],
@@ -40,7 +40,7 @@ optimizer = dict(backbone='AdamW',
 scheduler = dict(backbone='ReduceLROnPlateau',
                  params=dict(factor=0.5, patience=100))
 
-hyperpara = dict(epochs=200, batch_size=128)
+hyperpara = dict(epochs=100, batch_size=128)
 fsdp_parallel = dict(enabled=False, min_num_params=1e4)
 optimize_config = dict(fp16=False,
                        grad_acc=1,
