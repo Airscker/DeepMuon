@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-31 09:28:41
 LastEditors: airscker
-LastEditTime: 2023-10-08 22:38:17
+LastEditTime: 2023-10-17 12:27:35
 Description: NULL
 
 Copyright (C) OpenMMLab. All rights reserved.
@@ -65,7 +65,7 @@ def ConfusionMatrix(scores, labels, normalize=None):
     cm=confusion_matrix(labels, scores.argmax(axis=1))
     return cm
 
-
+@EnableVisualiaztion(Name="Top 1 ACC",NNHSReport=True,TRTensorBoard=True,TRCurve=True)
 def every_class_accuracy(scores, labels):
     """
     ## Calculate mean class accuracy.
@@ -77,11 +77,10 @@ def every_class_accuracy(scores, labels):
     ### Returns:
         - np.ndarray: Mean class accuracy.
     """
-    cf_mat = confusion_matrix(scores, labels).astype(float)
+    cf_mat = confusion_matrix(labels, np.argmax(scores,axis=1)).astype(float)
     cls_cnt = cf_mat.sum(axis=1)  # Sum of column vectors
     cls_hit = np.diag(cf_mat)  # Diagnal points
-    every_class_acc = [hit / cnt if cnt else 0.0 for cnt,
-                       hit in zip(cls_cnt, cls_hit)]
+    every_class_acc = cls_hit / cls_cnt
     return every_class_acc
 
 

@@ -86,7 +86,7 @@ def mol_to_graph(mol, graph_constructor, node_featurizer, edge_featurizer,
         new_order = rdmolfiles.CanonicalRankAtoms(mol)
         mol = rdmolops.RenumberAtoms(mol, new_order)
     g = graph_constructor(mol)
-
+    
     if node_featurizer is not None:
         g.ndata.update(node_featurizer(mol))
 
@@ -149,7 +149,7 @@ def construct_bigraph_from_mol(mol, add_self_loop=False):
     g : DGLGraph
         Empty bigraph topology of the molecule
     """
-    g = dgl.graph(([], []), idtype=torch.int64)
+    g = dgl.graph([], idtype=torch.int64)
     # g = dgl.DGLGraph()
     # Add nodes
     num_atoms = mol.GetNumAtoms()

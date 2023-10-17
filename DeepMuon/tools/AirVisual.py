@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-07-26 18:55:28
 LastEditors: airscker
-LastEditTime: 2023-10-08 21:10:26
+LastEditTime: 2023-10-17 12:07:20
 Description: Visualization tools
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -239,15 +239,16 @@ def R2JointPlot(scores,labels,save_path:str='./',tag:str='TS'):
 def CMPlot(scores,labels,save_path:str='./',tag:str='TS',target_names=None):
     scores=np.array(scores)
     labels=np.array(labels)
+    classes,cls_count=np.unique(labels,return_counts=True)
     cm=confusion_matrix(labels,scores.argmax(axis=1))
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(20,20) if len(classes)>10 else (10,10))
     plt.imshow(cm,cmap='Blues')
     plt.colorbar()
-    plt.title('Confusion Matrix')
+    plt.title(f'Confusion Matrix\nTotal Number: {np.sum(cls_count)} Num Classes: {len(classes)}\nAccuracy: {np.sum(np.diag(cm))/np.sum(cm)}')
     confusion=cm.T
     if target_names is None:
-        target_names=[str(i) for i in range(confusion.shape[0])]
-    font={#'family':'TARIAL',
+        target_names=[str(item) for item in classes]
+    fontw={#'family':'TARIAL',
             # 'style':'italic',
             'weight':'normal',
             # 'align':'center',
@@ -262,14 +263,15 @@ def CMPlot(scores,labels,save_path:str='./',tag:str='TS',target_names=None):
     if target_names is not None:
             tick_marks = np.arange(len(target_names))
             # plt.xticks(tick_marks, target_names, rotation=45, fontsize=12, fontname='ARIAL')
-            plt.xticks(tick_marks, target_names, fontsize=12, fontname='ARIAL')
-            plt.yticks(tick_marks, target_names, fontsize=12, fontname='ARIAL')
+            plt.xticks(tick_marks, target_names, fontsize=12)
+            plt.yticks(tick_marks, target_names, fontsize=12)
     for first_index in range(len(confusion)):
             for second_index in range(len(confusion[first_index])):
-                if confusion[first_index][second_index]<np.sum(confusion)/confusion.shape[0]:
-                    plt.text(first_index, second_index, confusion[first_index][second_index],fontdict=fontb)
-                else:
-                    plt.text(first_index, second_index, confusion[first_index][second_index],fontdict=font)
+                plt.text(first_index, second_index, confusion[first_index][second_index],fontdict=fontb)
+                # if confusion[first_index][second_index]<np.sum(confusion)/confusion.shape[0]:
+                #     plt.text(first_index, second_index, confusion[first_index][second_index],fontdict=fontb)
+                # else:
+                #     plt.text(first_index, second_index, confusion[first_index][second_index],fontdict=fontw)
     # plt.tight_layout()
     plt.ylabel('True label',size=15)
     plt.xlabel('Predicted label',size=15)

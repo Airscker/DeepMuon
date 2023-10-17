@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-10-04 13:23:27
 LastEditors: airscker
-LastEditTime: 2023-10-08 17:47:08
+LastEditTime: 2023-10-17 12:44:04
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -11,20 +11,20 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 
 model = dict(backbone='AtomEmbedding',
              pipeline='molpretrain',
-             params=dict(atom_feat_dim=150,bond_feat_dim=12,emb_dim=300,gnn_layers=5,mlp_dims=[],res_connection=1))
+             params=dict(atom_feat_dim=150,bond_feat_dim=12,emb_dim=2048,gnn_layers=5,mlp_dims=[],res_connection=1))
 
 train_dataset = dict(backbone='AtomMasking',
                      collate_fn='collate_atom_masking',
-                     num_workers=64,
-                     params=dict(datapath='/data/yufeng/CollectedDataset/SMILES/all_smiles.txt',size=100000,
-                                 mask_ratio=0.15,mask_num=None,randomize=False,mode='train'))
+                     num_workers=0,
+                     params=dict(datapath='/data/yufeng/CollectedDataset/SMILES/Graph_path.npy',size=100000,
+                                 mask_ratio=0.15,randomize=False,mode='train'))
 test_dataset = dict(backbone='AtomMasking',
                      collate_fn='collate_atom_masking',
-                     num_workers=64,
-                     params=dict(datapath='/data/yufeng/CollectedDataset/SMILES/all_smiles.txt',size=100000,
-                                 mask_ratio=0.15,mask_num=None,randomize=False,mode='test'))
+                     num_workers=0,
+                     params=dict(datapath='/data/yufeng/CollectedDataset/SMILES/Graph_path.npy',size=100000,
+                                 mask_ratio=0.15,randomize=False,mode='test'))
 
-work_config = dict(work_dir='/home/yufeng/workdir/MolPT/GINV1004')
+work_config = dict(work_dir='/home/yufeng/workdir/MolPT/GINV1006')
 
 checkpoint_config = dict(load_from='', resume_from='', save_inter=100)
 

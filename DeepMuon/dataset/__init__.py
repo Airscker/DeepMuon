@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 20:03:40
 LastEditors: airscker
-LastEditTime: 2023-10-08 12:18:08
+LastEditTime: 2023-10-15 16:29:27
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -11,7 +11,10 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''Basic dataset utils'''
 from .SmilesGraphUtils.crystal_featurizer import MPJCrystalGraphData, one_hot_encoding, one_hot_decoding
 from .SmilesGraphUtils.atom_feat_encoding import CanonicalAtomFeaturizer,CanonicalBondFeaturizer
-from .SmilesGraphUtils.molecular_graph import mol_to_bigraph,construct_bigraph_from_mol
+from .SmilesGraphUtils.molecular_graph import (mol_to_graph,smiles_to_bigraph,mol_to_bigraph,
+                                               smiles_to_complete_graph,mol_to_complete_graph,
+                                               k_nearest_neighbors,mol_to_nearest_neighbor_graph,
+                                               smiles_to_nearest_neighbor_graph)
 
 '''Customized datasets'''
 from .MinistData import MinistDataset
@@ -25,7 +28,9 @@ from .AtomEmbedData import AtomMasking, collate_atom_masking
 
 __all__ = [
     'MPJCrystalGraphData', 'one_hot_encoding', 'one_hot_decoding' ,
-    'CanonicalAtomFeaturizer','CanonicalBondFeaturizer','mol_to_bigraph','construct_bigraph_from_mol',
+    'CanonicalAtomFeaturizer','CanonicalBondFeaturizer',
+    'mol_to_graph','smiles_to_bigraph','mol_to_bigraph','smiles_to_complete_graph',
+    'mol_to_complete_graph','k_nearest_neighbors','mol_to_nearest_neighbor_graph','smiles_to_nearest_neighbor_graph',
     'PandaxDataset', 'HailingDataset_Direct2', 'HailingDataset_DirectV3',
     'NIIDecodeV2', 'ValenceDataset', 'ValenceDatasetV2', 'MinistDataset',
     'SmilesGraphData', 'MultiSmilesGraphData', 'collate_solubility',

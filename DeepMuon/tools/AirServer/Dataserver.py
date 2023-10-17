@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-10-06 22:42:15
 LastEditors: airscker
-LastEditTime: 2023-10-08 02:42:49
+LastEditTime: 2023-10-15 22:13:49
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -21,7 +21,7 @@ from multiprocessing.managers import SharedMemoryManager
 import DeepMuon
 from DeepMuon.tools.AirServer.shared_memory import SharedMemory
 from DeepMuon.tools.AirFunc import fix_port,ddp_fsdp_model_save
-from DeepMuon.tools.AirQuene import TaskFIFOQueueThread
+# from DeepMuon.tools.AirQuene import TaskFIFOQueueThread
 from DeepMuon.tools.AirLogger import LOGT
 pkg_path=DeepMuon.__path__[0]
 
@@ -33,10 +33,10 @@ class DatasetServer(object):
                  verbose:bool=False,
                  workdir:str='',
                  logfile:str='FileSavingServer.log'):
-        self.BestModelFIFOSaving=TaskFIFOQueueThread(sequenced=False,verbose=verbose,daemon=True)
-        self.CheckpointFIFOSaving=TaskFIFOQueueThread(sequenced=True,verbose=verbose,daemon=True)
-        self.BestModelFIFOSaving.start()
-        self.CheckpointFIFOSaving.start()
+        # self.BestModelFIFOSaving=TaskFIFOQueueThread(sequenced=False,verbose=verbose,daemon=True)
+        # self.CheckpointFIFOSaving=TaskFIFOQueueThread(sequenced=True,verbose=verbose,daemon=True)
+        # self.BestModelFIFOSaving.start()
+        # self.CheckpointFIFOSaving.start()
         self.serverIP = serverIP
         available_port,info= fix_port(serverIP,serverPort)
         self.serverPort = available_port

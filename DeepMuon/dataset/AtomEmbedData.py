@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-10-03 14:19:48
 LastEditors: airscker
-LastEditTime: 2023-10-08 18:14:43
+LastEditTime: 2023-10-16 21:17:41
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -24,7 +24,7 @@ from rdkit.Chem import AllChem
 from rdkit.Chem import rdDistGeom
 from tqdm import tqdm
 from .SmilesGraphUtils.atom_feat_encoding import CanonicalAtomFeaturizer,CanonicalBondFeaturizer
-from .SmilesGraphUtils.molecular_graph import mol_to_bigraph,construct_bigraph_from_mol
+from .SmilesGraphUtils.molecular_graph import smiles_to_bigraph
 from .SmilesGraphUtils.crystal_featurizer import one_hot_decoding
 
 # allowable node and edge features
@@ -60,20 +60,20 @@ from .SmilesGraphUtils.crystal_featurizer import one_hot_decoding
 
 
 class AtomMasking(Dataset):
-
     def __init__(self,
                  datapath,
                  size:int=10000,
                  mask_ratio: float = None,
-                 mask_num: int = None,
                  randomize: bool = False,
-                 mode: str = 'train') -> None:
+                 mode: str = 'train',
+                 *args,
+                 **kwargs) -> None:
         super().__init__()
         self.size=size
         self.mask_ratio = mask_ratio
-        self.mask_num = mask_num
         self.dataset = []
-        self._load_smiles(datapath)
+        # self._load_smiles(datapath)
+        self._load_preprocess(datapath)
         self.atom_featurizer=CanonicalAtomFeaturizer(atom_data_field='atom_feat',alltable=True,encode_unknown=True)
         self.bond_featurizer=CanonicalBondFeaturizer(bond_data_field='bond_feat',self_loop=False)
         # np.random.seed(0)
@@ -83,6 +83,8 @@ class AtomMasking(Dataset):
             self.dataset = self.dataset[:int(len(self.dataset) * 0.8)]
         else:
             self.dataset = self.dataset[int(len(self.dataset) * 0.8):]
+    def _load_preprocess(self,datapath:str):
+        self.dataset=np.load(datapath,allow_pickle=True)[:self.size]
     def _load_smiles(self,datapath:str):
         # mol_list=[]
         with open(datapath,'r') as f:
@@ -136,72 +138,26 @@ class AtomMasking(Dataset):
 
     def mask_atom(self, graph: dgl.DGLGraph):
         atom_num = graph.number_of_nodes()
-        if self.mask_num is None:
-            mask_num = max(1, int(atom_num * self.mask_ratio))
-        else:
-            mask_num = self.mask_num
+        node_feat=graph.ndata['atom_feat']
+        mask_num = max(1, int(atom_num * 0.15))
         mask_index = np.random.choice(atom_num, mask_num, replace=False)
-        masked_atom_feature = []
-        for idx in mask_index:
-            masked_atom_feature.append(one_hot_decoding(graph.nodes[idx].data['atom_feat'][:118]))
-            graph.ndata['atom_feat'][idx] = 0
-        return graph, mask_index, torch.LongTensor(masked_atom_feature)
+        full_atom_feature = torch.argmax(node_feat[:,:118],dim=1)+1
+        masked_atom_feature=full_atom_feature[mask_index]
 
-    @staticmethod
-    def smiles2graph(smiles=None, mol=None, bidirectional=True) -> dgl.DGLGraph:
-        if mol is None:
-            mol = Chem.MolFromSmiles(smiles)
-        molecule_graph = dgl.graph([], idtype=torch.int64)
-        nodes = []
-        node_features = []
-        bond_features = []
-        for atom in mol.GetAtoms():
-            # node_features.append([atom.GetAtomicNum(),
-            #                       allowable_features['possible_chirality_list'].index(atom.GetChiralTag()),
-            #                       allowable_features['possible_hybridization_list'].index(atom.GetHybridization()),
-            #                       atom.GetTotalNumHs(),
-            #                       atom.GetImplicitValence(),
-            #                       atom.GetDegree()])
-            node_features.append(atom.GetAtomicNum())
-        for bond in mol.GetBonds():
-            begin_atom_idx = bond.GetBeginAtomIdx()
-            end_atom_idx = bond.GetEndAtomIdx()
-            bond_type = int(bond.GetBondTypeAsDouble())
-            nodes.append([begin_atom_idx, end_atom_idx])
-            bond_features.append(bond_type)
-            if bidirectional:
-                nodes.append([end_atom_idx, begin_atom_idx])
-                bond_features.append(bond_type)
-        nodes = np.array(nodes).T
-        molecule_graph.add_nodes(
-            mol.GetNumAtoms(), data={'atom_feat': torch.tensor(node_features)})
-        molecule_graph.add_edges(
-            nodes[0],
-            nodes[1],
-            data={'bond_feat': torch.tensor(bond_features)})
-        return mol, molecule_graph
+        node_feat[mask_index] = 0
+        graph.ndata['atom_feat']=node_feat
+        return graph, mask_index, torch.LongTensor(masked_atom_feature), torch.LongTensor(full_atom_feature)
 
     def __len__(self) -> int:
         return len(self.dataset)
-    def _smiles_bigraph(self,smiles):
-        mol=Chem.MolFromSmiles(smiles)
-        graph=mol_to_bigraph(mol=mol,
-                             add_self_loop=False,
-                             node_featurizer=self.atom_featurizer,
-                             edge_featurizer=self.bond_featurizer)
-        return graph
     def __getitem__(self, index):
-        smiles=self.dataset[index]
-        graph=self._smiles_bigraph(smiles)
-        if graph is None:
-            graph=self._smiles_bigraph('CCCCC')
-            print(f'Error occured with SMILES: {smiles}')
-        
-        masked_graph, _, _ = self.mask_atom(graph)
-        full_graph_atom=[]
-        for atom_feat in graph.ndata['atom_feat']:
-            full_graph_atom.append(one_hot_decoding(atom_feat[:118]))
-        return masked_graph,torch.LongTensor(full_graph_atom)
+        '''
+        ATTENTION: AFTER MASKING, THE GRAPH IS CHANGED!
+        I.E.: masked_graph==graph
+        '''
+        graph=np.load(self.dataset[index],allow_pickle=True).item()
+        masked_graph, _, _,full_graph_atom= self.mask_atom(graph)
+        return masked_graph,full_graph_atom
 
 
 def collate_atom_masking(samples):

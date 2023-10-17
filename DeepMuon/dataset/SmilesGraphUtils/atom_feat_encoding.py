@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-06-08 15:08:59
 LastEditors: airscker
-LastEditTime: 2023-10-08 12:29:24
+LastEditTime: 2023-10-16 00:34:16
 Description: Comes from DGLlife open source package.
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -78,7 +78,7 @@ __all__ = ['one_hot_encoding',
            'PretrainBondFeaturizer',
            'AttentiveFPBondFeaturizer']
 
-def one_hot_encoding(x, allowable_set, encode_unknown=False):
+def one_hot_encoding(x, allowable_set:list, encode_unknown:bool=False):
     """One-hot encoding.
 
     Parameters
@@ -109,13 +109,13 @@ def one_hot_encoding(x, allowable_set, encode_unknown=False):
     >>> one_hot_encoding('S', ['C', 'O'], encode_unknown=True)
     [False, False, True]
     """
-    if encode_unknown and (allowable_set[-1] is not None):
-        allowable_set.append(None)
-
-    if encode_unknown and (x not in allowable_set):
-        x = None
-
-    return list(map(lambda s: x == s, allowable_set))
+    encode_len=len(allowable_set)
+    index=allowable_set.index(x) if x in allowable_set else -1
+    if encode_unknown:
+        encode_len+=1
+    one_hot_code = [False] * encode_len
+    one_hot_code[index] = True
+    return one_hot_code
 
 
 #################################################################
@@ -192,20 +192,24 @@ def atom_type_one_hot_alltable(atom, allowable_set=None, encode_unknown=False):
     atomic_number
     atomic_number_one_hot
     """
-    if allowable_set is None:
-        allowable_set = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
-                         'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca',
-                         'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn',
-                         'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr',
-                         'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn',
-                         'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd',
-                         'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb',
-                         'Lu', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg',
-                         'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th',
-                         'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm',
-                         'Md', 'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds',
-                         'Rg', 'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
-    return one_hot_encoding(atom.GetSymbol(), allowable_set, encode_unknown)
+    # if allowable_set is None:
+    #     allowable_set = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
+    #                      'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca',
+    #                      'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn',
+    #                      'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr',
+    #                      'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn',
+    #                      'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd',
+    #                      'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb',
+    #                      'Lu', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg',
+    #                      'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th',
+    #                      'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm',
+    #                      'Md', 'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds',
+    #                      'Rg', 'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
+    # return one_hot_encoding(atom.GetSymbol(), allowable_set, encode_unknown)
+    atomic_num=atom.GetAtomicNum()
+    one_hot_code=[False]*118
+    one_hot_code[atomic_num-1]=True
+    return one_hot_code
 
 
 def atomic_number_one_hot(atom, allowable_set=None, encode_unknown=False):

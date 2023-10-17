@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-10-03 18:10:01
 LastEditors: airscker
-LastEditTime: 2023-10-08 17:59:13
+LastEditTime: 2023-10-17 12:42:07
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -60,7 +60,7 @@ class AtomEmbedding(nn.Module):
         with graph.local_scope():
             for i in range(len(self.GNN)):
                 atom_emb = F.relu(self.GNN[i](graph, atom_emb, edge_emb))
-                if self.res_connection and (i+1)/self.res_connection == 0:
+                if self.res_connection and (i+1)%self.res_connection == 0:
                     atom_emb = atom_emb + res_feat
                     res_feat = atom_emb
             if self.res_connection:

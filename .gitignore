@@ -20,10 +20,5 @@ DeepMuon/tools/__pycache__/
 DeepMuon/train/__pycache__/
 DeepMuon/config/XAS/__pycache__/
 DeepMuon/models/base/__pycache__/
-DeepMuon/tools/AirServer/__pycache__/FileSaving.cpython-39.pyc
-DeepMuon/models/base/__pycache__/__init__.cpython-39.pyc
-DeepMuon/models/base/__pycache__/ADNBlock.cpython-39.pyc
-DeepMuon/models/base/__pycache__/MLP.cpython-39.pyc
-DeepMuon/models/base/__pycache__/PGNN.cpython-39.pyc
-DeepMuon/models/base/__pycache__/ResidualUnit.cpython-39.pyc
+DeepMuon/models/base/__pycache__/
 DeepMuon/tools/AirServer/__pycache__/

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-10-04 16:09:46
+LastEditTime: 2023-10-15 22:39:42
 Description: Import configuration file and prepare configurations for experiments
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -156,14 +156,14 @@ class Config:
             collate_fn=None
         else:
             collate_fn=getattr(dataset_module,dataset_info['collate_fn'])
-        if 'params' not in dataset_info:
+        if 'params' not in dataset_info.keys():
             params={}
         else:
             params=dataset_info['params']
-        if 'num_workers' not in params.keys():
+        if 'num_workers' not in dataset_info.keys():
             num_workers=0
         else:
-            num_workers=params['num_workers']
+            num_workers=dataset_info['num_workers']
         return backbone,collate_fn,params,num_workers
 
     def __para_config(self):
