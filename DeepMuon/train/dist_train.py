@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-10-08 17:55:22
+LastEditTime: 2023-10-17 21:57:49
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -42,7 +42,8 @@ except:
     NNHS_enabled=False
 
 try:
-    from torch.distributed.fsdp import FullyShardedDataParallel as FSDP, FullStateDictConfig, StateDictType
+    from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
+    from torch.distributed.fsdp import FullStateDictConfig, StateDictType, ShardingStrategy
     from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy
     fsdp_env = True
 except:
@@ -66,12 +67,15 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
     test_params = configs['test_dataset']['params']
     test_num_workers = configs['test_dataset']['num_workers']
     work_dir = configs['work_config']['work_dir']
+    checkpoint_savepath=os.path.join(work_dir,'Checkpoint')
+    curve_path=os.path.join(work_dir,'Figure')
+    folders_toCreate=[work_dir,checkpoint_savepath,curve_path]
     if search:
         trail_id=nni.get_trial_id()
         work_dir=os.path.join(work_dir,F'NNHS_{nni.get_experiment_id()}',trail_id)
-    log = configs['work_config']['logfile']
+    logfile = configs['work_config']['logfile']
     if test_path is not None:
-        log = 'test_'+log
+        logfile = 'test_'+logfile
     resume = configs['checkpoint_config']['resume_from']
     load = configs['checkpoint_config']['load_from']
     fp16 = configs['optimize_config']['fp16']
@@ -98,7 +102,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
 
     '''Log the basic parameters'''
     if local_rank == 0:
-        logger = LOGT(log_dir=work_dir, logfile=log)
+        logger = LOGT(log_dir=work_dir, logfile=logfile)
         # while test_path is None and server:
         #     if os.path.exists(os.path.join(work_dir,'Server','ServerInfo.pkl')):
         #         try:
@@ -110,9 +114,6 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
         #         except:
         #             pass
         '''Create work_dir'''
-        checkpoint_savepath=os.path.join(work_dir,'Checkpoint')
-        curve_path=os.path.join(work_dir,'Figure')
-        folders_toCreate=[work_dir,checkpoint_savepath,curve_path]
         for folder in folders_toCreate:
             if not os.path.exists(folder):
                 os.makedirs(folder)
@@ -120,10 +121,9 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
             config_info.move_config(source_code=source_code,save_path=os.path.join(work_dir,'config.py'))
         else:
             config_info.move_config()
-        log = os.path.join(work_dir, log)
         '''show hyperparameters'''
         PID=os.getpid()
-        logger.log(f'========= Current Time: {time.ctime()} Current PID: {PID} =========')
+        logger.log(f'========= Current Time: {time.ctime()} RANK 0 PID: {PID} =========')
         logger.log(f'LOCAL WORLD SIZE: {local_world_size}')
         logger.log(f"PORT: {os.environ['MASTER_PORT']}")
         if search:
@@ -220,7 +220,12 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
         auto_wrap_policy = functools.partial(
             size_based_auto_wrap_policy, min_num_params=configs['fsdp_parallel']['min_num_params']
         )
-        model = FSDP(model, auto_wrap_policy=auto_wrap_policy)
+        model = FSDP(model,
+                     process_group=group,
+                     mixed_precision=fp16,
+                     device_id=torch.cuda.current_device(),
+                     sharding_strategy=ShardingStrategy.FULL_SHARD,
+                     auto_wrap_policy=auto_wrap_policy)
         ddp_training = False
     else:
         model = DistributedDataParallel(model, device_ids=[
@@ -285,6 +290,8 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
     bestres = None
     eva_interval = configs['evaluation']['interval']
     best_checkpoint = ''
+    del_checkpoint = ''
+    copy_checkpoint = []
     sota_target = configs['evaluation']['sota_target']['target']
     if sota_target is None:
         sota_target = 'loss'
@@ -321,18 +328,31 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
         loss_values = loss_values/float(local_world_size)
 
         '''Evaluation and save the model'''
+        train_loss = loss_values[0].item()
+        test_loss = loss_values[1].item()
+        LRn = optimizer.state_dict()['param_groups'][0]['lr']
+        if (t+1)%eva_interval==0:
+            ts_eva_metrics, ts_target, vis_com = evaluation(
+                ts_score_val, ts_label_val, configs['evaluation'], bestres, test_loss,False)
+            tr_eva_metrics, tr_target, vis_com = evaluation(
+                tr_score_val, tr_label_val, configs['evaluation'], bestres, 0,False)
+        else:
+            ts_eva_metrics={}
+            tr_eva_metrics={}
+        save_best_model = False
+        save_checkpoint = False
         if local_rank == 0:
-            train_loss = loss_values[0].item()
-            test_loss = loss_values[1].item()
-            LRn = optimizer.state_dict()['param_groups'][0]['lr']
-            if (t+1)%eva_interval==0:
-                ts_eva_metrics, ts_target, vis_com = evaluation(
-                    ts_score_val, ts_label_val, configs['evaluation'], bestres, test_loss,False)
-                tr_eva_metrics, tr_target, vis_com = evaluation(
-                    tr_score_val, tr_label_val, configs['evaluation'], bestres, 0,False)
-            else:
-                ts_eva_metrics={}
-                tr_eva_metrics={}
+            # train_loss = loss_values[0].item()
+            # test_loss = loss_values[1].item()
+            # LRn = optimizer.state_dict()['param_groups'][0]['lr']
+            # if (t+1)%eva_interval==0:
+            #     ts_eva_metrics, ts_target, vis_com = evaluation(
+            #         ts_score_val, ts_label_val, configs['evaluation'], bestres, test_loss,False)
+            #     tr_eva_metrics, tr_target, vis_com = evaluation(
+            #         tr_score_val, tr_label_val, configs['evaluation'], bestres, 0,False)
+            # else:
+            #     ts_eva_metrics={}
+            #     tr_eva_metrics={}
 
             '''Visualize records of loss and learning rate as well as evaluation metrics'''
             vis_com={**sys_vis_com,**vis_com}
@@ -350,13 +370,18 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                         end_exp=end_exp,
                         vis_com=vis_com)
             
-            '''Save best model according to the value of sota target'''
-            if ts_target != bestres and not np.isnan(ts_target):
+            '''
+            Save best model according to the value of sota target.
+                - If the sota target is loss, the model with the lowest loss will be saved.
+                - If ddp_training is enabled, the model will be saved as a checkpoint only at rank 0.
+                - If ddp_training is disabled(FSDP is enabled), the model must be saved as a checkpoint at every rank, otherwise undefined behavior will occur.
+            '''
+        if ts_target != bestres and not np.isnan(ts_target):
                 bestres = ts_target
                 best_epoch=t+1
-                if os.path.exists(best_checkpoint):
-                    os.remove(best_checkpoint)
+                del_checkpoint=best_checkpoint
                 best_checkpoint = os.path.join(work_dir, f"Best_{sota_target}_epoch_{best_epoch}.pth")
+                save_best_model = True
                 # dist.barrier()
                 # if server:
                 #     share_memory(data=['BestModel',
@@ -365,10 +390,11 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                 #                 client=FIFOsaver)
                 # else:
                 #     ddp_fsdp_model_save(epoch=t, model=model, path=best_checkpoint, ddp_training=ddp_training)
-                ddp_fsdp_model_save(epoch=t, model=model, path=best_checkpoint, ddp_training=ddp_training)
-                logger.log(f'Best Model Saved as {best_checkpoint}, Best {sota_target}: {bestres}, Current Epoch: {t+1}', show=True)
-            if (t + 1) % inter == 0:
+                ddp_fsdp_model_save(epoch=t, model=model, path=best_checkpoint, ddp_training=ddp_training,local_rank=local_rank)
+                # logger.log(f'Best Model Saved as {best_checkpoint}, Best {sota_target}: {bestres}, Current Epoch: {t+1}', show=True)
+        if (t + 1) % inter == 0:
                 savepath = os.path.join(checkpoint_savepath,f'Epoch_{t+1}.pth')
+                save_checkpoint = True
                 # dist.barrier()
                 # if server:
                 #     share_memory(data=['Checkpoint',
@@ -378,11 +404,24 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                 # else:
                 #     ddp_fsdp_model_save(epoch=t, model=model, path=savepath, ddp_training=ddp_training)
                 if best_epoch==(t+1):
-                    shutil.copyfile(best_checkpoint,savepath)
+                    copy_checkpoint=[best_checkpoint,savepath]
                 else:
-                    ddp_fsdp_model_save(epoch=t, model=model, path=savepath, ddp_training=ddp_training)
+                    ddp_fsdp_model_save(epoch=t, model=model, path=savepath, ddp_training=ddp_training,local_rank=local_rank)
+                # logger.log(f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=True)
+        if local_rank == 0:
+            '''Post-process the model saving actions'''
+            if os.path.exists(del_checkpoint):
+                os.remove(del_checkpoint)
+                del_checkpoint=''
+            if copy_checkpoint!=[]:
+                shutil.copyfile(*copy_checkpoint)
+                copy_checkpoint=[]
+            if save_best_model:
+                logger.log(f'Best Model Saved as {best_checkpoint}, Best {sota_target}: {bestres}, Current Epoch: {t+1}', show=True)
+                save_best_model = False
+            if save_checkpoint:
                 logger.log(f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=True)
-            
+                save_checkpoint = False
             '''Record the training information in the log file'''
             epoch_time = time.time() - start_time
             eta = format_time((epochs - 1 - t) * epoch_time)

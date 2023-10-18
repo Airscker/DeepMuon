@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-10-03 18:10:01
 LastEditors: airscker
-LastEditTime: 2023-10-17 12:42:07
+LastEditTime: 2023-10-17 15:13:13
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -69,3 +69,9 @@ class AtomEmbedding(nn.Module):
             # graph_feat = dgl.sum_nodes(graph, 'atom_feat')
             atom_idx = self.mlp(atom_emb)
             return atom_idx
+
+class AtomEmbeddingV2(nn.Module):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+    def forward(self,graph:dgl.DGLGraph,device):
+        pass

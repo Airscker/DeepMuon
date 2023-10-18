@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-09-02 14:37:59
 LastEditors: airscker
-LastEditTime: 2023-10-08 01:06:32
+LastEditTime: 2023-10-17 22:08:06
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -356,10 +356,10 @@ def load_model(path: str, device: torch.device):
         epoch=0
     return epoch, model_dic
 
-def ddp_fsdp_model_save(epoch=0, model=None, path=None, ddp_training=True):
-    if ddp_training:
+def ddp_fsdp_model_save(epoch:int=0, model:nn.Module=None, path:str=None, ddp_training:bool=True, local_rank:int=0):
+    if ddp_training and local_rank==0:
         save_model(epoch=epoch, model=model, path=path, dist_train=ddp_training)
-    else:
+    elif not ddp_training:
         save_policy = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)
         with FSDP.state_dict_type(model, StateDictType.FULL_STATE_DICT, save_policy):
             cpu_state = model.state_dict()

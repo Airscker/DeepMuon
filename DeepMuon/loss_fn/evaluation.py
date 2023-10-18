@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-31 09:28:41
 LastEditors: airscker
-LastEditTime: 2023-10-17 12:27:35
+LastEditTime: 2023-10-17 16:45:35
 Description: NULL
 
 Copyright (C) OpenMMLab. All rights reserved.
@@ -21,12 +21,16 @@ def R2Value(scores, labels):
     return r2_score(labels, scores)
 
 @EnableVisualiaztion(Name="AUC Score",NNHSReport=True,TRTensorBoard=True,TRCurve=True)
-def AUC(scores,labels,pos_label=1):
-    new_score=[]
-    for i in range(len(labels)):
-        new_score.append(scores[i][pos_label])
-    res=roc_auc_score(labels, new_score, multi_class='ovo')
-    return res
+def AUC(scores,labels):
+    cls_labels=np.unique(labels)
+    if scores.shape[1]>2 and len(cls_labels)!=scores.shape[1]:
+        # raise ValueError("The number of classes is not equal to the number of columns of the score matrix.")
+        scores=scores[:,cls_labels]
+    scores=scores/np.sum(scores,axis=1,keepdims=True)
+    if scores.shape[1]==2:
+        return roc_auc_score(labels,scores[:,1])
+    else:
+        return roc_auc_score(labels, scores, multi_class='ovr',average='macro')
 
 @EnableVisualiaztion(Name="F1 Score",NNHSReport=True,TRTensorBoard=True,TRCurve=True)
 def f1_score(scores, labels):
