@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-10-03 18:10:01
 LastEditors: airscker
-LastEditTime: 2023-10-17 15:13:13
+LastEditTime: 2023-10-22 16:34:54
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -18,17 +18,18 @@ from .base import MLPBlock
 
 
 class AtomEmbedding(nn.Module):
-
     def __init__(self,
                  atom_feat_dim=150,
                  bond_feat_dim=12,
                  emb_dim: int = 300,
                  gnn_layers: int = 5,
                  res_connection: Union[int,bool] = True,
-                 mlp_dims=[]):
+                 mlp_dims=[],
+                 freeze_gnn=False):
         super().__init__()
         # self.atom_embedding = nn.Embedding(118, emb_dim)
         # self.edge_embedding = nn.Embedding(4, emb_dim)
+        self.freeze_gnn = freeze_gnn
         self.res_connection = int(res_connection)
         self.atom_embedding = nn.Linear(atom_feat_dim, emb_dim)
         self.bond_embedding = nn.Linear(bond_feat_dim, emb_dim)
@@ -45,7 +46,10 @@ class AtomEmbedding(nn.Module):
             # nn.Softmax(dim=-1),
             # nn.Sigmoid()
         )
-
+    def _freeze_gnn(self):
+        self.GNN.eval()
+        for param in self.GNN.parameters():
+            param.requires_grad = False
     def reset_parameters(self):
         nn.init.xavier_uniform_(self.atom_embedding.weight.data)
 
@@ -69,6 +73,10 @@ class AtomEmbedding(nn.Module):
             # graph_feat = dgl.sum_nodes(graph, 'atom_feat')
             atom_idx = self.mlp(atom_emb)
             return atom_idx
+    def train(self,mode: bool = True):
+        super().train(mode)
+        if self.freeze_gnn:
+            self._freeze_gnn()
 
 class AtomEmbeddingV2(nn.Module):
     def __init__(self, *args, **kwargs) -> None:

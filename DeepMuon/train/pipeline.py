@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 14:35:50
 LastEditors: airscker
-LastEditTime: 2023-10-08 12:32:52
+LastEditTime: 2023-11-03 20:50:25
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -135,5 +135,13 @@ class molpretrain(Pipeline):
         super().__init__(model)
     def predict(self, input, label, device, precision):
         pred=self.model(input,device)
+        label=label.squeeze().to(device)
+        return pred,label
+    
+class molspacepipe(Pipeline):
+    def __init__(self, model: nn.Module) -> None:
+        super().__init__(model)
+    def predict(self, input, label, device, precision):
+        pred=self.model(input['atom_graphs'],input['bond_graphs'],device)
         label=label.squeeze().to(device)
         return pred,label

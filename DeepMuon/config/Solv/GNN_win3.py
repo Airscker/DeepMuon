@@ -2,16 +2,16 @@
 Author: airscker
 Date: 2023-05-23 13:46:07
 LastEditors: airscker
-LastEditTime: 2023-11-04 22:35:05
+LastEditTime: 2023-11-05 15:47:38
 Description: NULLs
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 
 # model = dict(backbone='SolvGNNV2',pipeline='solvgnn',params=dict(hidden_dim=256, edge_hidden_dim=512,add_dim=0))
-model = dict(backbone='SolvGNNV6',pipeline='solvgnn',params=dict(in_dim=74, hidden_dim=1024, add_dim=2, mlp_dims=[1024,512], gcr_layers=2 ,n_classes=1,allow_zero_in_degree=True))
+model = dict(backbone='SolvGNNV7',pipeline='solvgnn',params=dict(in_dim=74, hidden_dim=1024, add_dim=2, mlp_dims=[1024,512], gcr_layers=2 ,n_classes=1,allow_zero_in_degree=True))
 
-train_dataset = dict(backbone='MultiSmilesGraphData',collate_fn='collate_solubility_binary',
+train_dataset = dict(backbone='MultiSmilesGraphData',collate_fn='collate_ce',
                      params=dict(pretrained_path='/data/yufeng/pretrained/model_gin/supervised_contextpred.pth',
                                  pretrain_embedding=False,
                                  pred_ce=False,
@@ -22,10 +22,11 @@ train_dataset = dict(backbone='MultiSmilesGraphData',collate_fn='collate_solubil
                                  end=8000,
                                  mode='train',
                                  binary=True,
+                                 combine_graph=False,
                                  add_self_loop=False,
                                  featurize_edge=False,
                                  shuffle=False))
-test_dataset = dict(backbone='MultiSmilesGraphData',collate_fn='collate_solubility_binary',
+test_dataset = dict(backbone='MultiSmilesGraphData',collate_fn='collate_ce',
                     params=dict(pretrained_path='/data/yufeng/pretrained/model_gin/supervised_contextpred.pth',
                                  pretrain_embedding=False,
                                  pred_ce=False,
@@ -36,11 +37,12 @@ test_dataset = dict(backbone='MultiSmilesGraphData',collate_fn='collate_solubili
                                  end=None,
                                  mode='test',
                                  binary=True,
+                                 combine_graph=False,
                                  add_self_loop=False,
                                  featurize_edge=False,
                                  shuffle=False))
 
-work_config = dict(work_dir='/home/yufeng/workdir/MINES/CO2_SOLV/GNNV6M001')
+work_config = dict(work_dir='/home/yufeng/workdir/MINES/CO2_SOLV/GNNV6M003')
 
 checkpoint_config = dict(load_from='', resume_from='', save_inter=200)
 

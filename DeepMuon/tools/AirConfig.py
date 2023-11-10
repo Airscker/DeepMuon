@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 23:29:14
 LastEditors: airscker
-LastEditTime: 2023-10-15 22:39:42
+LastEditTime: 2023-10-29 23:23:46
 Description: Import configuration file and prepare configurations for experiments
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -48,20 +48,21 @@ class Config:
 
     ### Example:
     
-    >>> search_config=dict(search_space= {'seq_dropout': {'_type': 'choice', '_value': [0.1, 0.3, 0.5, 0.7]}},
+    ```python
+    search_config=dict(search_space= {'seq_dropout': {'_type': 'choice', '_value': [0.1, 0.3, 0.5, 0.7]}},
                             exp_name='DeepMuon EXP',
                             concurrency=1,
                             trial_number=10,
                             port=14001,
                             tuner='TPE')
-    >>> search_params = dict(seq_dropout=0.1)
-    >>> model = dict(filepath='Mypath/model.py',
+    search_params = dict(seq_dropout=0.1)
+    model = dict(filepath='Mypath/model.py',
                     backbone='VST',
                     pipeline='regression',
                     params=dict(n_classes=11,
                                 input_shape=(3, 130, 130),
                                 seq_dropout=search_params['seq_dropout']))
-    >>> train_dataset = dict(filepath='',
+    train_dataset = dict(filepath='',
                             backbone='NIIDecodeV2',
                             collate_fn=None,
                             params=dict(ann_file=None,
@@ -72,7 +73,7 @@ class Config:
                                                         dict(type='SingleNorm'),
                                                         dict(type='Padding', size=(120, 120)),
                                                         dict(type='Resize', size=(130, 130))]))
-    >>> test_dataset = dict(filepath='',
+    test_dataset = dict(filepath='',
                             backbone='NIIDecodeV2',
                             collate_fn=None,
                             params=dict(ann_file=None,
@@ -82,15 +83,16 @@ class Config:
                                                         dict(type='SingleNorm'),
                                                         dict(type='Padding', size=(120, 120)),
                                                         dict(type='Resize', size=(130, 130))]))
-    >>> work_config = dict(work_dir='./VST_1', logfile='log.log')
-    >>> checkpoint_config = dict(load_from='', resume_from='', save_inter=50)
-    >>> loss_fn = dict(filepath='',backbone='CrossEntropyLoss')
-    >>> evaluation = dict(interval=1, metrics=['f1_score'])
-    >>> optimizer = dict(filepath='',backbone='SGD', params=dict(lr=0.0001, momentum=0.9, nesterov=True))
-    >>> scheduler = dict(filepath='',backbone='CosineAnnealingLR', params=dict(T_max=10))
-    >>> hyperpara = dict(epochs=2000, batch_size=7500, inputshape=[1, 3, 40, 10, 10])
-    >>> fsdp_parallel=dict(enabled=True,min_num_params=1e6)
-    >>> optimize_config = dict(fp16=False, grad_acc=8, grad_clip=None, double_precision=False)
+    work_config = dict(work_dir='./VST_1', logfile='log.log')
+    checkpoint_config = dict(load_from='', resume_from='', save_inter=50)
+    loss_fn = dict(filepath='',backbone='CrossEntropyLoss')
+    evaluation = dict(interval=1,metrics=['f1_score'],sota_target=dict(mode='max', target='f1_score'))
+    optimizer = dict(filepath='',backbone='SGD', params=dict(lr=0.0001, momentum=0.9, nesterov=True))
+    scheduler = dict(filepath='',backbone='CosineAnnealingLR', params=dict(T_max=10))
+    hyperpara = dict(epochs=200, batch_size=12)
+    fsdp_parallel=dict(enabled=True,min_num_params=1e6)
+    optimize_config = dict(fp16=False, grad_acc=8, grad_clip=None, double_precision=False)
+    ```
     """
 
     def __init__(self, configpath: str=None, config_module=None):

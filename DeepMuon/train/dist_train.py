@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-10-17 21:57:49
+LastEditTime: 2023-10-23 14:35:32
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -15,6 +15,7 @@ import numpy as np
 import functools
 import pickle as pkl
 from typing import Union,Any
+from tqdm import tqdm
 # from multiprocessing.managers import SharedMemoryManager
 
 import DeepMuon
@@ -53,7 +54,7 @@ pkg_path = DeepMuon.__path__[0]
 msg = os.path.join(pkg_path.split('DeepMuon')[0], 'LICENSE.txt')
 precision=torch.FloatTensor
 
-def main(config_info:Config, test_path:str=None, search:bool=False, source_code:str=None, server:bool=True):
+def main(config_info:Config, test_path:str=None, save_tr:bool=False, search:bool=False, source_code:str=None, server:bool=True):
     global msg
     global fsdp_env
     global precision
@@ -158,7 +159,7 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                                  sampler=test_sampler,
                                  collate_fn=configs['test_dataset']['collate_fn'])
     _test_load_time=time.time()-_test_load_time
-    if test_path is None:
+    if test_path is None or save_tr:
         _train_load_time=time.time()
         train_dataset = configs['train_dataset']['backbone'](**train_params)
         train_sampler = DistributedSampler(train_dataset)
@@ -266,16 +267,33 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
     '''Start testing, only if test_path!=None'''
     model_pipeline=configs['model']['pipeline'](model)
     if test_path is not None:
-        _, ts_score, ts_label=test(device=device, dataloader=test_dataloader, model_pipeline=model_pipeline, loss_fn=loss_fn)
+        _, ts_score, ts_label=test(device=device,
+                                   local_rank=local_rank,
+                                   dataloader=test_dataloader,
+                                   model_pipeline=model_pipeline,
+                                   loss_fn=loss_fn)
+        if save_tr:
+            _, tr_score, tr_label=test(device=device,
+                                       local_rank=local_rank,
+                                       dataloader=train_dataloader,
+                                       model_pipeline=model_pipeline,
+                                       loss_fn=loss_fn)
         # attr,_,_=dataattr(device,test_dataloader,model)
         dist.barrier()
+
         # all_attr=gather_attr(attr,local_world_size)
         # np.save(os.path.join(work_dir,'attr.npy'),all_attr)
         ts_score_val, ts_label_val = gather_score_label(
             ts_score, ts_label, local_world_size)
+        if save_tr:
+            tr_score_val, tr_label_val = gather_score_label(
+                tr_score, tr_label, local_world_size)
         if local_rank == 0:
             np.save(os.path.join(work_dir,'scores.npy'),ts_score_val)
             np.save(os.path.join(work_dir,'labels.npy'),ts_label_val)
+            if save_tr:
+                np.save(os.path.join(work_dir,'tr_scores.npy'),tr_score_val)
+                np.save(os.path.join(work_dir,'tr_labels.npy'),tr_label_val)
             ts_eva_metrics, _, vis_com= evaluation(
                 ts_score_val, ts_label_val, configs['evaluation'], 0, 0,logger)
             for key in ts_eva_metrics.keys():
@@ -307,9 +325,22 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
     for t in range(epoch_now, epochs):
         start_time = time.time()
         train_dataloader.sampler.set_epoch(t)
-        trloss, tr_score, tr_label = train(device=device, dataloader=train_dataloader, model_pipeline=model_pipeline, loss_fn=loss_fn, optimizer=optimizer,
-                                           scheduler=scheduler, gradient_accumulation=grad_acc, grad_clip=grad_clip, fp16=fp16, grad_scalar=grad_scalar)
-        tsloss, ts_score, ts_label = test(device=device, dataloader=test_dataloader, model_pipeline=model_pipeline, loss_fn=loss_fn)
+        trloss, tr_score, tr_label = train(device=device,
+                                           local_rank=local_rank,
+                                           dataloader=train_dataloader,
+                                           model_pipeline=model_pipeline,
+                                           loss_fn=loss_fn,
+                                           optimizer=optimizer,
+                                           scheduler=scheduler,
+                                           gradient_accumulation=grad_acc,
+                                           grad_clip=grad_clip,
+                                           fp16=fp16,
+                                           grad_scalar=grad_scalar)
+        tsloss, ts_score, ts_label = test(device=device,
+                                          local_rank=local_rank,
+                                          dataloader=test_dataloader,
+                                          model_pipeline=model_pipeline,
+                                          loss_fn=loss_fn)
 
         '''Synchronize all threads, reduces the tensor data across all machines in such a way that all get the final result (Add/Gather results of every gpu).'''
         loss_values = torch.tensor([trloss, tsloss], device=device)
@@ -369,45 +400,45 @@ def main(config_info:Config, test_path:str=None, search:bool=False, source_code:
                         modes=['tr_eval','ts_eval'],
                         end_exp=end_exp,
                         vis_com=vis_com)
-            
-            '''
-            Save best model according to the value of sota target.
-                - If the sota target is loss, the model with the lowest loss will be saved.
-                - If ddp_training is enabled, the model will be saved as a checkpoint only at rank 0.
-                - If ddp_training is disabled(FSDP is enabled), the model must be saved as a checkpoint at every rank, otherwise undefined behavior will occur.
-            '''
+
+        '''
+        Save best model according to the value of sota target.
+            - If the sota target is loss, the model with the lowest loss will be saved.
+            - If ddp_training is enabled, the model will be saved as a checkpoint only at rank 0.
+            - If ddp_training is disabled(FSDP is enabled), the model must be saved as a checkpoint at every rank, otherwise undefined behavior will occur.
+        '''
         if ts_target != bestres and not np.isnan(ts_target):
-                bestres = ts_target
-                best_epoch=t+1
-                del_checkpoint=best_checkpoint
-                best_checkpoint = os.path.join(work_dir, f"Best_{sota_target}_epoch_{best_epoch}.pth")
-                save_best_model = True
-                # dist.barrier()
-                # if server:
-                #     share_memory(data=['BestModel',
-                #                     dict(epoch=t, model=model.state_dict(), path=best_checkpoint, ddp_training=ddp_training)],
-                #                 name=f'{PID}_E{t}B',
-                #                 client=FIFOsaver)
-                # else:
-                #     ddp_fsdp_model_save(epoch=t, model=model, path=best_checkpoint, ddp_training=ddp_training)
-                ddp_fsdp_model_save(epoch=t, model=model, path=best_checkpoint, ddp_training=ddp_training,local_rank=local_rank)
-                # logger.log(f'Best Model Saved as {best_checkpoint}, Best {sota_target}: {bestres}, Current Epoch: {t+1}', show=True)
+            bestres = ts_target
+            best_epoch=t+1
+            del_checkpoint=best_checkpoint
+            best_checkpoint = os.path.join(work_dir, f"Best_{sota_target}_epoch_{best_epoch}.pth")
+            save_best_model = True
+            # dist.barrier()
+            # if server:
+            #     share_memory(data=['BestModel',
+            #                     dict(epoch=t, model=model.state_dict(), path=best_checkpoint, ddp_training=ddp_training)],
+            #                 name=f'{PID}_E{t}B',
+            #                 client=FIFOsaver)
+            # else:
+            #     ddp_fsdp_model_save(epoch=t, model=model, path=best_checkpoint, ddp_training=ddp_training)
+            ddp_fsdp_model_save(epoch=t, model=model, path=best_checkpoint, ddp_training=ddp_training,local_rank=local_rank)
+            # logger.log(f'Best Model Saved as {best_checkpoint}, Best {sota_target}: {bestres}, Current Epoch: {t+1}', show=True)
         if (t + 1) % inter == 0:
-                savepath = os.path.join(checkpoint_savepath,f'Epoch_{t+1}.pth')
-                save_checkpoint = True
-                # dist.barrier()
-                # if server:
-                #     share_memory(data=['Checkpoint',
-                #                     dict(epoch=t, model=model.state_dict(), path=savepath, ddp_training=ddp_training)],
-                #                 name=f'{PID}_E{t}C',
-                #                 client=FIFOsaver)
-                # else:
-                #     ddp_fsdp_model_save(epoch=t, model=model, path=savepath, ddp_training=ddp_training)
-                if best_epoch==(t+1):
-                    copy_checkpoint=[best_checkpoint,savepath]
-                else:
-                    ddp_fsdp_model_save(epoch=t, model=model, path=savepath, ddp_training=ddp_training,local_rank=local_rank)
-                # logger.log(f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=True)
+            savepath = os.path.join(checkpoint_savepath,f'Epoch_{t+1}.pth')
+            save_checkpoint = True
+            # dist.barrier()
+            # if server:
+            #     share_memory(data=['Checkpoint',
+            #                     dict(epoch=t, model=model.state_dict(), path=savepath, ddp_training=ddp_training)],
+            #                 name=f'{PID}_E{t}C',
+            #                 client=FIFOsaver)
+            # else:
+            #     ddp_fsdp_model_save(epoch=t, model=model, path=savepath, ddp_training=ddp_training)
+            if best_epoch==(t+1):
+                copy_checkpoint=[best_checkpoint,savepath]
+            else:
+                ddp_fsdp_model_save(epoch=t, model=model, path=savepath, ddp_training=ddp_training,local_rank=local_rank)
+            # logger.log(f'CheckPoint at epoch {(t+1)} saved as {savepath}', show=True)
         if local_rank == 0:
             '''Post-process the model saving actions'''
             if os.path.exists(del_checkpoint):
@@ -480,7 +511,6 @@ def nnhs_report(search:bool,sota_target:str,eva_metrics:list,modes:list,end_exp:
             nni.report_final_result(new_metric)
         else:
             nni.report_intermediate_result(new_metric)
-
 def tensorboard_plot(metrics: dict, epoch: int, writer:SummaryWriter, tag:str, vis_com: dict):
     for key in metrics:
         if vis_com[key][2]:
@@ -608,6 +638,7 @@ def release_cache():
         pass
 
 def train(device: Union[int, str, torch.device],
+          local_rank: int,
           dataloader: DataLoader,
           model_pipeline:DeepMuon.train.pipeline.Pipeline,
           loss_fn=None,
@@ -630,8 +661,10 @@ def train(device: Union[int, str, torch.device],
     train_loss = 0
     predictions = []
     labels = []
-    batchs = len(dataloader)
-    gradient_accumulation = min(batchs, gradient_accumulation)
+    num_batches = len(dataloader)
+    gradient_accumulation = min(num_batches, gradient_accumulation)
+    if local_rank == 0:
+        bar=tqdm(range(num_batches),desc='Training Interations:')
     for i, (x, y) in enumerate(dataloader):
         with autocast(enabled=fp16):
             if (i+1) % gradient_accumulation != 0:
@@ -654,12 +687,15 @@ def train(device: Union[int, str, torch.device],
         predictions.append(pred.detach().cpu().numpy())
         labels.append(label.detach().cpu().numpy())
         train_loss += loss.item()*gradient_accumulation
-    scheduler.step(train_loss/batchs)
+        if local_rank == 0:
+            bar.update()
+    scheduler.step(train_loss/num_batches)
     # release_cache()
-    return train_loss/batchs, np.concatenate(predictions, axis=0), np.concatenate(labels, axis=0)
+    return train_loss/num_batches, np.concatenate(predictions, axis=0), np.concatenate(labels, axis=0)
 
 
 def test(device:Union[int, str, torch.device],
+         local_rank:int,
          dataloader:DataLoader,
          model_pipeline:DeepMuon.train.pipeline.Pipeline,
          loss_fn=None):
@@ -668,12 +704,16 @@ def test(device:Union[int, str, torch.device],
     test_loss = 0
     predictions = []
     labels = []
+    if local_rank == 0:
+        bar=tqdm(range(num_batches),desc='Testing Interations:')
     with torch.no_grad():
         for x, y in dataloader:
             pred,label=model_pipeline.predict(input=x,label=y,device=device,precision=precision)
             predictions.append(pred.detach().cpu().numpy())
             labels.append(label.detach().cpu().numpy())
             test_loss += loss_fn(pred, label).item()
+            if local_rank == 0:
+                bar.update()
     test_loss /= num_batches
     # release_cache()
     return test_loss, np.concatenate(predictions, axis=0), np.concatenate(labels, axis=0)
@@ -682,9 +722,10 @@ def test(device:Union[int, str, torch.device],
 @click.command()
 @click.option('--config', default='', help='Specify the path of configuartion file')
 @click.option('--test', default='', help='Specify the path of checkpoint used to test the model performance, if nothing given the test mode will be disabled')
+@click.option('--save_tr',is_flag=True,help='Specify whether to save the results on training datasets, only available when test mode is enabled')
 @click.option('--search',is_flag=True,help='Specify whether to use Neural Network Hyperparameter Searching (NNHS for short)')
 @click.option('--server',is_flag=True,help='Specify whether to use File Saving Server to save the model checkpoints')
-def start_exp(config, test, search, server):
+def start_exp(config, test, save_tr, search, server):
     global NNHS_enabled
     if not NNHS_enabled:
         search=False
@@ -697,11 +738,13 @@ def start_exp(config, test, search, server):
         train_config = Config(configpath=config)
     if not os.path.exists(test) and test != '':
         test = None
+        save_tr=False
         print(f"checkpoint {test} cannot be found, test mode is disabled!")
         return 0
     elif test == '':
         test = None
-    main(train_config, test, search, source_code, server)
+        save_tr=False
+    main(train_config, test, save_tr, search, source_code, server)
 
  
 if __name__ == '__main__':

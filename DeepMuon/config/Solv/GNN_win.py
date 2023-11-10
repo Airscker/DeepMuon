@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 13:46:07
 LastEditors: airscker
-LastEditTime: 2023-09-11 18:42:02
+LastEditTime: 2023-11-04 14:34:59
 Description: NULLs
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -20,7 +20,7 @@ test_dataset = dict(backbone='SmilesGraphData',collate_fn='collate_solubility',
                                  solv_file='/data/yufeng/MINES/data/CO2_organic/solubility_co2.csv',
                                  start=2500,ID_col='ID',info_keys=['CanonicalSMILES','Solubility_CO2'],add_self_loop=False,featurize_edge=True,shuffle=False))
 
-work_config = dict(work_dir='/home/yufeng/workdir/MINES/CO2_SOLV/GNNV3009')
+work_config = dict(work_dir='/home/yufeng/workdir/MINES/CO2_SOLV/GNNV3010')
 
 checkpoint_config = dict(load_from='', resume_from='', save_inter=200)
 

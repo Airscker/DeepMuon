@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 14:36:30
 LastEditors: airscker
-LastEditTime: 2023-10-07 15:24:40
+LastEditTime: 2023-11-07 17:25:01
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -72,7 +72,7 @@ class SolvGNN(nn.Module):
                                      edge_hidden_feats=edge_hidden_dim,
                                      num_step_message_passing=1)
         # self.global_conv1=GraphConv(hidden_dim+4,hidden_dim)
-        
+
         # self.add_embed_dims=[128,256,64]
         # self.add_embed=nn.Sequential(
         #     nn.Linear(add_dim+2,self.add_embed_dims[0]),
@@ -84,7 +84,7 @@ class SolvGNN(nn.Module):
         #     nn.Linear(self.add_embed_dims[1],self.add_embed_dims[2])
         # )
         self.regression=MLPBlock(257,n_classes,[hidden_dim]*2,mode='NAD',activation=nn.LeakyReLU)
-        
+
     # def forward(self, solvdata=None,empty_solvsys=None,device=None):
     #     graph:dgl.DGLGraph=solvdata['graph'].to(device)
     #     with graph.local_scope():
@@ -92,7 +92,7 @@ class SolvGNN(nn.Module):
     #         graph_edata=graph.edata['type'].float().to(device)
     #         inter_hb=solvdata['inter_hb'][:,None].float().to(device)
     #         # be_salt=solvdata['be_salt'][:,None].to(device)
-    #         # be_ps=solvdata['be_ps'][:,None].to(device) 
+    #         # be_ps=solvdata['be_ps'][:,None].to(device)
     #         # ip=solvdata['ip'][:,None].to(device)
     #         add_feature=solvdata['add_features'].float().to(device)
     #         graph.ndata['h']=F.relu(self.conv2(graph,(F.relu(self.conv1(graph,(graph_ndata,graph_edata))),graph_edata)))
@@ -139,7 +139,7 @@ class SolvGNNV2(nn.Module):
         #                              edge_hidden_feats=edge_hidden_dim,
         #                              num_step_message_passing=1)
         # self.global_conv1=GraphConv(hidden_dim,hidden_dim)
-        
+
         # self.add_embed_dims=[128,256,64]
         # self.add_embed=nn.Sequential(
         #     nn.Linear(add_dim+2,self.add_embed_dims[0]),
@@ -152,7 +152,7 @@ class SolvGNNV2(nn.Module):
         # )
         self.hidden_dims=[1024,512]
         self.regression=MLPBlock(hidden_dim,n_classes,self.hidden_dims,mode='NAD',activation=nn.LeakyReLU)
-        
+
     def forward(self, solvdata=None,empty_solvsys=None,device=None):
         graph:dgl.DGLGraph=solvdata['graph'].to(device)
         with graph.local_scope():
@@ -176,7 +176,7 @@ class GCR(nn.Module):
         super().__init__()
         self.gcn1=GraphConv(dim, dim,allow_zero_in_degree=allow_zero_in_degree)
         self.gcn2=GraphConv(dim, dim,allow_zero_in_degree=allow_zero_in_degree)
-    def forward(self,graph:dgl.DGLGraph,node_feature:torch.Tensor):
+    def forward(self,graph:dgl.DGLGraph,node_feature:torch.Tensor,bond_feature:torch.Tensor=None):
         with graph.local_scope():
             output=self.gcn1(graph,node_feature)
             output=self.gcn2(graph,F.relu(output))
@@ -192,6 +192,7 @@ class SolvGNNV3(nn.Module):
         self.add_dim=add_dim
         self.res_connection=int(res_connection)
         self.freeze_GNN=freeze_GNN
+        # self.node_embedding=nn.Linear(in_dim,hidden_dim)
         self.gcn=GraphConv(in_dim, hidden_dim,allow_zero_in_degree=allow_zero_in_degree)
         self.node_gcr=nn.ModuleList(
             [GCR(dim=hidden_dim,allow_zero_in_degree=allow_zero_in_degree) for _ in range(gcr_layers)]
@@ -213,6 +214,7 @@ class SolvGNNV3(nn.Module):
         with graph.local_scope():
             graph_ndata=graph.ndata['h'].float().to(device)
             node_feature=self.gcn(graph,graph_ndata)
+            # node_feature=self.node_embedding(graph_ndata)
             for i in range(len(self.node_gcr)):
                 feature=self.node_gcr[i](graph,node_feature)
                 if self.res_connection>0 and i>0 and (i+1)%self.res_connection==0:
@@ -221,6 +223,7 @@ class SolvGNNV3(nn.Module):
                     node_feature=feature
             graph.ndata['h']=node_feature
             node_mean=dgl.mean_nodes(graph,'h')
+            print(node_mean.shape,add_features.shape)
             if self.add_dim>0:
                 node_mean=torch.cat([node_mean,add_features],axis=1)
             output=self.regression(node_mean).squeeze(-1)
@@ -235,42 +238,15 @@ class SolvGNNV3(nn.Module):
         super().train(mode)
         self.freeze_GNNPart()
 
-class SolvGNNV3Norm(SolvGNNV3):
-    def __init__(self, in_dim=74, hidden_dim=256, add_dim=0,
-                 mlp_dims=[1024, 512], dropout=0, gcr_layers=5,
-                 n_classes=1, res_connection: Union[int,bool] = 0,
-                 allow_zero_in_degree=True, freeze_GNN=False, norm_output=True) -> None:
-        super().__init__(in_dim, hidden_dim, add_dim, mlp_dims, dropout, gcr_layers,
-                         n_classes, res_connection, allow_zero_in_degree, freeze_GNN)
-        self.normnn=nn.Sequential(
-            MLPBlock(hidden_dim+add_dim,mlp_dims[-1],mlp_dims,mode='NAD',activation=nn.LeakyReLU,dropout_rate=dropout),
-            nn.Softmax(dim=1),
-            nn.Linear(mlp_dims[-1],n_classes),
-            )
-    def forward(self,solvdata=None,empty_solvsys=None,device=None):
-        graph:dgl.DGLGraph=solvdata['graph'].to(device)
-        if self.add_dim>0:
-            add_features=solvdata['add_features'].float().to(device)
-            add_features=add_features.squeeze()
-        with graph.local_scope():
-            graph_ndata=graph.ndata['h'].float().to(device)
-            node_feature=self.gcn(graph,graph_ndata)
-            for i in range(len(self.node_gcr)):
-                feature=self.node_gcr[i](graph,node_feature)
-                if self.res_connection>0 and i>0 and (i+1)%self.res_connection==0:
-                    node_feature=node_feature+feature
-                else:
-                    node_feature=feature
-            graph.ndata['h']=node_feature
-            node_mean=dgl.mean_nodes(graph,'h')
-            if self.add_dim>0:
-                node_mean=torch.cat([node_mean,add_features],axis=1)
-            output=self.regression(node_mean)
-            norm_output=self.normnn(node_mean)
-            output=output*norm_output
-            return output.squeeze(-1)
 
-
+class SolvLinear(nn.Module):
+    def __init__(self, in_dims:int) -> None:
+        super().__init__()
+        self.linear=nn.Linear(in_dims,1)
+        nn.init.xavier_uniform_(self.linear.weight.data)
+        self.linear.bias.data.fill_(0)
+    def forward(self,data):
+        return self.linear(data).squeeze(-1)
 
 
 class SolvGNNV4(nn.Module):
@@ -280,15 +256,15 @@ class SolvGNNV4(nn.Module):
     def forward(self,data):
         output=self.mlp(data)
         return output.unsqueeze(-1)
-    
+
 class SolvGNNV5(nn.Module):
     def __init__(self,
                  in_dim=74,
                  hidden_dim=2048,
                  add_dim=0,
-                 mlp_dims=[2048,1024,512],
+                 mlp_dims=[2048],
                  dropout_rate=0,
-                 norm=True,
+                 norm=False,
                  gcr_layers=25,
                  n_classes=1,
                  res_connection:Union[int,bool]=0,
@@ -296,10 +272,11 @@ class SolvGNNV5(nn.Module):
                  freeze_GNN=False) -> None:
         super().__init__()
         self.res_connection=int(res_connection)
-        gnn_hidden_dims=[in_dim]+[hidden_dim]*gcr_layers
+        gnn_hidden_dims=[hidden_dim]*gcr_layers
         self.node_update=nn.ModuleList([
             nn.Linear(gnn_hidden_dims[i],gnn_hidden_dims[i+1]) for i in range(len(gnn_hidden_dims)-1)
         ])
+        self.pre_gnn=GINConv(nn.Linear(in_dim,hidden_dim),aggregator_type='sum',init_eps=0,learn_eps=False,activation=F.relu)
         self.gnn=nn.ModuleList([
             GINConv(self.node_update[i],aggregator_type='sum',init_eps=0,learn_eps=False,activation=F.relu)
             for i in range(len(gnn_hidden_dims)-1)
@@ -320,15 +297,187 @@ class SolvGNNV5(nn.Module):
             add_features=add_features.squeeze()
         with graph.local_scope():
             graph_ndata=graph.ndata['h'].float().to(device)
+            graph_ndata=self.pre_gnn(graph,graph_ndata)
+            if self.res_connection:
+                res_feat=graph_ndata
             for i in range(len(self.gnn)):
                 feature=self.gnn[i](graph,graph_ndata)
                 if self.res_connection>0 and i>0 and (i+1)%self.res_connection==0:
-                    graph_ndata=graph_ndata+feature
+                    graph_ndata=feature+res_feat
+                    res_feat=graph_ndata
                 else:
                     graph_ndata=feature
+            if self.res_connection:
+                del res_feat
             graph.ndata['h']=graph_ndata
             node_mean=dgl.mean_nodes(graph,'h')
             if self.add_dim>0:
                 node_mean=torch.cat([node_mean,add_features],axis=1)
             output=self.regression(node_mean)
             return output.squeeze(-1)
+
+class SolvGNNV6(nn.Module):
+
+    def __init__(self,
+                 in_dim=74,
+                 hidden_dim=256,
+                 add_dim=0,
+                 mlp_dims=[1024, 512],
+                 dropout=0,
+                 gcr_layers=5,
+                 n_classes=1,
+                 res_connection: Union[int, bool] = 0,
+                 allow_zero_in_degree=True,
+                 freeze_GNN=False) -> None:
+        super().__init__()
+        self.add_dim = add_dim
+        self.res_connection = int(res_connection)
+        self.freeze_GNN = freeze_GNN
+        self.gcn = GraphConv(in_dim,
+                             hidden_dim,
+                             allow_zero_in_degree=allow_zero_in_degree)
+        self.node_gcr = nn.ModuleList([
+            GCR(dim=hidden_dim, allow_zero_in_degree=allow_zero_in_degree)
+            for _ in range(gcr_layers)
+        ])
+        self.regression = MLPBlock(2*hidden_dim + add_dim,
+                                   n_classes,
+                                   mlp_dims,
+                                   mode='NAD',
+                                   activation=nn.LeakyReLU,
+                                   dropout_rate=dropout)
+        # self.sum_weight = nn.Parameter(torch.Tensor([0.5, 0.5]),requires_grad=True)
+
+    def _feat_extract(self,
+                      graph: dgl.DGLGraph,
+                      node_feature: torch.Tensor,
+                      device=None):
+        node_feature = node_feature.float().to(device)
+        with graph.local_scope():
+            output = self.gcn(graph, node_feature)
+            for i in range(len(self.node_gcr)):
+                feature = self.node_gcr[i](graph, output)
+                if self.res_connection > 0 and i > 0 and (
+                        i + 1) % self.res_connection == 0:
+                    output = output + feature
+                else:
+                    output = feature
+            graph.ndata['h'] = output
+            node_mean = dgl.sum_nodes(graph, 'h')
+            return node_mean,output
+
+    def forward(self, solvdata=None, empty_solvsys=None, device=None):
+        cation: dgl.DGLGraph = solvdata['cation'].to(device)
+        anion: dgl.DGLGraph = solvdata['anion'].to(device)
+        if self.add_dim > 0:
+            add_features = solvdata['add_features'].float().to(device)
+            add_features = add_features.squeeze()
+        cation_feat,_ = self._feat_extract(cation, cation.ndata['h'], device)
+        anion_feat,_ = self._feat_extract(anion, anion.ndata['h'], device)
+        sumed_feat = self.sum_weight[0] * cation_feat + self.sum_weight[1] * anion_feat
+        output = self.regression(
+            torch.cat([cation_feat, anion_feat, add_features], axis=1)
+            # torch.cat([sumed_feat, add_features], axis=1)
+        )
+        return output.squeeze(-1)
+class Attention(nn.Module):
+    def __init__(self,in_dim:int=1024,q_dim:int=None,v_dim:int=None) -> None:
+        super().__init__()
+        if q_dim is None:
+            q_dim=in_dim
+        if v_dim is None:
+            v_dim=in_dim
+        self.q_linear=nn.Linear(in_dim,q_dim)
+        self.k_linear=nn.Linear(in_dim,q_dim)
+        self.v_linear=nn.Linear(in_dim,v_dim)
+
+    def forward(self,x:torch.Tensor):
+        '''
+        x.shape: (Node_num, in_dim)
+        '''
+        q=self.q_linear(x)
+        k=self.k_linear(x)
+        v=self.v_linear(x)
+        attention=torch.softmax(torch.matmul(q,k.T),dim=1)
+        output=torch.matmul(attention,v)
+        return output
+
+class SolvGNNV7(nn.Module):
+    def __init__(self,
+                 in_dim=74,
+                 hidden_dim=256,
+                 add_dim=0,
+                 mlp_dims=[1024, 512],
+                 dropout=0,
+                 gcr_layers=5,
+                 n_classes=1,
+                 res_connection: Union[int, bool] = 0,
+                 allow_zero_in_degree=True,
+                 freeze_GNN=False) -> None:
+        super().__init__()
+        self.add_dim = add_dim
+        self.res_connection = int(res_connection)
+        self.freeze_GNN = freeze_GNN
+        self.gcn = GraphConv(in_dim,
+                             hidden_dim,
+                             allow_zero_in_degree=allow_zero_in_degree)
+        self.node_gcr = nn.ModuleList([
+            GCR(dim=hidden_dim, allow_zero_in_degree=allow_zero_in_degree)
+            for _ in range(gcr_layers)
+        ])
+        # self.attention=Attention(hidden_dim)
+        # self.attention=nn.ModuleList([
+        #     Attention(hidden_dim) for _ in range(gcr_layers)
+        # ])
+        self.regression = MLPBlock(hidden_dim + add_dim,
+                                   n_classes,
+                                   mlp_dims,
+                                   mode='NAD',
+                                   activation=nn.LeakyReLU,
+                                   dropout_rate=dropout)
+        # self.sum_weight = nn.Parameter(torch.Tensor([0.5, 0.5]),requires_grad=True)
+        self.q_linear=nn.Linear(hidden_dim,hidden_dim)
+        self.k_linear=nn.Linear(hidden_dim,hidden_dim)
+        self.v_linear=nn.Linear(hidden_dim,1)
+    def _weighted_molcule(self,x:torch.Tensor):
+        q=self.q_linear(x)
+        k=self.k_linear(x)
+        v=self.v_linear(x)
+        attention=torch.softmax(torch.matmul(q,k.T),dim=1)
+        output=torch.matmul(attention,v)
+        return output
+    def _feat_extract(self,
+                      graph: dgl.DGLGraph,
+                      node_feature: torch.Tensor,
+                      device=None):
+        node_feature = node_feature.float().to(device)
+        with graph.local_scope():
+            output = self.gcn(graph, node_feature)
+            for i in range(len(self.node_gcr)):
+                feature = self.node_gcr[i](graph, output)
+                if self.res_connection > 0 and i > 0 and (
+                        i + 1) % self.res_connection == 0:
+                    output = output + feature
+                else:
+                    output = feature
+                # output=self.attention[i](output)
+            graph.ndata['h'] = output
+            node_mean = dgl.sum_nodes(graph, 'h')
+            return node_mean,output
+
+    def forward(self, solvdata=None, empty_solvsys=None, device=None):
+        graphs = solvdata['graphs']
+        features=[]
+        for graph in graphs:
+            graph: dgl.DGLGraph = graph.to(device)
+            _,system_feat=self._feat_extract(graph, graph.ndata['h'], device)
+            feat_weight=self._weighted_molcule(system_feat).squeeze(-1)
+            features.append(torch.matmul(system_feat.T,feat_weight))
+        features=torch.stack(features)
+        if self.add_dim > 0:
+            add_features = solvdata['add_features'].float().to(device)
+            add_features = add_features.squeeze()
+        output = self.regression(
+            torch.cat([features, add_features], axis=1)
+        )
+        return output.squeeze(-1)

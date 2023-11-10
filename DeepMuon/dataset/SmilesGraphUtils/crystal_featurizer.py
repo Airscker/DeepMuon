@@ -2,23 +2,30 @@
 Author: airscker
 Date: 2023-09-05 18:38:28
 LastEditors: airscker
-LastEditTime: 2023-10-08 12:23:42
+LastEditTime: 2023-11-08 00:47:41
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
 '''
 
-from typing import Any
 import dgl
 import torch
 import numpy as np
 
+from typing import Union,Any
+from itertools import combinations
 from abc import ABCMeta,abstractmethod
-from typing import Union
+
 from pymatgen.core.structure import Structure
 from pymatgen.analysis.local_env import CrystalNN
 from pymatgen.analysis.graphs import MoleculeGraph, StructureGraph
+
+from .atom_feat_encoding import (atom_type_one_hot,atom_type_one_hot_alltable,atom_degree_one_hot,atom_implicit_valence_one_hot,
+                                 atom_formal_charge,atom_num_radical_electrons,atom_hybridization_one_hot,atom_is_aromatic,atom_total_num_H_one_hot)
+from rdkit import Chem, RDLogger
 from rdkit.Chem.rdchem import Atom
+from rdkit.Chem import AllChem,rdDistGeom,rdMolTransforms,AddHs
+RDLogger.DisableLog('rdApp.*')
 
 def one_hot_decoding(data:Any):
     if isinstance(data,np.ndarray):
@@ -39,7 +46,7 @@ def one_hot_encoding(data:int, code_length:int, encode=True):
 class BaseCrystalGraphData(object,metaclass=ABCMeta):
     def __init__(self) -> None:
         super().__init__()
-    
+
     def _sort_dict_key(self,data:dict):
         new_data={}
         for key in sorted(data.keys()):
@@ -57,7 +64,7 @@ class BaseCrystalGraphData(object,metaclass=ABCMeta):
     @abstractmethod
     def creat_graph(self):
         pass
-    
+
     def __call__(self, *args: Any, **kwds: Any):
         return self.creat_graph(*args, **kwds)
 
@@ -174,3 +181,168 @@ class MPJCrystalGraphData(BaseCrystalGraphData):
         graph.ndata['feat']=torch.Tensor(node_info).type(torch.float32)
         self.graph=graph
         return graph
+def atom_featurizer(atom):
+    features=[]
+    functions=[
+        atom_type_one_hot,
+        atom_degree_one_hot,
+        atom_implicit_valence_one_hot,
+        atom_formal_charge,
+        atom_num_radical_electrons,
+        atom_hybridization_one_hot,
+        atom_is_aromatic,
+        atom_total_num_H_one_hot,
+    ]
+    for func in functions:
+        features.append(func(atom))
+    return np.concatenate(features)
+
+def mol_to_atom_bond_bigraph(mol:Chem.rdchem.Mol,add_Hs=False,only_atomic_num=False,return_bond_graph=True):
+    '''
+    ## Creat the graph of the molecule.
+
+    ### Args:
+        - mol: The molecule to be featurized.
+        - add_Hs: If `True`, the hydrogens will be added to the molecule.
+        - only_atomic_num: If `True`, the atom features are only the atomic number of the atom, otherwise, the atom features are the atom features encoded by `atom_featurizer`.
+        - return_bond_graph: If `True`, the bond graph will be returned, otherwise, the bond graph will not be returned.
+
+    ### Returns:
+        - atom_graph: A `DGLGraph` object, the graph structure of the molecule
+            - node features: `atomic_num`: The atomic number of the atom.
+            - edge features: `bond_length`: The bond length between explicitly bonded atoms (Such as vad der waals or hydrogen bonds are excluded).
+        - bond_graph: A `DGLGraph` object, the graph structure of the molecule
+            - node features: 
+                - `bond_length`: The bond length between explicitly bonded atoms. Which is the same as the `bond_length` in `atom_graph`, but their orders are different.
+                - `bond_index`: The list of the bonded atoms' index (`e_ij`), which indicates the index of the atoms in `atom_graph`.
+            - edge features:
+                - `bond_angle`: The bond angles between connected bonds.
+                - `angle_index`: The list of the connected bonds' index (`a_ijk = Angle(e_ij, e_jk)`), which indicates the index of the bonds in `bond_graph`.
+
+    ### Example:
+
+    >>> from rdkit import Chem
+    >>> mol=Chem.MolFromSmiles('Br.C(COc1cccnc1)=NNC1=NCCN1')
+    >>> atom_graph,bond_graph=mol_to_atom_edge_bigraph(mol, add_Hs=False)
+    >>> atom_graph
+        Graph(num_nodes=17, num_edges=34,
+            ndata_schemes={'atomic_num': Scheme(shape=(), dtype=torch.int64)}
+            edata_schemes={'bond_length': Scheme(shape=(), dtype=torch.float32)})
+    >>> bond_graph
+        Graph(num_nodes=34, num_edges=40,
+            ndata_schemes={'bond_length': Scheme(shape=(), dtype=torch.float32), 'bond_index': Scheme(shape=(2,), dtype=torch.int64)}
+            edata_schemes={'bond_angle': Scheme(shape=(), dtype=torch.float32), 'angle_index': Scheme(shape=(3,), dtype=torch.int64)})
+    ```
+    '''
+    AllChem.EmbedMolecule(mol)
+    if add_Hs:
+        mol=AddHs(mol)
+    adjacent_matrix=AllChem.GetAdjacencyMatrix(mol)
+    bond_length_matrix=AllChem.Get3DDistanceMatrix(mol)
+    conf=mol.GetConformer(0)
+
+    src_list=[]
+    dst_list=[]
+    atomic_num=[]
+    angle_index=[]
+    bond_angle=[]
+    for i in range(len(adjacent_matrix)):
+        pos=np.where(adjacent_matrix[i]==1)[0]
+        dst_pos=pos[pos>i]
+        dst_list+=dst_pos.tolist()
+        src_list+=[i]*len(dst_pos)
+        if only_atomic_num:
+            atomic_num.append(mol.GetAtomWithIdx(i).GetAtomicNum())
+        else:
+            # atomic_num.append(mol.GetAtomWithIdx(i).GetAtomicNum())
+            atomic_num.append(atom_featurizer(mol.GetAtomWithIdx(i)))
+        if len(pos)>1:
+            _pos=np.array(list(combinations(pos,2)))
+            _pos=np.insert(_pos,1,i,axis=1)
+            angle_index+=_pos.tolist()
+    src_dst=np.array([src_list,dst_list])
+    src_dst=np.concatenate((src_dst,np.flip(src_dst,axis=0)),axis=1)
+
+    for i in range(len(angle_index)):
+        angle=rdMolTransforms.GetAngleDeg(conf,angle_index[i][0],angle_index[i][1],angle_index[i][2])
+        bond_angle.append(angle)
+    angle_index=np.array(angle_index).T
+    angle_index=np.concatenate((angle_index,np.flip(angle_index,axis=0)),axis=1).T
+    bond_angle=bond_angle+bond_angle
+    bond_length=bond_length_matrix[src_dst[0],src_dst[1]]
+    bond_index=src_dst.T
+
+    atom_graph=dgl.graph([],idtype=torch.int64)
+    atomic_num=np.array(atomic_num)
+    atom_graph.add_nodes(len(atomic_num),
+                        #  data={'atomic_num':torch.LongTensor(atomic_num)})
+                        data={'atomic_num':torch.from_numpy(atomic_num).type(torch.float32)})
+    atom_graph.add_edges(torch.LongTensor(src_dst[0]),
+                         torch.LongTensor(src_dst[1]),
+                         data={'bond_length':torch.FloatTensor(bond_length)})
+    if not return_bond_graph:
+        return atom_graph,None
+    angle_vertex=[angle_index[:,0:2],angle_index[:,1:]]
+    src_list=[]
+    dst_list=[]
+    for i in range(len(angle_index)):
+        src_list.append(np.where(np.all(bond_index==angle_vertex[0][i],axis=1))[0].item())
+        dst_list.append(np.where(np.all(bond_index==angle_vertex[1][i],axis=1))[0].item())
+
+    bond_graph=dgl.graph([],idtype=torch.int64)
+    bond_graph.add_nodes(len(bond_index),
+                         data={'bond_length':torch.FloatTensor(bond_length)})
+    bond_graph.add_edges(torch.LongTensor(src_list),
+                         torch.LongTensor(dst_list),
+                         data={'bond_angle':torch.FloatTensor(bond_angle)})
+    bond_graph.ndata['bond_index']=torch.LongTensor(bond_index)
+    bond_graph.edata['angle_index']=torch.LongTensor(angle_index)
+
+    return atom_graph,bond_graph
+
+def smiles_to_atom_bond_graph(smiles:str,add_Hs=False,only_atomic_num=False,return_bond_graph=True):
+    '''
+    ## Creat the graph of the molecule.
+
+    ### Args:
+        - smiles: The molecule to be featurized, given by SMILES.
+        - add_Hs: If `True`, the hydrogens will be added to the molecule.
+        - only_atomic_num: If `True`, the atom features are only the atomic number of the atom, otherwise, the atom features are the atom features encoded by `atom_featurizer`.
+        - return_bond_graph: If `True`, the bond graph will be returned, otherwise, the bond graph will not be returned.
+
+    ### Returns:
+        - atom_graph: A `DGLGraph` object, the graph structure of the molecule
+            - node features: `atomic_num`: The atomic number of the atom.
+            - edge features: `bond_length`: The bond length between explicitly bonded atoms (Such as vad der waals or hydrogen bonds are excluded).
+        - bond_graph: A `DGLGraph` object, the graph structure of the molecule
+            - node features: 
+                - `bond_length`: The bond length between explicitly bonded atoms. Which is the same as the `bond_length` in `atom_graph`, but their orders are different.
+                - `bond_index`: The list of the bonded atoms' index (`e_ij`), which indicates the index of the atoms in `atom_graph`.
+            - edge features:
+                - `bond_angle`: The bond angles between connected bonds.
+                - `angle_index`: The list of the connected bonds' index (`a_ijk = Angle(e_ij, e_jk)`), which indicates the index of the bonds in `bond_graph`.
+
+    ### Example:
+
+    >>> atom_graph,bond_graph=smiles_to_atom_edge_bigraph(smiles='Br.C(COc1cccnc1)=NNC1=NCCN1, add_Hs=False)
+    >>> atom_graph
+        Graph(num_nodes=17, num_edges=34,
+            ndata_schemes={'atomic_num': Scheme(shape=(), dtype=torch.int64)}
+            edata_schemes={'bond_length': Scheme(shape=(), dtype=torch.float32)})
+    >>> bond_graph
+        Graph(num_nodes=34, num_edges=40,
+            ndata_schemes={'bond_length': Scheme(shape=(), dtype=torch.float32), 'bond_index': Scheme(shape=(2,), dtype=torch.int64)}
+            edata_schemes={'bond_angle': Scheme(shape=(), dtype=torch.float32), 'angle_index': Scheme(shape=(3,), dtype=torch.int64)})
+    ```
+    '''
+    try:
+        mol=Chem.MolFromSmiles(smiles)
+    except:
+        return None,None
+    if mol is None:
+        return None,None
+    try:
+        atom_graph,bond_graph=mol_to_atom_bond_bigraph(mol,add_Hs,only_atomic_num,return_bond_graph)
+    except:
+        return None,None
+    return atom_graph,bond_graph

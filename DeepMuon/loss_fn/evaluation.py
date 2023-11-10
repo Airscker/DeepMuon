@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-01-31 09:28:41
 LastEditors: airscker
-LastEditTime: 2023-10-17 16:45:35
+LastEditTime: 2023-10-18 19:18:12
 Description: NULL
 
 Copyright (C) OpenMMLab. All rights reserved.
@@ -26,7 +26,7 @@ def AUC(scores,labels):
     if scores.shape[1]>2 and len(cls_labels)!=scores.shape[1]:
         # raise ValueError("The number of classes is not equal to the number of columns of the score matrix.")
         scores=scores[:,cls_labels]
-    scores=scores/np.sum(scores,axis=1,keepdims=True)
+    scores=softmax(scores,dim=1)
     if scores.shape[1]==2:
         return roc_auc_score(labels,scores[:,1])
     else:
@@ -86,7 +86,6 @@ def every_class_accuracy(scores, labels):
     cls_hit = np.diag(cf_mat)  # Diagnal points
     every_class_acc = cls_hit / cls_cnt
     return every_class_acc
-
 
 @EnableVisualiaztion(Name="Top 1 ACC",NNHSReport=True,TRTensorBoard=True,TRCurve=True)
 def top_k_accuracy(scores, labels, topk=(1, )):

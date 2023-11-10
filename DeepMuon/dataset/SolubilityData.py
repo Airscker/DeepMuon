@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-18 13:58:39
 LastEditors: airscker
-LastEditTime: 2023-09-28 16:12:26
+LastEditTime: 2023-11-05 15:41:56
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -21,7 +21,7 @@ import torch
 from torch.utils.data import Dataset
 from torch_geometric.data import Data
 
-from .SmilesGraphUtils.atom_feat_encoding import CanonicalAtomFeaturizer
+from .SmilesGraphUtils.atom_feat_encoding import CanonicalAtomFeaturizer,CanonicalBondFeaturizer
 from .SmilesGraphUtils.molecular_graph import mol_to_bigraph
 from ..models.base import GNN_feature
 
@@ -169,10 +169,16 @@ class MultiSmilesGraphData(Dataset):
                 start:int=None,
                 end:int=None,
                 mode='train',
+                target='LCE',
+                binary=False,
+                combine_graph=True,
                 add_self_loop=True,
                 featurize_edge=False,
                 shuffle=True) -> None:
         super().__init__()
+        self.binary=binary
+        self.combine_graph=combine_graph
+        self.target=target
         if add_self_loop and featurize_edge:
             warnings.warn('Self looping is forbidden when edge featurizer is enabled. We will set self looping option as false.')
             add_self_loop=False
@@ -238,7 +244,11 @@ class MultiSmilesGraphData(Dataset):
                 if cation_graph is None or anion_graph is None:
                     continue
                 else:
-                    combined_graph=CombineGraph([cation_graph['graph'],anion_graph['graph']],add_global=True,bi_direction=True,add_self_loop=self.add_self_loop)
+                    if self.binary:
+                        combined_graph=dgl.batch([cation_graph['graph'],anion_graph['graph']])
+                        # self.dataset.append([cation_graph['graph'],anion_graph['graph'],sub_group[i][2],sub_group[i][3],sub_group[i][4]])
+                    else:
+                        combined_graph=CombineGraph([cation_graph['graph'],anion_graph['graph']],add_global=True,bi_direction=True,add_self_loop=self.add_self_loop)
                     self.dataset.append([combined_graph,sub_group[i][2],sub_group[i][3],sub_group[i][4]])
         if self.shuffle:
             random.shuffle(self.dataset)
@@ -254,7 +264,7 @@ class MultiSmilesGraphData(Dataset):
         solv_mol=all_data[['Solvent 1 mol/L','Solvent 2 mol/L','Solvent 3 mol/L']].to_numpy()
         salt_mol=all_data[['Salt 1 mol/L','Salt 2 mol/L','Salt 3 mol/L']].to_numpy()
         env_info=all_data[['FC','OC','FO','InOr','F','sF','aF','O','sO','aO','C','sC','aC']].to_numpy().tolist()
-        ColumbicEfficiency=all_data['CE (%)'].tolist()
+        ColumbicEfficiency=all_data[self.target].tolist()
         self.dataset=[]
         for i in range(len(composition)):
             graphs=[]
@@ -266,7 +276,10 @@ class MultiSmilesGraphData(Dataset):
                 else:
                     graphs.append(graph['graph'])
             if len(graphs)!=0:
-                combined_graph=CombineGraph(graphs,add_global=True,bi_direction=True,add_self_loop=self.add_self_loop)
+                if not self.combine_graph:
+                    combined_graph=dgl.batch(graphs)
+                else:
+                    combined_graph=CombineGraph(graphs,add_global=True,bi_direction=True,add_self_loop=self.add_self_loop)
                 self.dataset.append([combined_graph,np.concatenate([solv_mol[i],salt_mol[i]]).tolist(),ColumbicEfficiency[i]])
                 # self.dataset.append([combined_graph,env_info[i],ColumbicEfficiency[i]])
                 
@@ -281,18 +294,18 @@ class MultiSmilesGraphData(Dataset):
             # One bond between atom u and v corresponds to two edges (u, v) and (v, u)
             feats.extend([btype, btype])
         return {'bond_type': torch.tensor(feats).reshape(-1, 1).float()}
-    def pretrained_featurizer(self,mol):
-        can_feat=CanonicalAtomFeaturizer()
-        self.pretrained_node_featurizer.eval()
-        graph_data=mol_to_graph_data_obj_simple(mol)
-        with torch.no_grad():
-            node_emb=self.pretrained_node_featurizer(graph_data)
-        con_emb=can_feat(mol)['h']
-        return {'h':torch.cat([node_emb,con_emb],dim=-1)}
+    # def pretrained_featurizer(self,mol):
+    #     can_feat=CanonicalAtomFeaturizer()
+    #     self.pretrained_node_featurizer.eval()
+    #     graph_data=mol_to_graph_data_obj_simple(mol)
+    #     with torch.no_grad():
+    #         node_emb=self.pretrained_node_featurizer(graph_data)
+    #     con_emb=can_feat(mol)['h']
+    #     return {'h':torch.cat([node_emb,con_emb],dim=-1)}
         
     def generate_graph(self,smiles):
         if self.featurize_edge:
-            edge_featurizer=self.featurize_bonds
+            edge_featurizer=CanonicalBondFeaturizer()
         else:
             edge_featurizer=None
         graph_data={}
@@ -300,7 +313,7 @@ class MultiSmilesGraphData(Dataset):
             mol = Chem.MolFromSmiles(smiles)
             graph_data['graph']=mol_to_bigraph(mol=mol,
                                            add_self_loop=self.add_self_loop,
-                                           node_featurizer=self.pretrained_featurizer if self.pretrain_embedding else CanonicalAtomFeaturizer(),
+                                           node_featurizer=CanonicalAtomFeaturizer(),
                                            edge_featurizer=edge_featurizer,
                                            canonical_atom_order=False,
                                            explicit_hydrogens=False,
@@ -316,154 +329,14 @@ class MultiSmilesGraphData(Dataset):
     def __len__(self):
         return len(self.dataset)
     def __getitem__(self, index):
-        sample={}
-        sample['graph']=self.dataset[index][0]
-        sample['add_features']=self.dataset[index][1:-1]
-        return sample,self.dataset[index][-1]
-        # return torch.Tensor(self.dataset[index][1]),torch.Tensor([self.dataset[index][2]])
-
-
-# allowable node and edge features
-allowable_features = {
-    'possible_atomic_num_list' : list(range(1, 119)),
-    'possible_formal_charge_list' : [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
-    'possible_chirality_list' : [
-        Chem.rdchem.ChiralType.CHI_UNSPECIFIED,
-        Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CW,
-        Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CCW,
-        Chem.rdchem.ChiralType.CHI_OTHER
-    ],
-    'possible_hybridization_list' : [
-        Chem.rdchem.HybridizationType.S,
-        Chem.rdchem.HybridizationType.SP, Chem.rdchem.HybridizationType.SP2,
-        Chem.rdchem.HybridizationType.SP3, Chem.rdchem.HybridizationType.SP3D,
-        Chem.rdchem.HybridizationType.SP3D2, Chem.rdchem.HybridizationType.UNSPECIFIED
-    ],
-    'possible_numH_list' : [0, 1, 2, 3, 4, 5, 6, 7, 8],
-    'possible_implicit_valence_list' : [0, 1, 2, 3, 4, 5, 6],
-    'possible_degree_list' : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    'possible_bonds' : [
-        Chem.rdchem.BondType.SINGLE,
-        Chem.rdchem.BondType.DOUBLE,
-        Chem.rdchem.BondType.TRIPLE,
-        Chem.rdchem.BondType.AROMATIC
-    ],
-    'possible_bond_dirs' : [ # only for double bond stereo information
-        Chem.rdchem.BondDir.NONE,
-        Chem.rdchem.BondDir.ENDUPRIGHT,
-        Chem.rdchem.BondDir.ENDDOWNRIGHT
-    ]
-}
-
-def mol_to_graph_data_obj_simple(mol):
-    """
-    Converts rdkit mol object to graph Data object required by the pytorch
-    geometric package. NB: Uses simplified atom and bond features, and represent
-    as indices
-    :param mol: rdkit mol object
-    :return: graph data object with the attributes: x, edge_index, edge_attr
-    """
-    # atoms
-    num_atom_features = 2   # atom type,  chirality tag
-    atom_features_list = []
-    for atom in mol.GetAtoms():
-        atom_feature = [allowable_features['possible_atomic_num_list'].index(
-            atom.GetAtomicNum())] + [allowable_features[
-            'possible_chirality_list'].index(atom.GetChiralTag())]
-        atom_features_list.append(atom_feature)
-    x = torch.tensor(np.array(atom_features_list), dtype=torch.long)
-
-    # bonds
-    num_bond_features = 2   # bond type, bond direction
-    if len(mol.GetBonds()) > 0: # mol has bonds
-        edges_list = []
-        edge_features_list = []
-        for bond in mol.GetBonds():
-            i = bond.GetBeginAtomIdx()
-            j = bond.GetEndAtomIdx()
-            edge_feature = [allowable_features['possible_bonds'].index(
-                bond.GetBondType())] + [allowable_features[
-                                            'possible_bond_dirs'].index(
-                bond.GetBondDir())]
-            edges_list.append((i, j))
-            edge_features_list.append(edge_feature)
-            edges_list.append((j, i))
-            edge_features_list.append(edge_feature)
-
-        # data.edge_index: Graph connectivity in COO format with shape [2, num_edges]
-        edge_index = torch.tensor(np.array(edges_list).T, dtype=torch.long)
-
-        # data.edge_attr: Edge feature matrix with shape [num_edges, num_edge_features]
-        edge_attr = torch.tensor(np.array(edge_features_list),
-                                 dtype=torch.long)
-    else:   # mol has no bonds
-        edge_index = torch.empty((2, 0), dtype=torch.long)
-        edge_attr = torch.empty((0, num_bond_features), dtype=torch.long)
-
-    data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
-
-    return data
-
-
-class PreTrainedNodeEmbedding(Dataset):
-    def __init__(self,pretrained_path:str='',smiles_info:str='',sample_info:str='',mode='train') -> None:
-        super().__init__()
-        self.featurizer=GNN_feature(num_layer=5, emb_dim=300, num_tasks=1, JK='last', drop_ratio=0, graph_pooling='mean', gnn_type='gin')
-        if os.path.exists(pretrained_path):
-            self.featurizer.from_pretrained(pretrained_path)
-        self.mode=mode
-        self.load_smiles_dict(smiles_info=smiles_info)
-        self.load_sample_dict(sample_info=sample_info)
-        self.dataset=[]
-        for i in range(len(self.composition)):
-            node_fetures=[]
-            try:
-                for smiles in self.composition[i]:
-                    node_fetures.append(self.get_node_embedding(smiles))
-            except:
-                print(f'ERROR occured with {self.composition[i]}')
-                continue
-            node_fetures=torch.cat(node_fetures,dim=0)
-            self.dataset.append([torch.sum(node_fetures,dim=0),self.ColumbicEfficiency[i]])
-    def load_smiles_dict(self,smiles_info):
-        salt=pd.read_excel(smiles_info,sheet_name='Salt',index_col='Salt').to_dict()['SMILES']
-        solvent=pd.read_excel(smiles_info,sheet_name='Molecule',index_col='Solvent').to_dict()['SMILES']
-        new_solv={}
-        for key in solvent.keys():
-            new_solv[key.split(' (')[0]]=solvent[key]
-        new_salt={}
-        for key in salt.keys():
-            new_salt[key.split(' (')[0]]=salt[key]
-        self.smiles_dict={**new_salt,**new_solv}
-    def load_sample_dict(self,sample_info):
-        all_data=pd.read_excel(sample_info)
-        if self.mode=='train':
-            all_data=all_data[:int(len(all_data)*0.8)]
-        else:
-            all_data=all_data[int(len(all_data)*0.8):]
-        comp_salt=all_data['Salt'].tolist()
-        comp_solv=all_data['Solvent'].tolist()
-        self.ColumbicEfficiency=all_data['CE (%)'].tolist()
-        composition=[]
-        for i in range(len(comp_salt)):
-            salt=comp_salt[i].split(',')
-            solv=comp_solv[i].split(',')
-            composition.append(salt+solv)
-        for i in range(len(composition)):
-            for j in range(len(composition[i])):
-                composition[i][j]=self.smiles_dict[composition[i][j]]
-        self.composition=composition
-    def get_node_embedding(self,smiles):
-        self.featurizer.eval()
-        mol = Chem.MolFromSmiles(smiles)
-        graph_data=mol_to_graph_data_obj_simple(mol)
-        with torch.no_grad():
-            node_emb=self.featurizer(graph_data)
-        return node_emb
-    def __len__(self):
-        return len(self.dataset)
-    def __getitem__(self, index):
-        return self.dataset[index]
+        # if self.binary:
+        #     return self.dataset[index][0],self.dataset[index][1],self.dataset[index][2:-1],self.dataset[index][-1]
+        # else:
+            sample={}
+            sample['graph']=self.dataset[index][0]
+            sample['add_features']=self.dataset[index][1:-1]
+            return sample,self.dataset[index][-1]
+            # return torch.Tensor(self.dataset[index][1]),torch.Tensor([self.dataset[index][2]])
 
 
 def collate_solubility(batch):
@@ -476,6 +349,28 @@ def collate_solubility(batch):
     samples = list(map(list,zip(*samples)))
     batched_sample = {}
     batched_sample['graph'] = dgl.batch(samples[0])
+    for i,key in enumerate(keys):        
+        batched_sample[key] = torch.tensor(samples[i+1])
+    return batched_sample,torch.Tensor(labels)
+
+def collate_solubility_binary(batch):
+    samples=list(map(list,zip(*batch)))
+    data={}
+    data['cation']=dgl.batch(samples[0])
+    data['anion']=dgl.batch(samples[1])
+    data['add_features']=torch.Tensor(samples[2])
+    return data,torch.Tensor(samples[3])
+
+def collate_ce(batch):
+    keys = list(batch[0][0].keys())[1:]
+    samples=[]
+    labels=[]
+    for info in batch:
+        samples.append(info[0].values())
+        labels.append(info[1])
+    samples = list(map(list,zip(*samples)))
+    batched_sample = {}
+    batched_sample['graphs'] = samples[0]
     for i,key in enumerate(keys):        
         batched_sample[key] = torch.tensor(samples[i+1])
     return batched_sample,torch.Tensor(labels)

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-07 21:35:54
 LastEditors: airscker
-LastEditTime: 2023-10-08 02:25:41
+LastEditTime: 2023-10-23 14:37:57
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -136,6 +136,8 @@ class NNHSearch:
                 warnings.warn('Neural network hyperparameter searching is unavailable in testing mode.')
                 self.search=False
             base_command=base_command+f' --test {exp_args.test}'
+            if exp_args.save_tr:
+                base_command=base_command+' --save_tr'
             os.system(base_command)
             return 0
         else:
@@ -169,6 +171,7 @@ def main():
     parser.add_argument('-p', '--port', default=22911, type=int,help='Port number for multi-process training, e.g. 22911')
     parser.add_argument('-c', '--config', default='', type=str,help='Configuration file path, e.g. ./config.py')
     parser.add_argument('-ts', '--test', default='', type=str,help='If the path of tested checkpoint given, then test mode will be activated, e.g. ./checkpoint.pth')
+    parser.add_argument('-str','--save_tr', action='store_true',help='If this flag is set, then the results of model on training dataset will be saved, only available in testing mode.')
     parser.add_argument('-sr', '--search', action='store_true',help='If this flag is set, then neural network hyperparameter searching will be activated.')
     parser.add_argument('-sv', '--server', action='store_true',help='If this flag is set, then the file saving server will be started.')
     args = parser.parse_args()

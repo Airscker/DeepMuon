@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 13:46:07
 LastEditors: airscker
-LastEditTime: 2023-10-08 15:28:44
+LastEditTime: 2023-11-05 19:00:02
 Description: NULLs
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -10,7 +10,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 
 # model = dict(backbone='SolvGNNV2',pipeline='solvgnn',params=dict(hidden_dim=256, edge_hidden_dim=512,add_dim=0))
 model = dict(backbone='SolvGNNV3',pipeline='solvgnn',
-             params=dict(in_dim=74, hidden_dim=2048, add_dim=6, gcr_layers=10, mlp_dims=[5120],dropout=0,
+             params=dict(in_dim=74, hidden_dim=2048, add_dim=6, gcr_layers=20, mlp_dims=[2048,1024],dropout=0,
                          n_classes=1,allow_zero_in_degree=True,res_connection=1,freeze_GNN=False))
 
 train_dataset = dict(backbone='MultiSmilesGraphData',collate_fn='collate_solubility',
@@ -22,6 +22,7 @@ train_dataset = dict(backbone='MultiSmilesGraphData',collate_fn='collate_solubil
                                  sample_info='/data/yufeng/MINES/ColumbicEfficiency/dataset.xlsx',
                                  start=0,
                                  end=80,
+                                 target='LCE',
                                  add_self_loop=False,
                                  featurize_edge=False,
                                  shuffle=False))
@@ -34,13 +35,14 @@ test_dataset = dict(backbone='MultiSmilesGraphData',collate_fn='collate_solubili
                                  sample_info='/data/yufeng/MINES/ColumbicEfficiency/dataset.xlsx',
                                  start=80,
                                  end=None,
+                                 target='LCE',
                                  add_self_loop=False,
                                  featurize_edge=False,
                                  shuffle=False))
 
-work_config = dict(work_dir='/home/yufeng/workdir/MINES/ColumbicEfficiency/GNNV3C015')
+work_config = dict(work_dir='/home/yufeng/workdir/MINES/CE_DS/GNNV3M002')
 
-checkpoint_config = dict(load_from='', resume_from='', save_inter=4)
+checkpoint_config = dict(load_from='', resume_from='', save_inter=50)
 
 loss_fn = dict(backbone='MSELoss')
 evaluation = dict(metrics=['R2Value'],
@@ -52,6 +54,6 @@ optimizer = dict(backbone='AdamW', params=dict(lr=1e-4, weight_decay=0.1, betas=
 # scheduler = dict(backbone='CosineAnnealingLR', params=dict(T_max=100, eta_min=1e-5))
 scheduler = dict(backbone='ReduceLROnPlateau', params=dict(factor=0.5, patience=100))
 
-hyperpara = dict(epochs=20, batch_size=32)
+hyperpara = dict(epochs=500, batch_size=32)
 fsdp_parallel = dict(enabled=False, min_num_params=1e4)
 optimize_config = dict(fp16=False, grad_acc=1, grad_clip=None, double_precision=False,find_unused_parameters=False)
