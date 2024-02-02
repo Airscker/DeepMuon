@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 20:03:40
 LastEditors: airscker
-LastEditTime: 2023-11-09 09:51:44
+LastEditTime: 2024-02-01 15:45:12
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -20,12 +20,12 @@ from .SmilesGraphUtils.molecular_graph import (mol_to_graph,smiles_to_bigraph,mo
 
 '''Customized datasets'''
 from .MinistData import MinistDataset
-from .HailingData import HailingDataset_Direct2, HailingDataset_DirectV3
-from .Pandax4TData import PandaxDataset
+from .hailing import HailingDataset_Direct2, HailingDataset_DirectV3, PandaxDataset
 from .CMRData import NIIDecodeV2
 from .XASData import ValenceDataset, ValenceDatasetV2
 from .SolubilityData import (SmilesGraphData, MultiSmilesGraphData, collate_solubility,collate_solubility_binary,collate_ce)
 from .XASDataV2 import XASSUMDataset, collate_XASSUM
+from .XASDataV3 import XASSUMDatasetV3
 from .AtomEmbedData import AtomMasking, MolSpaceDataset, collate_molspace, collate_atom_masking, collate_molspacev2
 from .MolFoundation import MolFoundationDataset,collate_molfoundation,FoundationBasicDataset
 
@@ -38,5 +38,5 @@ __all__ = [
     'NIIDecodeV2', 'ValenceDataset', 'ValenceDatasetV2', 'MinistDataset',
     'SmilesGraphData', 'MultiSmilesGraphData', 'collate_solubility','collate_solubility_binary','collate_ce', 'XASSUMDataset',
     'collate_XASSUM', 'AtomMasking', 'MolSpaceDataset', 'collate_molspace', 'collate_atom_masking', 'collate_molspacev2',
-    'MolFoundationDataset','collate_molfoundation','FoundationBasicDataset'
+    'MolFoundationDataset','collate_molfoundation','FoundationBasicDataset','XASSUMDatasetV3'
 ]

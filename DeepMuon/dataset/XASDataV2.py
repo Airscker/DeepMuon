@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-04 22:11:50
 LastEditors: airscker
-LastEditTime: 2023-09-28 16:40:28
+LastEditTime: 2024-02-01 13:58:21
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -25,7 +25,7 @@ class XASSUMDataset(Dataset):
     ## Load detailed XAS/Structure information of inorganic materials from preprocessed Materials Project (https://next-gen.materialsproject.org/) database.
 
     ### Args:
-        - folder_path: The path of the folder where the preprocessed data is stored.
+        - data_path: The path of the folder where the preprocessed data is stored.
         - mode: The mode of the dataset, which can be `train` or `test`, the dataset size will be about 8:2.
         - num_workers: The number of threads used to load data.
         - xas_type: The type of XAS data to be loaded. The supported types include `XANES`, `EXAFS` and `XAFS`. If `None`, all types of XAS data will be loaded.
@@ -98,9 +98,7 @@ class XASSUMDataset(Dataset):
         for i in range(len(self.dataset)):
             if self.dataset[i][2].shape[-1]!=xas_len:
                 continue
-            if np.min(self.dataset[i][2][1])<-3 or np.max(self.dataset[i][2][1])>20:
-                continue
-            if np.max(self.dataset[i][2][1])<0.1 or np.min(self.dataset[i][2][1])>10:
+            if np.max(self.dataset[i][2][1])<-0.1 or np.min(self.dataset[i][2][1])>10:
                 continue
             new_dataset.append(self.dataset[i])
         self.dataset=new_dataset
@@ -128,7 +126,7 @@ class XASSUMDataset(Dataset):
     def __getitem__(self, index: int):
         graph,prompt,full_spec=self.dataset[index]
         return [graph,prompt,full_spec[1]]
-    
+
 
 def collate_XASSUM(batch):
     samples=list(map(list,zip(*batch)))

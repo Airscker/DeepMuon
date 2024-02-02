@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-10-05 01:17:20
 LastEditors: airscker
-LastEditTime: 2023-10-08 00:42:52
+LastEditTime: 2023-12-11 22:21:57
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -13,8 +13,8 @@ from .AirConfig import Config
 from .AirDecorator import EnableVisualiaztion
 from .AirEnv import EnvINFO
 from .AirLogger import LOGT
-from .AirSys import get_cpu_info,get_gpu_info,pid_info
-from .AirPara import model_para
+from .AirSysInfo import get_cpu_info,get_gpu_info,pid_info
+from .AirFlops import model_para
 from .AirQuene import TaskFIFOQueueThread,TaskFIFOQueueProcess
 from .AirLoader import MultiThreadLoader
 from .AirVisual import (ShowDGLGraph,plot_3d,plot_hist_2nd,plot_curve,R2JointPlot,CMPlot)

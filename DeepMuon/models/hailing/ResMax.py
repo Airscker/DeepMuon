@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-12-26 21:36:52
 LastEditors: airscker
-LastEditTime: 2023-09-13 21:06:18
+LastEditTime: 2023-12-11 22:07:37
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -10,8 +10,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .base import ResidualUnit,MLPBlock
-
+from ..base import ResidualUnit,MLPBlock
 
 class ResMax2(nn.Module):
     ''''''

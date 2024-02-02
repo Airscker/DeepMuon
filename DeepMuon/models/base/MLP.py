@@ -10,6 +10,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 
 import torch
 from torch import nn
+from typing import Union
 from .ADNBlock import ADN
 
 class MLPBlock(nn.Module):
@@ -40,7 +41,7 @@ class MLPBlock(nn.Module):
     def __init__(self,
                  dim_input: int,
                  dim_output: int,
-                 hidden_sizes:list[int]=None,
+                 hidden_sizes:Union[int,list[int]]=None,
                  mode='NDA',
                  bias:bool=True,
                  normalization:nn.Module=None,
@@ -59,6 +60,8 @@ class MLPBlock(nn.Module):
             raise ValueError("dropout_rate should be between 0 and 1.")
         if hidden_sizes is None or len(hidden_sizes)==0:
             self.mlp=nn.Linear(dim_input,dim_output)
+        elif isinstance(hidden_sizes,int):
+            hidden_sizes=[hidden_sizes]
         else:
             self.mlp=nn.Sequential()
             hidden_sizes=[dim_input]+hidden_sizes+[dim_output]

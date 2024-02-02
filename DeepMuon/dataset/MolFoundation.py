@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-11-07 23:58:28
 LastEditors: airscker
-LastEditTime: 2023-11-10 00:35:21
+LastEditTime: 2023-11-10 12:29:05
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -69,6 +69,8 @@ class MolFoundationDataset(Dataset):
             print(f'Loading preprocessed data from {self.preprocessed_filepath}')
             _atom_graphs=torch.load(os.path.join(self.preprocessed_filepath,'atom_graphs.pth'))
             _bond_graphs=torch.load(os.path.join(self.preprocessed_filepath,'bond_graphs.pth'))
+            _atom_graphs=dgl.unbatch(_atom_graphs)
+            _bond_graphs=dgl.unbatch(_bond_graphs)
             _pre_smiles=np.load(os.path.join(self.preprocessed_filepath,'smiles.npy'),allow_pickle=True)
             self.atom_graphs=self._split_dataset(_atom_graphs)
             self.bond_graphs=self._split_dataset(_bond_graphs)
@@ -102,7 +104,6 @@ class MolFoundationDataset(Dataset):
         bond_graph=self.bond_graphs[index]
         return atom_graph,bond_graph,label
 class FoundationBasicDataset(Dataset):
-
     def __init__(self,
                  dataset_type: str = 'qm9',
                  label_col: str = 'mu',
@@ -125,7 +126,7 @@ class FoundationBasicDataset(Dataset):
         self.return_bond_graph = return_bond_graph
         self.mode = mode
         self.show_bar = show_bar
-        self.atom_featurizer=CanonicalAtomFeaturizer(atom_data_field='atomic_num')
+        self.atom_featurizer=CanonicalAtomFeaturizer(atom_data_field='atom_feat')
         self.bond_featurizer=CanonicalBondFeaturizer(bond_data_field='bond_length')
         self.atom_graphs = []
         self.smiles = []
@@ -183,18 +184,15 @@ class FoundationBasicDataset(Dataset):
         smiles = self.smiles[index]
         label = self.labels[smiles]
         atom_graph = self.atom_graphs[index]
-        return atom_graph, label
+        return atom_graph, None, label
 
 
 def collate_molfoundation(batch):
     samples = list(map(list, zip(*batch)))
     data = {}
     atom_graphs = samples[0]
+    bond_graphs = samples[1]
     labels = torch.tensor(samples[-1])
     data['atom_graphs'] = atom_graphs
-    if len(samples)>2:
-        bond_graphs = samples[1]
-        data['bond_graphs'] = bond_graphs
-    else:
-        data['bond_graphs']=None
+    data['bond_graphs'] = bond_graphs
     return data, labels

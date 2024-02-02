@@ -12,10 +12,10 @@ from torch import nn
 from .base import MLPBlock
 
 class MinistModel(nn.Module):
-    def __init__(self):
+    def __init__(self,img_size=28,n_classes=10,hidden_size=[512,512]):
         super().__init__()
         self.flatten = nn.Flatten()
-        self.linear_relu_stack = MLPBlock(28*28,10,[512,512])
+        self.linear_relu_stack = MLPBlock(img_size**2,n_classes,hidden_size)
 
     def forward(self, x):
         x = self.flatten(x)

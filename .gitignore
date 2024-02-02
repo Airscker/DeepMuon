@@ -20,5 +20,9 @@ DeepMuon/tools/__pycache__/
 DeepMuon/train/__pycache__/
 DeepMuon/config/XAS/__pycache__/
 DeepMuon/models/base/__pycache__/
-DeepMuon/models/base/__pycache__/
 DeepMuon/tools/AirServer/__pycache__/
+DeepMuon/dataset/hailing/__pycache__/
+DeepMuon/models/base/_expansion/__pycache__/
+DeepMuon/models/base/swinT/__pycache__/
+DeepMuon/models/cmr/__pycache__/
+DeepMuon/models/hailing/__pycache__/

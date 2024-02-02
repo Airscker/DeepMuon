@@ -118,9 +118,9 @@ def main(config_info:Config, test_path:str=None, save_tr:bool=False, search:bool
         for folder in folders_toCreate:
             if not os.path.exists(folder):
                 os.makedirs(folder)
-        if search:
+        if search and test_path is None:
             config_info.move_config(source_code=source_code,save_path=os.path.join(work_dir,'config.py'))
-        else:
+        elif test_path is None:
             config_info.move_config()
         '''show hyperparameters'''
         PID=os.getpid()
@@ -289,11 +289,14 @@ def main(config_info:Config, test_path:str=None, save_tr:bool=False, search:bool
             tr_score_val, tr_label_val = gather_score_label(
                 tr_score, tr_label, local_world_size)
         if local_rank == 0:
-            np.save(os.path.join(work_dir,'scores.npy'),ts_score_val)
-            np.save(os.path.join(work_dir,'labels.npy'),ts_label_val)
+            _save_dir = os.path.join(work_dir, 'TestScore')
+            if not os.path.exists(_save_dir):
+                os.makedirs(_save_dir)
+            np.save(os.path.join(_save_dir,'scores.npy'),ts_score_val)
+            np.save(os.path.join(_save_dir,'labels.npy'),ts_label_val)
             if save_tr:
-                np.save(os.path.join(work_dir,'tr_scores.npy'),tr_score_val)
-                np.save(os.path.join(work_dir,'tr_labels.npy'),tr_label_val)
+                np.save(os.path.join(_save_dir,'tr_scores.npy'),tr_score_val)
+                np.save(os.path.join(_save_dir,'tr_labels.npy'),tr_label_val)
             ts_eva_metrics, _, vis_com= evaluation(
                 ts_score_val, ts_label_val, configs['evaluation'], 0, 0,logger)
             for key in ts_eva_metrics.keys():
@@ -603,7 +606,7 @@ def evaluation(scores, labels, evaluation_command, best_target, loss, logger):
                 logger.log(f"WARNING: After version 1.23.91, the metric-evaluating methods stored in module `evaluation.py` should be decorated by \
                            VisualiaztionRegister `DeepMuon.tools.AirDecorators.EnableVisualiaztion` to be properly visualized.\n\
                            Otherwise some evaluation metrics may occur fetal errors when using default plotting methods.\n\
-                           Unless evaluation method `{metrics[key].__name__} is registered for visualization, no record will be visualized for this metric.`".replace('  ',''))
+                           Unless evaluation method `{metrics[key].__name__} is registered for visualization, no record will be visualized for this metric.`"                                                                                                                                                             .replace('  ',''))
         except:
             pass
     '''
@@ -746,7 +749,7 @@ def start_exp(config, test, save_tr, search, server):
         save_tr=False
     main(train_config, test, save_tr, search, source_code, server)
 
- 
+
 if __name__ == '__main__':
     print(f'\n---Starting Neural Network...PID:{os.getpid()}---')
     start_exp()

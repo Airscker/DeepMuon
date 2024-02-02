@@ -79,7 +79,6 @@ setup(
                       'ptflops',
                       'torchinfo',
                       'captum',
-                      'monai',
                       'pynvml',
                       'psutil',
                       'GPUtil',

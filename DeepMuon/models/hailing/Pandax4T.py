@@ -12,7 +12,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 
 from torch import nn
-from .base import MLPBlock
+from ..base import MLPBlock
 import torch
 
 

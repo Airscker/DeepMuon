@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-10-04 13:23:27
 LastEditors: airscker
-LastEditTime: 2023-11-10 00:35:55
+LastEditTime: 2023-11-13 14:17:04
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -21,6 +21,7 @@ model = dict(
                 learnable_rbf=True,
                 densenet=False,
                 residual=False,
+                use_message = True,
                 atom_embedding_dim=1024,
                 bond_embedding_dim=1024,
                 angle_embedding_dim=1024,
@@ -31,7 +32,7 @@ model = dict(
                 bondconv_dropout=0,
                 angleconv_hidden_dim=[1024],
                 angleconv_dropout=0,
-                mlp_dims=[1024, 512],
+                mlp_dims=[1024,512],
                 mlp_out_dim=1))
 
 train_dataset = dict(
@@ -63,11 +64,11 @@ test_dataset = dict(
                 mode='test',
                 show_bar=False))
 
-work_config = dict(work_dir='/home/yufeng/workdir/MolDS/MolP001')
+work_config = dict(work_dir='/home/yufeng/workdir/MolDS/MolP004')
 
 checkpoint_config = dict(load_from='', resume_from='', save_inter=50)
 
-loss_fn = dict(backbone='MSELoss')
+loss_fn = dict(backbone='L1Loss')
 evaluation = dict(metrics=['R2Value'],
                   sota_target=dict(mode='max', target='R2Value'))
 

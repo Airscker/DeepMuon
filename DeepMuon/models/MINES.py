@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 14:36:30
 LastEditors: airscker
-LastEditTime: 2023-11-07 17:25:01
+LastEditTime: 2023-12-14 01:38:46
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -223,7 +223,7 @@ class SolvGNNV3(nn.Module):
                     node_feature=feature
             graph.ndata['h']=node_feature
             node_mean=dgl.mean_nodes(graph,'h')
-            print(node_mean.shape,add_features.shape)
+            # print(node_mean.shape,add_features.shape)
             if self.add_dim>0:
                 node_mean=torch.cat([node_mean,add_features],axis=1)
             output=self.regression(node_mean).squeeze(-1)
@@ -262,12 +262,12 @@ class SolvGNNV5(nn.Module):
                  in_dim=74,
                  hidden_dim=2048,
                  add_dim=0,
-                 mlp_dims=[2048],
+                 mlp_dims=[1024, 512],
                  dropout_rate=0,
                  norm=False,
                  gcr_layers=25,
                  n_classes=1,
-                 res_connection:Union[int,bool]=0,
+                 res_connection: Union[int, bool] = 0,
                  allow_zero_in_degree=True,
                  freeze_GNN=False) -> None:
         super().__init__()
@@ -481,3 +481,241 @@ class SolvGNNV7(nn.Module):
             torch.cat([features, add_features], axis=1)
         )
         return output.squeeze(-1)
+
+class AdjGNN(nn.Module):
+
+    def __init__(self,
+                 in_dim=74,
+                 edge_dim=12,
+                 hidden_dim=256,
+                 add_dim=0,
+                 mlp_dims=[1024, 512],
+                 dropout=0,
+                 gcr_layers=5,
+                 n_classes=1,
+                 res_connection: Union[int, bool] = 0,
+                 allow_zero_in_degree=True,
+                 freeze_GNN=False,
+                 bias=True,
+                 degree_norm=True,
+                 weighted_sum=True,
+                 transform=True,
+                 attention=False,
+                 no_adj=False,
+                 cross_adj=False,
+                 include_edge=False) -> None:
+        super().__init__()
+        self.node_embedding=nn.Linear(in_dim,hidden_dim)
+        self.bond_embedding=nn.Linear(edge_dim,hidden_dim)
+        self.node_gcr=nn.ModuleList([
+            node_adjV2(hidden_dim,bias,nn.ReLU(),degree_norm,weighted_sum,transform,attention,no_adj,cross_adj,include_edge) for _ in range(gcr_layers)
+        ])
+        self.res_connection=int(res_connection)
+        self.add_dim=add_dim
+        self.freeze_GNN=freeze_GNN
+        self.include_edge=include_edge
+        self.regression=MLPBlock(hidden_dim+add_dim,n_classes,mlp_dims,mode='NAD',activation=nn.LeakyReLU,dropout_rate=dropout)
+    def forward(self, solvdata=None, empty_solvsys=None, device=None):
+        graph: dgl.DGLGraph = solvdata['graph'].to(device)
+        if self.add_dim > 0:
+            add_features = solvdata['add_features'].float().to(device)
+            add_features = add_features.squeeze()
+        with graph.local_scope():
+            graph_ndata = graph.ndata['h'].float().to(device)
+            node_feature = self.node_embedding(graph_ndata)
+            if self.include_edge:
+                graph_edata = graph.edata['e'].float().to(device)
+                bond_feature=self.bond_embedding(graph_edata)
+            else:
+                bond_feature=None
+            for i in range(len(self.node_gcr)):
+                feature = self.node_gcr[i](graph, node_feature, bond_feature)
+                if self.res_connection > 0 and i > 0 and (
+                        i + 1) % self.res_connection == 0:
+                    node_feature = node_feature + feature
+                else:
+                    node_feature = feature
+            graph.ndata['h'] = node_feature
+            node_mean = dgl.mean_nodes(graph, 'h')
+            # print(node_mean.shape,add_features.shape)
+            if self.add_dim > 0:
+                node_mean = torch.cat([node_mean, add_features], axis=1)
+            output = self.regression(node_mean).squeeze(-1)
+            return output
+
+# class node_adj(nn.Module):
+#     def __init__(self,
+#                  node_dim:int,
+#                  bias=False,
+#                  activation=None,
+#                  degree_norm=True,
+#                  weighted_sum=False,
+#                  transform=True,
+#                  attention=False,
+#                  no_adj=False,
+#                  cross_adj=False,
+#                  include_edge=False) -> None:
+#         super().__init__()
+#         if attention:
+#             self.attention_embedding=node_attention(node_dim)
+#         else:
+#             self.attention_embedding=None
+#         self.embedding=nn.Linear(node_dim,node_dim)
+#         if include_edge:
+#             self.embedding_edge=nn.Linear(node_dim,node_dim)
+#         else:
+#             self.register_parameter('embedding_edge',None)
+#         if bias:
+#             self.bias=nn.Parameter(torch.Tensor(node_dim))
+#         else:
+#             self.register_parameter('bias',None)
+#         self.degree_norm=degree_norm
+#         if activation is not None:
+#             self.activation=activation
+#         if weighted_sum:
+#             self.sum_weight=nn.Parameter(torch.Tensor([0.5,0.5]))
+#         else:
+#             self.register_buffer('sum_weight',torch.Tensor([1,1]))
+#         if transform:
+#             self.transform=nn.Linear(node_dim,node_dim)
+#         else:
+#             self.register_parameter('transform',None)
+#         self.reset_parameters()
+#         self.no_adj=no_adj
+#         self.cross_adj=cross_adj
+#     def reset_parameters(self):
+#         nn.init.xavier_uniform_(self.embedding.weight.data)
+#         if self.bias is not None:
+#             self.bias.data.fill_(0)
+#     def forward(self,graph:dgl.DGLGraph,node_feature:torch.Tensor,bond_feature:torch.Tensor=None):
+#         adj_matrix=graph.adjacency_matrix().to_dense()
+#         msg=self.embedding(node_feature)
+#         if not self.no_adj:
+#             msg = torch.matmul(adj_matrix, msg)
+#             if self.degree_norm:
+#                 msg = msg / torch.sum(adj_matrix, axis=1, keepdim=True)
+#         if self.attention_embedding is not None:
+#             att_msg,att=self.attention_embedding(node_feature)
+#             if self.cross_adj:
+#                 att=att*adj_matrix
+#                 att_msg=torch.matmul(att,node_feature)
+#             msg=msg+att_msg
+#         if self.bias is not None:
+#             msg += self.bias
+#         if hasattr(self,'activation'):
+#             msg = self.activation(msg)
+#         msg=self.sum_weight[0]*msg+self.sum_weight[1]*node_feature
+#         if self.transform is not None:
+#             msg = self.transform(msg)
+#         return msg
+
+class node_adjV2(nn.Module):
+
+    def __init__(self,
+                 node_dim: int,
+                 bias=False,
+                 activation=None,
+                 degree_norm=True,
+                 weighted_sum=False,
+                 transform=True,
+                 attention=False,
+                 no_adj=False,
+                 cross_adj=False,
+                 include_edge=False) -> None:
+        super().__init__()
+        if attention:
+            self.attention_embedding = node_attention(node_dim)
+        else:
+            self.attention_embedding = None
+        self.embedding = nn.Linear(node_dim, node_dim)
+        self.include_edge = include_edge
+        if include_edge:
+            self.embedding_edge = nn.Linear(node_dim, node_dim)
+        else:
+            self.register_parameter('embedding_edge', None)
+        if bias:
+            self.bias = nn.Parameter(torch.Tensor(node_dim))
+        else:
+            self.register_parameter('bias', None)
+        self.degree_norm = degree_norm
+        if activation is not None:
+            self.activation = activation
+        if weighted_sum:
+            self.sum_weight = nn.Parameter(torch.Tensor([0.5, 0.5]))
+        else:
+            self.register_buffer('sum_weight', torch.Tensor([1, 1]))
+        if transform:
+            self.transform = nn.Linear(node_dim, node_dim)
+        else:
+            self.register_parameter('transform', None)
+        self.reset_parameters()
+        self.no_adj = no_adj
+        self.cross_adj = cross_adj
+
+    def reset_parameters(self):
+        nn.init.xavier_uniform_(self.embedding.weight.data)
+        if self.bias is not None:
+            self.bias.data.fill_(0)
+    def _message_func(self,edges):
+        src_node_feat=edges.src['_hf']
+        # dst_node_feat=edges.dst['_h']
+        if self.include_edge:
+            edge_feat=edges.data['_ef']
+            return {'msg':src_node_feat+edge_feat}
+        else:
+            return {'msg':src_node_feat}
+    def _reduce_func(self,nodes):
+        return {'_h':torch.sum(nodes.mailbox['msg'],dim=1)}
+
+    def forward(self,
+                graph: dgl.DGLGraph,
+                node_feature: torch.Tensor,
+                bond_feature: torch.Tensor = None):
+        with graph.local_scope():
+            adj_matrix = graph.adjacency_matrix().to_dense()
+            graph.ndata['_hf'] = self.embedding(node_feature)
+            if self.embedding_edge is not None:
+                graph.edata['_ef']=self.embedding_edge(bond_feature)
+            graph.update_all(self._message_func,self._reduce_func)
+            msg=graph.ndata['_h']
+            if self.degree_norm:
+                msg = msg / torch.sum(adj_matrix, axis=1, keepdim=True)
+            if self.bias is not None:
+                msg += self.bias
+            if hasattr(self, 'activation'):
+                msg = self.activation(msg)
+            msg = self.sum_weight[0] * msg + self.sum_weight[1] * node_feature
+            if self.transform is not None:
+                msg = self.transform(msg)
+            return msg
+        # if not self.no_adj:
+        #     msg = torch.matmul(adj_matrix, msg)
+        #     if self.degree_norm:
+        #         msg = msg / torch.sum(adj_matrix, axis=1, keepdim=True)
+        # if self.attention_embedding is not None:
+        #     att_msg, att = self.attention_embedding(node_feature)
+        #     if self.cross_adj:
+        #         att = att * adj_matrix
+        #         att_msg = torch.matmul(att, node_feature)
+        #     msg = msg + att_msg
+        # if self.bias is not None:
+        #     msg += self.bias
+        # if hasattr(self, 'activation'):
+        #     msg = self.activation(msg)
+        # msg = self.sum_weight[0] * msg + self.sum_weight[1] * node_feature
+        # if self.transform is not None:
+        #     msg = self.transform(msg)
+        # return msg
+
+
+class node_attention(nn.Module):
+    def __init__(self,hidden_dim) -> None:
+        super().__init__()
+        self.q_linear=nn.Linear(hidden_dim,hidden_dim)
+        self.k_linear=nn.Linear(hidden_dim,hidden_dim)
+    def forward(self,node_feature:torch.Tensor):
+        q=self.q_linear(node_feature)
+        k=self.k_linear(node_feature)
+        attention=torch.softmax(torch.matmul(q,k.T),dim=1)
+        output=torch.matmul(attention,node_feature)
+        return output,attention

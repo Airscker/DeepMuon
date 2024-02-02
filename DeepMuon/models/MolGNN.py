@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-10-26 23:09:22
 LastEditors: airscker
-LastEditTime: 2023-11-10 00:41:49
+LastEditTime: 2023-12-13 17:31:14
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -16,7 +16,7 @@ from torch import nn
 from dgl.nn.pytorch import GraphConv,GINConv,GINEConv
 from typing import Union
 from dgl.utils import expand_as_pair
-from DeepMuon.models import MLPBlock,Fourier,RadialBessel
+from DeepMuon.models import MLPBlock,FourierExpansion,RadialBesselFunction
 from DeepMuon.dataset import smiles_to_atom_bond_graph
 
 class AtomicNumEmbedding(nn.Module):
@@ -80,6 +80,7 @@ class AtomConv(nn.Module):
             - edge_weight: torch.Tensor, shape=(E_a, node_dim)
         ## Returns:
             - node_feat: torch.Tensor, shape=(N_a, node_dim)
+            - message: torch.Tensor, shape=(N_a, node_dim)
         '''
         with graph.local_scope():
             feat_src,feat_dst=expand_as_pair(node_feat,graph)
@@ -90,7 +91,7 @@ class AtomConv(nn.Module):
             node_feat=self.linear(graph.ndata['h'])
             if self.encode_self:
                 node_feat=feat_dst+node_feat
-            return node_feat
+            return node_feat,self.message
 
 class BondConv(nn.Module):
     def __init__(self,
@@ -99,15 +100,21 @@ class BondConv(nn.Module):
                  atom_embedding_dim:int,
                  hidden_dim:list,
                  dropout:float,
-                 encode_self:bool=True) -> None:
+                 encode_self:bool=True,
+                 use_message:bool=False) -> None:
         super().__init__()
-        self.gated_MLP=GatedMLP(in_dim=2*node_dim+edge_dim+atom_embedding_dim,
-                                out_dim=edge_dim,
+        if use_message:
+            mlp_in_dim=2*node_dim+edge_dim+2*atom_embedding_dim
+        else:
+            mlp_in_dim=2*node_dim+edge_dim+atom_embedding_dim
+        self.gated_MLP=GatedMLP(in_dim=mlp_in_dim,
+                                out_dim=node_dim,
                                 hidden_dim=hidden_dim,
                                 dropout=dropout)
         self.linear=nn.Linear(node_dim,node_dim)
         self.atom_feat=None
         self.encode_self=encode_self
+        self.use_message=use_message
     def _message_func(self,edges):
         src_node_feat=edges.src['_node_feat']
         dst_node_feat=edges.dst['_node_feat']
@@ -115,9 +122,17 @@ class BondConv(nn.Module):
         edge_index=edges.data['_edge_index']
         src_node_weight=edges.src['_node_weight']
         dst_node_weight=edges.dst['_node_weight']
-        angle_vertex=edge_index[:,1]
-        vertex_feat=self.atom_feat[angle_vertex]
-        res=torch.cat([src_node_feat,dst_node_feat,edge_feat,vertex_feat],dim=1)
+        if self.use_message:
+            src_bond_message=edges.src['_bond_message']
+            dst_bond_message=edges.dst['_bond_message']
+            res = torch.cat([
+                src_node_feat, dst_node_feat, src_bond_message,
+                dst_bond_message, edge_feat
+            ],dim=1)
+        else:
+            angle_vertex=edge_index[:,1]
+            vertex_feat=self.atom_feat[angle_vertex]
+            res=torch.cat([src_node_feat,dst_node_feat,edge_feat,vertex_feat],dim=1)
         res=self.gated_MLP(res)
         res=res*src_node_weight*dst_node_weight
         return {'m':res}
@@ -129,7 +144,8 @@ class BondConv(nn.Module):
                 edge_feat:torch.Tensor,
                 node_weight:torch.Tensor=None,
                 edge_index:torch.Tensor=None,
-                atom_feat:torch.Tensor=None):
+                atom_feat:torch.Tensor=None,
+                bond_message:torch.Tensor=None):
         '''
         ## Args:
             - graph: dgl.DGLGraph, the bond graph
@@ -138,6 +154,7 @@ class BondConv(nn.Module):
             - node_weight: torch.Tensor, shape=(N_b, edge_dim)
             - edge_index: torch.Tensor, shape=(E_b, 3)
             - atom_feat: torch.Tensor, shape=(N_a, atom_embedding_dim)
+            - bond_message: torch.Tensor, shape=(N_b, node_dim)
         ## Returns:
             - node_feat: torch.Tensor, shape=(N_b, node_dim)
         '''
@@ -148,6 +165,7 @@ class BondConv(nn.Module):
             graph.edata['_edge_index']=edge_index
             graph.ndata['_node_feat']=feat_src
             graph.ndata['_node_weight']=node_weight
+            graph.ndata['_bond_message']=bond_message
             graph.update_all(self._message_func,self._reduce_func)
             node_feat=self.linear(graph.ndata['h'])
             if self.encode_self:
@@ -161,31 +179,56 @@ class AngleUpdate(nn.Module):
                  atom_embedding_dim:int,
                  hidden_dim:list,
                  dropout:float,
-                 encode_self:bool=True) -> None:
+                 encode_self:bool=True,
+                 use_message:bool=False) -> None:
         super().__init__()
-        self.gated_MLP=GatedMLP(in_dim=2*bond_dim+angle_dim+atom_embedding_dim,
+        if use_message:
+            mlp_in_dim=2*bond_dim+angle_dim+2*atom_embedding_dim
+        else:
+            mlp_in_dim=2*bond_dim+angle_dim+atom_embedding_dim
+        self.gated_MLP=GatedMLP(in_dim=mlp_in_dim,
                                 out_dim=angle_dim,
                                 hidden_dim=hidden_dim,
                                 dropout=dropout)
         self.encode_self=encode_self
+        self.use_message=use_message
     def forward(self,
                 atom_feat:torch.Tensor,
                 bond_feat:torch.Tensor,
                 angle_feat:torch.Tensor,
                 angle_index:torch.Tensor,
+                bond_message:torch.Tensor,
                 bond_graph:dgl.DGLGraph,):
+        '''
+        ## Args:
+            - atom_feat: torch.Tensor, shape=(N_a, atom_embedding_dim)
+            - bond_feat: torch.Tensor, shape=(E_b, bond_dim)
+            - angle_feat: torch.Tensor, shape=(E_b, angle_dim)
+            - angle_index: torch.Tensor, shape=(E_b, 3)
+            - bond_message: torch.Tensor, shape=(N_b, node_dim)
+            - bond_graph: dgl.DGLGraph, the bond graph
+        '''
         graph_edges=bond_graph.edges()
         src_bond_feat=bond_feat[graph_edges[0]]
         dst_bond_feat=bond_feat[graph_edges[1]]
-        angle_vertex=angle_index[:,1]
-        vertex_feat=atom_feat[angle_vertex]
-        res=torch.cat([src_bond_feat,dst_bond_feat,angle_feat,vertex_feat],dim=1)
+        if self.use_message:
+            src_bond_message=bond_message[graph_edges[0]]
+            dst_bond_message=bond_message[graph_edges[1]]
+            res = torch.cat([
+                src_bond_feat, dst_bond_feat,
+                src_bond_message, dst_bond_message, angle_feat
+            ],dim=1)
+        else:
+            angle_vertex=angle_index[:,1]
+            vertex_feat=atom_feat[angle_vertex]
+            res=torch.cat([src_bond_feat,dst_bond_feat,angle_feat,vertex_feat],dim=1)
         res=self.gated_MLP(res)
         if self.encode_self:
             res=angle_feat+res
         return res
 class MolInteraction(nn.Module):
     def __init__(self,
+                 use_message:bool=False,
                  atom_embedding_dim:int=128,
                  bond_embedding_dim:int=128,
                  angle_embedding_dim:int=128,
@@ -200,6 +243,7 @@ class MolInteraction(nn.Module):
         ## Molucule Interaction Bolck
 
         ### Args:
+            - use_message: bool, default=False, whether to use pre-aggragated messages instead of atom features in bond/angle convolution.
             - atom_embedding_dim: int, default=128, the dimension of embedded atomic number.
             - bond_embedding_dim: int, default=128, the dimension of embedded bond length.
             - angle_embedding_dim: int, default=128, the dimension of embedded angle degree.
@@ -215,23 +259,26 @@ class MolInteraction(nn.Module):
             - bond_length_embedding: torch.Tensor, shape=(E_a, bond_embedding_dim)=(N_b, bond_embedding_dim)
             - angle_deg_embedding: torch.Tensor, shape=(E_b, angle_embedding_dim)
         '''
+        self.use_message=use_message
         self.atom_conv=AtomConv(node_dim=atom_embedding_dim,
                                 edge_dim=bond_embedding_dim,
                                 hidden_dim=atomconv_hidden_dim,
                                 dropout=atomconv_dropout,
                                 encode_self=True)
-        self.bond_conv=BondConv(node_dim=atom_embedding_dim,
-                                edge_dim=bond_embedding_dim,
+        self.bond_conv=BondConv(node_dim=bond_embedding_dim,
+                                edge_dim=angle_embedding_dim,
                                 atom_embedding_dim=atom_embedding_dim,
                                 hidden_dim=bondconv_hidden_dim,
                                 dropout=bondconv_dropout,
-                                encode_self=True)
+                                encode_self=True,
+                                use_message=use_message)
         self.angle_update=AngleUpdate(bond_dim=bond_embedding_dim,
                                       angle_dim=angle_embedding_dim,
                                       atom_embedding_dim=atom_embedding_dim,
                                       hidden_dim=angleconv_hidden_dim,
                                       dropout=angleconv_dropout,
-                                      encode_self=True)
+                                      encode_self=True,
+                                      use_message=use_message)
     def forward(self,
                 atom_graph:dgl.DGLGraph,
                 bond_graph:dgl.DGLGraph,
@@ -242,23 +289,26 @@ class MolInteraction(nn.Module):
                 atomconv_edge_weight:torch.Tensor,
                 bondconv_edge_weight:torch.Tensor):
         # graph=atom_graph.to(device)
-        atomic_num_embedding=self.atom_conv(atom_graph,
-                                            atomic_num_embedding,
-                                            bond_length_embedding,
-                                            atomconv_edge_weight)
+        atomic_num_embedding,bond_message=self.atom_conv(graph=atom_graph,
+                                                         node_feat=atomic_num_embedding,
+                                                         edge_feat=bond_length_embedding,
+                                                         edge_weight=atomconv_edge_weight)
 
         # graph=bond_graph.to(device)
-        bond_length_embedding=self.bond_conv(bond_graph,
-                                             bond_length_embedding,
-                                             angle_deg_embedding,
-                                             bondconv_edge_weight,
-                                             angle_index,
-                                             atomic_num_embedding)
-        angle_deg_embedding=self.angle_update(atomic_num_embedding,
-                                              bond_length_embedding,
-                                              angle_deg_embedding,
-                                              angle_index,
-                                              bond_graph)
+        bond_length_embedding=self.bond_conv(graph=bond_graph,
+                                             node_feat=bond_length_embedding,
+                                             edge_feat=angle_deg_embedding,
+                                             node_weight=bondconv_edge_weight,
+                                             edge_index=angle_index,
+                                             atom_feat=atomic_num_embedding,
+                                             bond_message=bond_message)
+
+        angle_deg_embedding=self.angle_update(atom_feat=atomic_num_embedding,
+                                                bond_feat=bond_length_embedding,
+                                                angle_feat=angle_deg_embedding,
+                                                angle_index=angle_index,
+                                                bond_message=bond_message,
+                                                bond_graph=bond_graph)
         return atomic_num_embedding,bond_length_embedding,angle_deg_embedding
 class AngleEncoder(nn.Module):
     def __init__(self,
@@ -277,7 +327,7 @@ class AngleEncoder(nn.Module):
         if num_angular%2==0:
             raise ValueError('num_angular must be odd integers')
         circular_harmonics_order = (num_angular - 1) // 2
-        self.fourier_expansion=Fourier(
+        self.fourier_expansion=FourierExpansion(
             order=circular_harmonics_order,
             learnable=learnable,
         )
@@ -306,7 +356,7 @@ class BondLengthEncoder(nn.Module):
         ### Returns:
             - bond_length_embedding: torch.Tensor, shape=(E_a, num_radial)=(N_b, num_radial)
         '''
-        self.rbf_expansion = RadialBessel(
+        self.rbf_expansion = RadialBesselFunction(
             num_radial=num_radial,
             cutoff=cutoff,
             smooth_cutoff=smooth_cutoff,
@@ -330,6 +380,7 @@ class MolSpaceGNN(nn.Module):
                  learnable_rbf:bool=True,
                  densenet:bool=False,
                  residual:bool=False,
+                 use_message:bool=False,
                  atom_embedding_dim:int=128,
                  bond_embedding_dim:int=128,
                  angle_embedding_dim:int=128,
@@ -354,6 +405,7 @@ class MolSpaceGNN(nn.Module):
             - learnable_rbf: bool, default=True, whether to set the frequencies of fourier/rbf expansion as learnable parameters.
             - densenet: bool, default=False, whether to densely sum the output of each interaction block.
             - residual: bool, default=False, whether to use residual connection in each interaction block.
+            - use_message: bool, default=False, whether to use pre-aggragated messages instead of atom features in bond/angle convolution.
             - atom_embedding_dim: int, default=128, the dimension of embedded atomic number.
             - bond_embedding_dim: int, default=128, the dimension of embedded bond length.
             - angle_embedding_dim: int, default=128, the dimension of embedded angle degree.
@@ -370,6 +422,7 @@ class MolSpaceGNN(nn.Module):
             raise ValueError('densenet and residual cannot be True at the same time')
         self.densenet=densenet
         self.residual=residual
+        self.use_message=use_message
         self.bond_length_rbf_encoder=BondLengthEncoder(cutoff=cutoff,
                                                        num_radial=num_radial,
                                                        smooth_cutoff=smooth_cutoff,
@@ -390,7 +443,8 @@ class MolSpaceGNN(nn.Module):
             nn.Sigmoid(),
         )
         self.interaction_blocks=nn.ModuleList([
-            MolInteraction(atom_embedding_dim=atom_embedding_dim,
+            MolInteraction(use_message=use_message,
+                           atom_embedding_dim=atom_embedding_dim,
                            bond_embedding_dim=bond_embedding_dim,
                            angle_embedding_dim=angle_embedding_dim,
                            atomconv_hidden_dim=atomconv_hidden_dim,
@@ -470,13 +524,15 @@ class MolSpaceGNN(nn.Module):
                 bond_dense=bond_dense+bond_length_embedding
                 angle_dense=angle_dense+angle_deg_embedding
         if self.densenet:
+            '''Only if we use densenet, we can sum the output of each interaction block directly.'''
             return atom_dense,bond_dense,angle_dense
         else:
+            '''Otherwise(residual=True/False), we should return the output of the last interaction block.'''
             return atomic_num_embedding,bond_length_embedding,angle_deg_embedding
     def _group_conv_forward(self,atom_graph:list[dgl.DGLGraph],bond_graph:list[dgl.DGLGraph],device:Union[str,torch.device]='cpu'):
         '''
         ===========================================================================================================
-        ATTENTION: Angle Vertxe Index CANNOT properly match the corresponding graph because of the batch operation.
+        ATTENTION: Angle Vertex Index CANNOT properly match the corresponding graph because of the batch operation.
         ===========================================================================================================
 
         Because we need to map the angle vertex to the corresponding atom graph to get the atom features by doing `atom_feat[angle_vertex[:,1]]`,
@@ -496,11 +552,23 @@ class MolSpaceGNN(nn.Module):
             bond_embedding_list.append(bond_embedding)
             angle_embedding_list.append(angle_embedding)
         return torch.cat(atomic_embedding_list,dim=0),torch.cat(bond_embedding_list,dim=0),torch.cat(angle_embedding_list,dim=0)
-    def forward(self,
-                atom_graph:list[dgl.DGLGraph],
-                bond_graph:list[dgl.DGLGraph],
+    def _forward(self,
+                atom_graph:Union[list,dgl.DGLGraph],
+                bond_graph:Union[list,dgl.DGLGraph],
                 device:Union[str,torch.device]='cpu'):
-        return self._group_conv_forward(atom_graph,bond_graph,device)
+        if self.use_message:
+            if isinstance(atom_graph,list):
+                atom_graph=dgl.batch(atom_graph)
+            if isinstance(bond_graph,list):
+                bond_graph=dgl.batch(bond_graph)
+            return self._conv_forward(atom_graph,bond_graph,device)
+        else:
+            return self._group_conv_forward(atom_graph,bond_graph,device)
+    def forward(self,
+                atom_graph:Union[list,dgl.DGLGraph],
+                bond_graph:Union[list,dgl.DGLGraph],
+                device:Union[str,torch.device]='cpu'):
+        return self._forward(atom_graph,bond_graph,device)
         # with atom_graph.local_scope():
         #     atom_graph.ndata['atomic_num']=atomic_num_embedding
         #     feat=dgl.mean_nodes(atom_graph,'atomic_num')
@@ -572,7 +640,6 @@ class MulMolSpace(nn.Module):
             torch.cat([cation_feat, anion_feat, add_features], axis=1))
         return output.squeeze(-1)
 
-
 class MolProperty(MolSpaceGNN):
     def __init__(self,
                  depth: int = 3,
@@ -584,6 +651,7 @@ class MolProperty(MolSpaceGNN):
                  learnable_rbf: bool = True,
                  densenet: bool = False,
                  residual: bool = False,
+                 use_message: bool = True,
                  atom_embedding_dim: int = 128,
                  bond_embedding_dim: int = 128,
                  angle_embedding_dim: int = 128,
@@ -605,6 +673,7 @@ class MolProperty(MolSpaceGNN):
                          learnable_rbf,
                          densenet,
                          residual,
+                         use_message,
                          atom_embedding_dim,
                          bond_embedding_dim,
                          angle_embedding_dim,
@@ -619,7 +688,7 @@ class MolProperty(MolSpaceGNN):
                           hidden_sizes=mlp_dims,
                           dim_output=mlp_out_dim,)
     def forward(self,atom_graph:list[dgl.DGLGraph],bond_graph:list[torch.Tensor],device:Union[str,torch.device]='cpu'):
-        atomic_num_embedding, bond_length_embedding, angle_deg_embedding=self._group_conv_forward(atom_graph,bond_graph,device)
+        atomic_num_embedding, bond_length_embedding, angle_deg_embedding=self._forward(atom_graph,bond_graph,device)
         batched_atom_graphs=dgl.batch(atom_graph)
         batched_atom_graphs=batched_atom_graphs.to(device)
         with batched_atom_graphs.local_scope():
@@ -695,7 +764,8 @@ class TestGNN(nn.Module):
 # atomg=[a1,a2]
 # bondg=[b1,b2]
 # # print(atom_graph.ndata['atomic_num'],atom_graph.edges())
-# model=MolProperty(atom_dim=74,depth=1)
+# model=MolProperty(atom_dim=74,depth=1,use_message=True,atom_embedding_dim=60,bond_embedding_dim=91,angle_embedding_dim=100)
+# print(model)
 # res=model(atomg,bondg)
 # # # print(model)
 # print(res.shape)

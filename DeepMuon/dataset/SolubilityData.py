@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-18 13:58:39
 LastEditors: airscker
-LastEditTime: 2023-11-05 15:41:56
+LastEditTime: 2023-12-13 21:46:41
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -125,7 +125,7 @@ class SmilesGraphData(Dataset):
                 self.graph_data[cid] = []
                 self.graph_data[cid].append(mol_to_bigraph(mol,add_self_loop=add_self_loop,
                                                                     node_featurizer=CanonicalAtomFeaturizer(),
-                                                                    edge_featurizer=edge_featurizer,
+                                                                    edge_featurizer=CanonicalBondFeaturizer() if self.featurize_edge else None,
                                                                     canonical_atom_order=False,
                                                                     explicit_hydrogens=False,
                                                                     num_virtual_nodes=0
@@ -162,8 +162,10 @@ class MultiSmilesGraphData(Dataset):
     def __init__(self,
                 pretrained_path='',
                 pretrain_embedding=False,
+                one_chart=False,
                 pred_ce=True,
                 smiles_info='',
+                add_feat=True,
                 smiles_info_col=['Abbreviation','Smiles'],
                 sample_info='',
                 start:int=None,
@@ -177,6 +179,7 @@ class MultiSmilesGraphData(Dataset):
                 shuffle=True) -> None:
         super().__init__()
         self.binary=binary
+        self.add_feat=add_feat
         self.combine_graph=combine_graph
         self.target=target
         if add_self_loop and featurize_edge:
@@ -193,12 +196,40 @@ class MultiSmilesGraphData(Dataset):
         else:
             self.pretrained_node_featurizer=None
         if pred_ce:
-            self.load_smiles_dict(smiles_info,smiles_info_col)
-            self.load_sample_dict(sample_info,start,end)
+            if one_chart:
+                self.load_smiles_sample(smiles_info,start,end)
+            else:
+                self.load_smiles_dict(smiles_info,smiles_info_col)
+                self.load_sample_dict(sample_info,start,end)
         else:
             self.load_smiles_dict_old(smiles_info,smiles_info_col)
             self.load_sample_dict_old(sample_info,start,end)
-        
+    def load_smiles_sample(self,chartpath,start,end):
+        chart = pd.read_csv(chartpath).fillna(0)
+        if self.mode=='train':
+            chart=chart[:int(len(chart)*0.8)]
+        else:
+            chart=chart[int(len(chart)*0.8):]
+        smiles=chart.to_numpy()[:,1:7].tolist()
+        labels=chart['LCE'].to_numpy()
+        self.dataset=[]
+        for i in range(len(smiles)):
+            graphs=[]
+            for j in range(len(smiles[i])):
+                if smiles[i][j]==0:
+                    continue
+                graph=self.generate_graph(smiles[i][j])
+                if graph is None:
+                    graphs=[]
+                    break
+                else:
+                    graphs.append(graph['graph'])
+            if len(graphs)!=0:
+                if not self.combine_graph:
+                    combined_graph=dgl.batch(graphs)
+                else:
+                    combined_graph=CombineGraph(graphs,add_global=True,bi_direction=True,add_self_loop=self.add_self_loop)
+                self.dataset.append([combined_graph,labels[i]])
     def load_smiles_dict_old(self,smiles_info,smiles_info_col):
         self.smiles=pd.read_csv(smiles_info,index_col=smiles_info_col[0]).to_dict()[smiles_info_col[1]]
     def load_smiles_dict(self,smiles_info,smiles_info_col):
@@ -282,7 +313,7 @@ class MultiSmilesGraphData(Dataset):
                     combined_graph=CombineGraph(graphs,add_global=True,bi_direction=True,add_self_loop=self.add_self_loop)
                 self.dataset.append([combined_graph,np.concatenate([solv_mol[i],salt_mol[i]]).tolist(),ColumbicEfficiency[i]])
                 # self.dataset.append([combined_graph,env_info[i],ColumbicEfficiency[i]])
-                
+
         if self.shuffle:
             random.shuffle(self.dataset)
     def featurize_bonds(self,mol):
@@ -302,7 +333,7 @@ class MultiSmilesGraphData(Dataset):
     #         node_emb=self.pretrained_node_featurizer(graph_data)
     #     con_emb=can_feat(mol)['h']
     #     return {'h':torch.cat([node_emb,con_emb],dim=-1)}
-        
+
     def generate_graph(self,smiles):
         if self.featurize_edge:
             edge_featurizer=CanonicalBondFeaturizer()
@@ -332,11 +363,14 @@ class MultiSmilesGraphData(Dataset):
         # if self.binary:
         #     return self.dataset[index][0],self.dataset[index][1],self.dataset[index][2:-1],self.dataset[index][-1]
         # else:
-            sample={}
-            sample['graph']=self.dataset[index][0]
+        sample={}
+        sample['graph']=self.dataset[index][0]
+        if self.add_feat:
             sample['add_features']=self.dataset[index][1:-1]
-            return sample,self.dataset[index][-1]
-            # return torch.Tensor(self.dataset[index][1]),torch.Tensor([self.dataset[index][2]])
+        else:
+            sample['add_features']=[]
+        return sample,self.dataset[index][-1]
+        # return torch.Tensor(self.dataset[index][1]),torch.Tensor([self.dataset[index][2]])
 
 
 def collate_solubility(batch):
@@ -349,7 +383,7 @@ def collate_solubility(batch):
     samples = list(map(list,zip(*samples)))
     batched_sample = {}
     batched_sample['graph'] = dgl.batch(samples[0])
-    for i,key in enumerate(keys):        
+    for i,key in enumerate(keys):
         batched_sample[key] = torch.tensor(samples[i+1])
     return batched_sample,torch.Tensor(labels)
 
@@ -371,6 +405,6 @@ def collate_ce(batch):
     samples = list(map(list,zip(*samples)))
     batched_sample = {}
     batched_sample['graphs'] = samples[0]
-    for i,key in enumerate(keys):        
+    for i,key in enumerate(keys):
         batched_sample[key] = torch.tensor(samples[i+1])
     return batched_sample,torch.Tensor(labels)
