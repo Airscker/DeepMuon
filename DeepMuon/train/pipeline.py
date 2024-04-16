@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-05-23 14:35:50
 LastEditors: airscker
-LastEditTime: 2023-11-03 20:50:25
+LastEditTime: 2024-02-07 00:39:29
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -12,6 +12,7 @@ from torch import nn
 
 from abc import abstractmethod,ABCMeta
 import dgl
+from torch.nn.modules import Module
 class Pipeline(metaclass=ABCMeta):
     '''
     ## Initialize the model prediction pipeline
@@ -77,7 +78,7 @@ class regression(Pipeline):
         label=label.type(precision).to(device)
         pred=self.model(input)
         return pred,label
-    
+
 class cnnlstm_cla(Pipeline):
     '''
     Model prediction pipeline built for CNNLSTM which was implemented within DeepMuon
@@ -98,7 +99,7 @@ class cnnlstm_cla(Pipeline):
         label = torch.autograd.Variable(label).cuda(device, non_blocking=True)
         pred=self.model(input,h0)
         return pred,label
-    
+
 class solvgnn(Pipeline):
     '''
     Model prediction pipeline built for SolvGNN which was implemented within DeepMuon
@@ -137,11 +138,29 @@ class molpretrain(Pipeline):
         pred=self.model(input,device)
         label=label.squeeze().to(device)
         return pred,label
-    
+
 class molspacepipe(Pipeline):
     def __init__(self, model: nn.Module) -> None:
         super().__init__(model)
     def predict(self, input, label, device, precision):
         pred=self.model(input['atom_graphs'],input['bond_graphs'],device)
         label=label.squeeze().to(device)
+        return pred,label
+
+class xas_structure(Pipeline):
+    def __init__(self, model: nn.Module) -> None:
+        super().__init__(model)
+    def predict(self,input,label,device,precision):
+        pred=self.model(input,device)
+        label = label.to(device)
+        label=label[:,1,:]
+        return pred,label
+
+class xas_atom(Pipeline):
+    def __init__(self, model: nn.Module) -> None:
+        super().__init__(model)
+    def predict(self,input,label,device,precision):
+        input=input[:,0,:].to(device)
+        pred=self.model(input)
+        label = label.to(device)
         return pred,label

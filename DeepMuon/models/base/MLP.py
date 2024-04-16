@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-13 19:24:38
 LastEditors: airscker
-LastEditTime: 2023-10-08 15:12:48
+LastEditTime: 2024-02-05 13:22:24
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -14,7 +14,7 @@ from typing import Union
 from .ADNBlock import ADN
 
 class MLPBlock(nn.Module):
-    '''
+    __doc__='''
     ## Multilayer Perceptron Block
 
     ### Args:

@@ -2,7 +2,7 @@
 Author: Airscker
 Date: 2022-07-19 13:01:17
 LastEditors: airscker
-LastEditTime: 2023-10-23 14:35:32
+LastEditTime: 2024-03-23 00:36:00
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
@@ -426,7 +426,7 @@ def main(config_info:Config, test_path:str=None, save_tr:bool=False, search:bool
             #     ddp_fsdp_model_save(epoch=t, model=model, path=best_checkpoint, ddp_training=ddp_training)
             ddp_fsdp_model_save(epoch=t, model=model, path=best_checkpoint, ddp_training=ddp_training,local_rank=local_rank)
             # logger.log(f'Best Model Saved as {best_checkpoint}, Best {sota_target}: {bestres}, Current Epoch: {t+1}', show=True)
-        if (t + 1) % inter == 0:
+        if (t + 1) % inter == 0 or t+1 == epochs:
             savepath = os.path.join(checkpoint_savepath,f'Epoch_{t+1}.pth')
             save_checkpoint = True
             # dist.barrier()

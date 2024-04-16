@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-07-26 18:55:28
 LastEditors: airscker
-LastEditTime: 2023-10-17 12:07:20
+LastEditTime: 2024-03-28 23:08:10
 Description: Visualization tools
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -228,6 +228,15 @@ def plot_curve(data, title='Curve', axis_label=['Epoch', 'Loss'], data_label=['C
     plt.clf()
 
 def R2JointPlot(scores,labels,save_path:str='./',tag:str='TS'):
+    '''
+    ## Plot the joint plot of the R2Value
+
+    ### Args:
+        - scores: The predicted value
+        - labels: The true value
+        - save_path: The path to save the ploted image
+        - tag: The tag of the ploted image 
+    '''
     chart=pd.DataFrame({'Pedicted':scores,'True':labels})
     plt.figure(figsize=(30,30))
     sns.pairplot(chart)
@@ -235,8 +244,19 @@ def R2JointPlot(scores,labels,save_path:str='./',tag:str='TS'):
     sns.set(font_scale=1.5)
     sns.jointplot(x='Pedicted',y='True',data=chart,kind='reg')
     plt.savefig(os.path.join(save_path,f'{tag}_R2Joint.jpg'),dpi=300)
+    return None
 
 def CMPlot(scores,labels,save_path:str='./',tag:str='TS',target_names=None):
+    '''
+    ## Plot the confusion matrix
+
+    ### Args:
+        - scores: The predicted value
+        - labels: The true value
+        - save_path: The path to save the ploted image
+        - tag: The tag of the ploted image 
+        - target_names: The name of the classes
+    '''
     scores=np.array(scores)
     labels=np.array(labels)
     classes,cls_count=np.unique(labels,return_counts=True)

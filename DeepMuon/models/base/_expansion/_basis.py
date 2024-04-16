@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-10-26 23:01:51
 LastEditors: airscker
-LastEditTime: 2023-12-11 15:12:44
+LastEditTime: 2024-04-10 14:08:59
 Description: NULL
 
 Copyright (C) 2023 by matgl(https://github.com/materialsvirtuallab/matgl), All Rights Reserved.
@@ -454,9 +454,17 @@ class SphericalBesselWithHarmonics(nn.Module):
             self.sbf = SphericalBesselFunction(self.max_l, self.max_n,
                                                self.cutoff, self.use_smooth)
 
-    def forward(self, line_graph):
-        sbf = self.sbf(line_graph.edata["triple_bond_lengths"])
-        shf = self.shf(line_graph.edata["cos_theta"], line_graph.edata["phi"])
+    def forward(self, bond_lengths: Tensor, cos_theta: Tensor, phi: Tensor):
+        '''
+        ### Args:
+            - bond_lengths: torch.Tensor, shape=(n_edges, 1), bond lengths
+            - cos_theta: torch.Tensor, shape=(n_edges, 1), cos(theta)
+            - phi: torch.Tensor, shape=(n_edges, 1), phi
+        '''
+        sbf=self.sbf(bond_lengths)
+        shf=self.shf(cos_theta, phi)
+        # sbf = self.sbf(line_graph.edata["triple_bond_lengths"])
+        # shf = self.shf(line_graph.edata["cos_theta"], line_graph.edata["phi"])
         return combine_sbf_shf(sbf,
                                shf,
                                max_n=self.max_n,
