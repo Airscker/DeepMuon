@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 19:32:21
 LastEditors: airscker
-LastEditTime: 2024-04-07 14:35:49
+LastEditTime: 2024-04-19 21:47:56
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -21,7 +21,7 @@ from .cmr import *
 from .Minist import MinistModel
 from .MLPMixer import MLPMixer, XASMLP
 from .MINES import SolvGNN, SolvGNNV2, SolvGNNV3, SolvGNNV4, SolvGNNV5, SolvLinear, SolvGNNV6, SolvGNNV7, AdjGNN
-from .CrystalXAS import GINConv, CrystalXASV1, CrystalXASV2, CrystalXASV3, CrystalXASV4,XASStructure,XAS_Atom
+from .CrystalXAS import GINConv, CrystalXASV1, CrystalXASV2, CrystalXASV3, CrystalXASV4,XASStructure,XAS_Atom,XASStructureV2
 from .MolPT import AtomEmbedding
 from .MolDS import MolSpaceMultiHeadAttention, MolSpaceTransformer, MolSpaceGNNFeaturizer, MolSpace
 from .MolGNN import MolSpaceGNN, MulMolSpace, MolProperty, TestGNN

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-10 17:32:44
 LastEditors: airscker
-LastEditTime: 2024-04-04 00:08:02
+LastEditTime: 2024-04-20 16:08:16
 Description: NULL
 
 Copyright (C) 2023 by Deep Graph Library, All Rights Reserved. 
@@ -11,12 +11,14 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 
 import os
 import dgl
+import math
 import torch
 from torch import nn
 import torch.nn.functional as F
 
 from typing import Union
-from .base import MLPBlock
+from .base import MLPBlock,GatedLinearUnit,SphericalBesselWithHarmonics
+from ..dataset import energy_level_ev
 from dgl.utils import expand_as_pair
 from dgl.nn.pytorch import GINConv, GINEConv, GraphConv
 
@@ -345,7 +347,7 @@ class XASStructure(nn.Module):
                  atom_coord_dim: int = 3,
                  bond_length_dim: int = 1,
                  gnn_layers: int = 3,
-                 gnn_hidden_dims: Union[int, list] = [256, 256],
+                 gnn_hidden_dims: int=256,
                  mlp_hidden_dims: Union[int, list] = [],
                  mlp_dropout: float = 0,
                  eps: float = 1e-3,
@@ -357,8 +359,7 @@ class XASStructure(nn.Module):
         assert xas_type in self.xas_types.keys(
         ), f"'xas_type' must be in {self.xas_types.keys()}, but {xas_type} was given."
         self.xas_type = xas_type
-        if isinstance(gnn_hidden_dims, int):
-            gnn_hidden_dims = [gnn_hidden_dims] * gnn_layers
+        gnn_hidden_dims = [gnn_hidden_dims] * gnn_layers
         self.gnn_hidden_dims = gnn_hidden_dims
 
         self.atom_embedding = nn.Linear(atomic_num_dim,
@@ -454,20 +455,107 @@ class XASStructure(nn.Module):
             feature=self.mlp(feature)
             return feature
 
+class XASStructureV2(nn.Module):
+    """
+    ## Predict XAS spectrums based on given crystal periodic structures
+    """
+
+    def __init__(
+        self,
+        energy_level:int=32,
+        max_n:int=6,
+        max_l:int=12,
+        cutoff: float = 6.0,
+        gnn_layers: int = 3,
+        gnn_hidden_dims: int = 256,
+        xas_type="XANES",
+        learnable_exp=True,
+        learnable_eps=True,
+    ):
+        super().__init__()
+        self.xas_types = {"XANES": 100, "EXAFS": 500, "XAFS": 600}
+        assert (
+            xas_type in self.xas_types.keys()
+        ), f"'xas_type' must be in {self.xas_types.keys()}, but {xas_type} was given."
+        self.xas_type = xas_type
+        self.xas_length = self.xas_types[xas_type]
+        self.energy_level=energy_level
+        self.gnn_hidden_dims = gnn_hidden_dims
+        self.sbhf_embedding = SphericalBesselWithHarmonics(max_n=max_n,max_l=max_l,cutoff=cutoff,use_smooth=False,use_phi=True)
+        self.energy_transform = nn.Linear(energy_level, gnn_hidden_dims)
+        self.energy_encoder = nn.Linear(gnn_hidden_dims, 1)
+        # It would be better to encode the photon energy with photon wave functions rather than a simple linear transformation.
+        self.spec_transform = nn.Linear(1, gnn_hidden_dims)
+        self.gnn = nn.ModuleList(
+            [
+                RRGraphConv(
+                    node_dim=gnn_hidden_dims,
+                    edge_dim=max_n*max_l**2,
+                    learnable_eps=learnable_eps,
+                    learnable_exp=learnable_exp,
+                )
+                for i in range(gnn_layers)
+            ]
+        )
+
+    # def unify_vector(self, data: torch.Tensor):
+    #     """Unify the vector to [-1,1] range."""
+    #     max_vals = torch.max(data, dim=1, keepdim=True)[0]
+    #     min_vals = torch.min(data, dim=1, keepdim=True)[0]
+    #     return (data - min_vals) / (self.eps + max_vals - min_vals)
+    def interaction(self,index,graph,spec_x,spec_y,energy_levels,edge_sbhf):
+        _spec_y = []
+        energy_levels = self.gnn[index](
+            graph,
+            energy_levels,
+            graph.edata["length"],
+            edge_sbhf,
+            )
+        graph.ndata["_h"] = energy_levels
+        gnn_list=dgl.unbatch(graph)
+        for i in range(len(gnn_list)):
+            _node_feat=gnn_list[i].ndata["_h"]
+            _spec_x=spec_x[i]
+            _att = torch.softmax(torch.matmul(_spec_x, _node_feat.T)/math.sqrt(self.gnn_hidden_dims),dim=-1)
+            _spec_y.append(torch.matmul(_att, _node_feat))
+        _spec_y = torch.stack(_spec_y, dim=0)
+        spec_y = self.energy_encoder(spec_y*_spec_y)
+        return spec_y
+    def forward(self, input, device):
+        """
+        input:[graph, struc_prompt, spec_data, spec_atom]
+        """
+        graph: dgl.DGLGraph = input[0]
+
+        energy_levels = energy_level_ev(graph.ndata["atomic_num"], torch.arange(1, self.energy_level + 1)) / 10000
+        energy_levels = self.energy_transform(energy_levels).to(device)
+        graph=graph.to(device)
+
+        spec_x = input[2][:,0,:]/10000
+        spec_x = spec_x.unsqueeze(-1).to(device)
+        spec_x = self.spec_transform(spec_x)
+
+        spec_y = torch.ones((self.xas_length,1)).to(device)
+        edge_sbhf=self.sbhf_embedding(graph.edata['length'],torch.cos(graph.edata['theta']),graph.edata['phi']).real
+        with graph.local_scope():
+            for i in range(len(self.gnn)):
+                """
+                You cannot directly apply the RELU activation function to the output of the GNN layer,
+                otherwise the output will be almmost all zeros (because positive values are rare for GIN).
+                """
+                spec_y=self.interaction(i,graph,spec_x,spec_y,energy_levels,edge_sbhf)
+            return spec_y.squeeze(-1)
+
+
 class RRGraphConv(nn.Module):
     def __init__(self,
-                 in_dim,
-                 out_dim,
-                 agg_func=None,
-                 apply_func=None,
+                 node_dim:int,
+                 edge_dim:int,
                  learnable_exp=False,
                  learnable_eps=False):
         super().__init__()
-        self.agg_func=agg_func
-        if in_dim!=out_dim and apply_func is None:
-            self.apply_func=nn.Linear(in_dim,out_dim)
-        else:
-            self.apply_func=apply_func
+        self.agg_func=nn.Linear(node_dim*2+edge_dim,node_dim)
+        self.apply_func=GatedLinearUnit(node_dim,node_dim)
         if learnable_exp:
             self.exp=nn.Parameter(torch.Tensor([-2]))
         else:
@@ -478,25 +566,27 @@ class RRGraphConv(nn.Module):
             self.register_buffer('eps',torch.Tensor([0]))
 
     def _aggregate(self, edges):
+        dst_node_feat = edges.dst['_h']
         src_node_feat = edges.src['_h']
+        edge_feat=edges.data['_e']
         edge_weight = edges.data['_r']
-        _msg = torch.ones_like(torch.exp(torch.log(edge_weight) * self.exp).view(-1, 1)) * src_node_feat
-        if self.agg_func is not None:
-            _msg = self.agg_func(_msg)
+        _msg=self.agg_func(torch.cat([src_node_feat,edge_feat,dst_node_feat],dim=-1))
+        _msg = torch.exp(torch.log(edge_weight) * self.exp).view(-1, 1) * _msg
         return {'m': _msg}
 
     def _reducer(self,nodes):
         return {'_h':nodes.mailbox['m'].sum(dim=1)}
-    def forward(self,graph:dgl.DGLGraph,feat:torch.Tensor,radius:torch.Tensor):
+
+    def forward(self,graph:dgl.DGLGraph,node_feat:torch.Tensor,radius:torch.Tensor,edge_feat:torch.Tensor):
         with graph.local_scope():
-            feat_src,feat_dst=expand_as_pair(feat,graph)
-            graph.srcdata['_h']=feat_src
+            feat_src, feat_dst = expand_as_pair(node_feat, graph)
+            graph.srcdata["_h"] = feat_src
+            graph.dstdata["_h"] = feat_dst
             graph.edata['_r']=radius
+            graph.edata['_e']=edge_feat
             graph.update_all(self._aggregate,self._reducer)
             rst=(1+self.eps)*feat_dst+graph.dstdata['_h']
-            if self.apply_func is not None:
-                rst=self.apply_func(rst)
-            return rst
+            return self.apply_func(rst)
 
 class XAS_Atom(nn.Module):
 
@@ -520,7 +610,6 @@ class XAS_Atom(nn.Module):
         input.shape: N,L
         '''
         return self.mlp(input)
-
 
 class XAS_Mask_Structure(nn.Module):
 

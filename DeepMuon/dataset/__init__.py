@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-20 20:03:40
 LastEditors: airscker
-LastEditTime: 2024-02-07 00:28:23
+LastEditTime: 2024-04-16 21:36:27
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -10,7 +10,7 @@ Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 
 '''Basic dataset utils'''
 from .SmilesGraphUtils.graph_operation import CombineGraph
-from .SmilesGraphUtils.crystal_featurizer import (MPJCrystalGraphData, one_hot_encoding, one_hot_decoding,
+from .SmilesGraphUtils.crystal_featurizer import (MPJCrystalGraphData, energy_level_ev, one_hot_encoding, one_hot_decoding,
                                                   mol_to_atom_bond_bigraph, smiles_to_atom_bond_graph)
 from .SmilesGraphUtils.atom_feat_encoding import CanonicalAtomFeaturizer,CanonicalBondFeaturizer
 from .SmilesGraphUtils.molecular_graph import (mol_to_graph,smiles_to_bigraph,mol_to_bigraph,
@@ -30,7 +30,7 @@ from .AtomEmbedData import AtomMasking, MolSpaceDataset, collate_molspace, colla
 from .MolFoundation import MolFoundationDataset,collate_molfoundation,FoundationBasicDataset
 
 __all__ = [
-    'CombineGraph', 'MPJCrystalGraphData', 'one_hot_encoding',
+    'CombineGraph', 'MPJCrystalGraphData', 'energy_level_ev', 'one_hot_encoding',
     'one_hot_decoding', 'mol_to_atom_bond_bigraph',
     'smiles_to_atom_bond_graph', 'CanonicalAtomFeaturizer',
     'CanonicalBondFeaturizer', 'mol_to_graph', 'smiles_to_bigraph',

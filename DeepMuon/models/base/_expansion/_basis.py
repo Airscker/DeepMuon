@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-10-26 23:01:51
 LastEditors: airscker
-LastEditTime: 2024-04-10 14:08:59
+LastEditTime: 2024-04-16 16:29:12
 Description: NULL
 
 Copyright (C) 2023 by matgl(https://github.com/materialsvirtuallab/matgl), All Rights Reserved.
@@ -289,7 +289,7 @@ class SphericalBesselFunction(nn.Module):
         results = []
         factor = torch.tensor(sqrt(2.0 / self.cutoff**3))
         for i in range(self.max_l):
-            root = torch.tensor(roots[i])
+            root = roots[i].clone()
             func = self.funcs[i]
             func_add1 = self.funcs[i + 1]
             results.append(
@@ -426,14 +426,18 @@ class SphericalBesselWithHarmonics(nn.Module):
     def __init__(self, max_n: int, max_l: int, cutoff: float, use_smooth: bool,
                  use_phi: bool):
         """
-        Init SphericalBesselWithHarmonics.
+        ## Init SphericalBesselWithHarmonics.
 
-        Args:
-            max_n: Degree of radial basis functions.
-            max_l: Degree of angular basis functions.
-            cutoff: Cutoff sphere.
-            use_smooth: Whether using smooth version of SBFs or not.
-            use_phi: Using phi as angular basis functions.
+        ### Args:
+            - max_n: Degree of radial basis functions.
+            - max_l: Degree of angular basis functions.
+            - cutoff: Cutoff sphere.
+            - use_smooth: Whether using smooth version of SBFs or not.
+            - use_phi: Using phi as angular basis functions.
+        
+        ### Returns:
+            Input tensor: [n, ] bond lengths; [n, ] cos(theta); [n, ] phi.
+            Output tensor: [n, max_n * max_l**2 ] combined basis functions.
         """
         super().__init__()
 
@@ -460,6 +464,8 @@ class SphericalBesselWithHarmonics(nn.Module):
             - bond_lengths: torch.Tensor, shape=(n_edges, 1), bond lengths
             - cos_theta: torch.Tensor, shape=(n_edges, 1), cos(theta)
             - phi: torch.Tensor, shape=(n_edges, 1), phi
+        ### Returns:
+            - torch.Tensor, shape=(n_edges, max_n * max_l**2), combined basis functions
         '''
         sbf=self.sbf(bond_lengths)
         shf=self.shf(cos_theta, phi)

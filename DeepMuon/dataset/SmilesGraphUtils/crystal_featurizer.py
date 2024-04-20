@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-05 18:38:28
 LastEditors: airscker
-LastEditTime: 2024-04-09 14:21:05
+LastEditTime: 2024-04-20 15:47:58
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -26,6 +26,32 @@ from rdkit import Chem, RDLogger
 from rdkit.Chem.rdchem import Atom
 from rdkit.Chem import AllChem,rdDistGeom,rdMolTransforms,AddHs
 RDLogger.DisableLog('rdApp.*')
+
+
+RYDBERG_CONSTANT = 10973731.6
+PLANCK_CONSTANT = 6.62607015e-34
+LIGHT_SPEED = 299792458
+ENERGY_LEVEL_UNIT=2.17988e-18 # RYDBERG_CONSTANT*PLANCK_CONSTANT*LIGHT_SPEED
+ENERGY_LEVEL_UNIT_EV=13.6056980659
+
+
+def energy_level_ev(z: int, n: Union[int, list, torch.Tensor] = 1):
+    """
+    ## Calculate the energy level of the electron in the hydrogen-like atoms
+
+    ### Args:
+        - z: int, the atomic number of the atom
+        - n: int, the principal quantum number of the electron, default 1
+    ### Returns:
+        - float/torch.Tensor, the energy level(in eV) of the electron in the hydrogen-like atoms
+    """
+    if not isinstance(n, torch.Tensor):
+        n = torch.tensor(n)
+    if not isinstance(z, torch.Tensor):
+        z = torch.tensor(z)
+    n = n.repeat(len(z), 1)
+    z = z.unsqueeze(-1)
+    return (-ENERGY_LEVEL_UNIT_EV * z**2 / n**2).squeeze()
 
 
 def one_hot_decoding(data: Any):
@@ -87,7 +113,7 @@ class MPJCrystalGraphData(BaseCrystalGraphData):
     ### Args:
         - structure: The crystal structure to be featurized, if `None`, the graph will be created later using `creat_graph` function.
         - self_loop: If `True`, the graph has self loop.
-        - onehot_encode: If `True`, the atom type and atom degree are one hot encoded.
+        - onehot_encode: If `True`, the atom types are one hot encoded.
         - neighbor_graph: If `True`, the graph is a neighborhood graph (atoms within neigborhood are all connected), otherwise,
             the graph is a bond graph (only actual bonds exist in th graph).
         - atom_neigh_cutoff: The cutoff radius of the neighborhood graph, only available when `neighbor_graph` is `True`, the UNIT is `A`.

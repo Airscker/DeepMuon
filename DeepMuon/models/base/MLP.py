@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-13 19:24:38
 LastEditors: airscker
-LastEditTime: 2024-02-05 13:22:24
+LastEditTime: 2024-04-16 22:56:11
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -90,3 +90,21 @@ class MLPBlock(nn.Module):
                         nn.init.zeros_(layer.bias.data)
     def forward(self, x:torch.Tensor):
         return self.mlp(x)
+
+
+class GatedLinearUnit(nn.Module):
+    def __init__(
+        self, in_dim: int, out_dim: int, bias:bool=True
+    ) -> None:
+        super().__init__()
+        self.gateway = nn.Sequential(
+            nn.Linear(in_dim, out_dim, bias=bias),
+            nn.Sigmoid(),
+        )
+        self.output = nn.Sequential(
+            nn.Linear(in_dim, out_dim, bias=bias),
+            nn.SiLU(),
+        )
+
+    def forward(self, x: torch.Tensor):
+        return self.output(x) * self.gateway(x)

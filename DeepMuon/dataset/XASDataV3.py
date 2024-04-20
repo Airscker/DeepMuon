@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2024-02-01 13:59:34
 LastEditors: airscker
-LastEditTime: 2024-03-23 23:43:15
+LastEditTime: 2024-04-19 21:31:04
 Description: NULL
 
 Copyright (C) 2024 by Airscker(Yufeng), All Rights Reserved. 
@@ -74,6 +74,7 @@ class XASSUMDatasetV3(Dataset):
         self.shuffle = shuffle
         self.verbose = verbose
         self.convert_graph = convert_graph
+        self.onehot_encode = onehot_encode
         self.xas_length = {'XANES': 100, 'EXAFS': 500, 'XAFS': 600}
         self.edge_set = {'K': 0, 'L3': 1, 'L2': 2, 'L2,3': 3, 'M': 4}
         self.graph_featurizer = MPJCrystalGraphData(
@@ -127,16 +128,21 @@ class XASSUMDatasetV3(Dataset):
     def __getitem__(self, index):
         graph, struc_prompt = self.struc_set[self.xas_struc_map[index]]
         spec_data, spec_atom = self.xas_set[index]
-        _atomic_num = torch.argmax(graph.ndata['atomic_num'], dim=-1)
-        _abs_mask = torch.zeros(graph.num_nodes())
-        _abs_mask[_atomic_num == spec_atom] = 1
-        graph.ndata['abs_mask'] = _abs_mask
+        # if self.onehot_encode:
+        #     _atomic_num = torch.argmax(graph.ndata['atomic_num'], dim=-1)
+        # else:
+        #     _atomic_num = graph.ndata['atomic_num']
+        # _abs_mask = torch.zeros(graph.num_nodes())
+        # _abs_mask[_atomic_num == spec_atom] = 1
+        # graph.ndata['abs_mask'] = _abs_mask
+        # graph.ndata['spec_x']=torch.from_numpy(spec_data[0]).repeat(graph.num_nodes(),1)
         return graph, struc_prompt, spec_data, spec_atom
 
 def collate_xas_struc(batch):
     samples = list(map(list, zip(*batch)))
     samples[0]=dgl.batch(samples[0])
     spectrum=torch.Tensor(samples[2])
+    samples[2]=spectrum
     samples[3]=torch.Tensor(samples[3])
     return samples,spectrum
 
