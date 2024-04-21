@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-10-26 23:01:51
 LastEditors: airscker
-LastEditTime: 2024-04-16 16:29:12
+LastEditTime: 2024-04-20 22:58:46
 Description: NULL
 
 Copyright (C) 2023 by matgl(https://github.com/materialsvirtuallab/matgl), All Rights Reserved.
@@ -240,8 +240,9 @@ class SphericalBesselFunction(nn.Module):
         super().__init__()
         self.max_l = max_l
         self.max_n = max_n
-        self.register_buffer("cutoff", torch.tensor(cutoff))
+        self.register_buffer("cutoff", torch.tensor(cutoff).float())
         self.smooth = smooth
+        self.register_buffer("SPHERICAL_BESSEL_ROOTS",SPHERICAL_BESSEL_ROOTS)
         if smooth:
             self.funcs = self._calculate_smooth_symbolic_funcs()
         else:
@@ -284,10 +285,10 @@ class SphericalBesselFunction(nn.Module):
     def _call_sbf(self, r):
         r_c = r.clone()
         r_c[r_c > self.cutoff] = self.cutoff
-        roots = SPHERICAL_BESSEL_ROOTS[:self.max_l, :self.max_n]
+        roots = self.SPHERICAL_BESSEL_ROOTS[:self.max_l, :self.max_n]
 
         results = []
-        factor = torch.tensor(sqrt(2.0 / self.cutoff**3))
+        factor = sqrt(2.0 / self.cutoff**3)
         for i in range(self.max_l):
             root = roots[i].clone()
             func = self.funcs[i]
@@ -458,7 +459,7 @@ class SphericalBesselWithHarmonics(nn.Module):
             self.sbf = SphericalBesselFunction(self.max_l, self.max_n,
                                                self.cutoff, self.use_smooth)
 
-    def forward(self, bond_lengths: Tensor, cos_theta: Tensor, phi: Tensor):
+    def forward(self, bond_lengths: Tensor, cos_theta: Tensor, phi: Tensor, device: Union[str, torch.device]='cpu'):
         '''
         ### Args:
             - bond_lengths: torch.Tensor, shape=(n_edges, 1), bond lengths
@@ -475,4 +476,5 @@ class SphericalBesselWithHarmonics(nn.Module):
                                shf,
                                max_n=self.max_n,
                                max_l=self.max_l,
-                               use_phi=self.use_phi)
+                               use_phi=self.use_phi,
+                               device=device)

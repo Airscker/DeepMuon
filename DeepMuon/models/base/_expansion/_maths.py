@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-12-11 14:59:57
 LastEditors: airscker
-LastEditTime: 2023-12-11 20:45:18
+LastEditTime: 2024-04-20 22:51:45
 Description: NULL
 
 Copyright (C) 2023 by matgl(https://github.com/materialsvirtuallab/matgl), All Rights Reserved.
@@ -71,7 +71,7 @@ def spherical_bessel_jn(n, x, return_all=False):
             result[x != 0] = jn_list[-1]
     return result
 
-def combine_sbf_shf(sbf, shf, max_n: int, max_l: int, use_phi: bool):
+def combine_sbf_shf(sbf, shf, max_n: int, max_l: int, use_phi: bool, device: torch.device):
     """Combine the spherical Bessel function and the spherical Harmonics function.
 
     For the spherical Bessel function, the column is ordered by
@@ -96,13 +96,16 @@ def combine_sbf_shf(sbf, shf, max_n: int, max_l: int, use_phi: bool):
 
     if not use_phi:
         repeats_sbf = torch.tensor([1] * max_l * max_n)
-        block_size = [1] * max_l
+        block_size = torch.tensor([1] * max_l)
     else:
         # [1, 1, 1, ..., 1, 3, 3, 3, ..., 3, ...]
-        repeats_sbf = np.repeat(2 * torch.arange(max_l) + 1, repeats=max_n)
+        repeats_sbf = 2 * torch.arange(max_l) + 1
+        repeats_sbf = repeats_sbf.repeat(max_n)
         # tf.repeat(2 * tf.range(max_l) + 1, repeats=max_n)
         block_size = 2 * torch.arange(max_l) + 1  # type: ignore
         # 2 * tf.range(max_l) + 1
+    
+    repeats_sbf, block_size = repeats_sbf.to(device), block_size.to(device)
     expanded_sbf = torch.repeat_interleave(sbf, repeats_sbf, 1)
     expanded_shf = _block_repeat(shf,
                                  block_size=block_size,
@@ -141,7 +144,7 @@ def spherical_bessel_roots(max_l: int, max_n: int):
 
 
 def _block_repeat(array, block_size, repeats):
-    col_index = torch.arange(array.size()[1])
+    col_index = torch.arange(array.size()[1]).to(array.device)
     indices = []
     start = 0
 

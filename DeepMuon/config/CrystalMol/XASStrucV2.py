@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-15 12:17:09
 LastEditors: airscker
-LastEditTime: 2024-04-20 16:40:41
+LastEditTime: 2024-04-20 21:01:26
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -26,7 +26,7 @@ train_dataset = dict(backbone='XASSUMDatasetV3',
                                  xas_type='XANES',
                                  xas_edge='K',
                                  self_loop=False,
-                                 onehot_encode=True,
+                                 onehot_encode=False,
                                  cutoff=6.0,
                                  shuffle=True,
                                  verbose=True))
@@ -36,7 +36,7 @@ test_dataset = dict(backbone='XASSUMDatasetV3',
                                 xas_type='XANES',
                                 xas_edge='K',
                                 self_loop=False,
-                                onehot_encode=True,
+                                onehot_encode=False,
                                 cutoff=6.0,
                                 shuffle=True,
                                 verbose=True))
@@ -58,7 +58,7 @@ optimizer = dict(backbone='AdamW',
 scheduler = dict(backbone='ReduceLROnPlateau',
                  params=dict(factor=0.5, patience=100))
 
-hyperpara = dict(epochs=30, batch_size=128)
+hyperpara = dict(epochs=100, batch_size=128)
 fsdp_parallel = dict(enabled=False, min_num_params=1e4)
 optimize_config = dict(fp16=False,
                        grad_acc=1,

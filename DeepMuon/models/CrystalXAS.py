@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-10 17:32:44
 LastEditors: airscker
-LastEditTime: 2024-04-20 16:08:16
+LastEditTime: 2024-04-20 22:53:31
 Description: NULL
 
 Copyright (C) 2023 by Deep Graph Library, All Rights Reserved. 
@@ -480,6 +480,7 @@ class XASStructureV2(nn.Module):
         self.xas_type = xas_type
         self.xas_length = self.xas_types[xas_type]
         self.energy_level=energy_level
+        self.register_buffer('energy_level_num',torch.arange(1, energy_level + 1))
         self.gnn_hidden_dims = gnn_hidden_dims
         self.sbhf_embedding = SphericalBesselWithHarmonics(max_n=max_n,max_l=max_l,cutoff=cutoff,use_smooth=False,use_phi=True)
         self.energy_transform = nn.Linear(energy_level, gnn_hidden_dims)
@@ -525,18 +526,18 @@ class XASStructureV2(nn.Module):
         """
         input:[graph, struc_prompt, spec_data, spec_atom]
         """
-        graph: dgl.DGLGraph = input[0]
-
-        energy_levels = energy_level_ev(graph.ndata["atomic_num"], torch.arange(1, self.energy_level + 1)) / 10000
+        graph: dgl.DGLGraph = input[0].to(device)
+        energy_levels = (
+            energy_level_ev(graph.ndata["atomic_num"], self.energy_level_num) / 10000
+        )
         energy_levels = self.energy_transform(energy_levels).to(device)
-        graph=graph.to(device)
 
         spec_x = input[2][:,0,:]/10000
         spec_x = spec_x.unsqueeze(-1).to(device)
         spec_x = self.spec_transform(spec_x)
 
         spec_y = torch.ones((self.xas_length,1)).to(device)
-        edge_sbhf=self.sbhf_embedding(graph.edata['length'],torch.cos(graph.edata['theta']),graph.edata['phi']).real
+        edge_sbhf=self.sbhf_embedding(graph.edata['length'],torch.cos(graph.edata['theta']),graph.edata['phi'],device).real
         with graph.local_scope():
             for i in range(len(self.gnn)):
                 """
