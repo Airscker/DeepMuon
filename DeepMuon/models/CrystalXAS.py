@@ -526,26 +526,37 @@ class XASStructureV2(nn.Module):
         """
         input:[graph, struc_prompt, spec_data, spec_atom]
         """
+        batch_size = input[0].batch_size
         graph: dgl.DGLGraph = input[0].to(device)
-        energy_levels = (
+        energy_levels = torch.exp(
             energy_level_ev(graph.ndata["atomic_num"], self.energy_level_num) / 10000
         )
         energy_levels = self.energy_transform(energy_levels).to(device)
-
-        spec_x = input[2][:,0,:]/10000
+        spec_x = input[2][:, 0, :] / 10000
         spec_x = spec_x.unsqueeze(-1).to(device)
         spec_x = self.spec_transform(spec_x)
 
-        spec_y = torch.ones((self.xas_length,1)).to(device)
-        edge_sbhf=self.sbhf_embedding(graph.edata['length'],torch.cos(graph.edata['theta']),graph.edata['phi'],device).real
+        spec_y = torch.ones((batch_size, self.xas_length, 1)).to(device)
+        edge_sbhf = self.sbhf_embedding(
+            graph.edata["length"],
+            torch.cos(graph.edata["theta"]),
+            graph.edata["phi"],
+            device,
+        ).real
+        spectrum=[spec_y]
         with graph.local_scope():
             for i in range(len(self.gnn)):
                 """
                 You cannot directly apply the RELU activation function to the output of the GNN layer,
                 otherwise the output will be almmost all zeros (because positive values are rare for GIN).
                 """
-                spec_y=self.interaction(i,graph,spec_x,spec_y,energy_levels,edge_sbhf)
-            return spec_y.squeeze(-1)
+                spec_y = self.interaction(
+                    i, graph, spec_x, torch.stack(spectrum,dim=2).sum(dim=2), energy_levels, edge_sbhf
+                )
+                spectrum.append(spec_y)
+            return torch.stack(spectrum,dim=2).sum(dim=2).squeeze(-1)
+            # spec_y=self.interaction(i,graph,spec_x,spec_y,energy_levels,edge_sbhf)
+            # return spec_y.squeeze(-1)
 
 
 class RRGraphConv(nn.Module):

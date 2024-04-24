@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-13 19:24:38
 LastEditors: airscker
-LastEditTime: 2024-04-16 22:56:11
+LastEditTime: 2024-04-23 01:50:37
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -105,6 +105,19 @@ class GatedLinearUnit(nn.Module):
             nn.Linear(in_dim, out_dim, bias=bias),
             nn.SiLU(),
         )
+        self.reset_parameters()
 
     def forward(self, x: torch.Tensor):
         return self.output(x) * self.gateway(x)
+
+    def reset_parameters(self):
+        for layer in self.gateway:
+            if isinstance(layer, nn.Linear):
+                nn.init.xavier_uniform_(layer.weight.data)
+                if layer.bias is not None:
+                    nn.init.zeros_(layer.bias.data)
+        for layer in self.output:
+            if isinstance(layer, nn.Linear):
+                nn.init.xavier_uniform_(layer.weight.data)
+                if layer.bias is not None:
+                    nn.init.zeros_(layer.bias.data)

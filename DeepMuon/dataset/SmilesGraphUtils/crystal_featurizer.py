@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-05 18:38:28
 LastEditors: airscker
-LastEditTime: 2024-04-20 21:03:04
+LastEditTime: 2024-04-23 00:08:41
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -150,8 +150,8 @@ class MPJCrystalGraphData(BaseCrystalGraphData):
         dst = graph.ndata['coord'][dst]
         relpos = dst - src
         theta = torch.atan2(relpos[:, 1], relpos[:, 0])
-        # phi = torch.atan2(torch.sqrt(relpos[:, 0]**2 + relpos[:, 1]**2), relpos[:, 2])
-        phi = torch.acos(relpos[:, 2] / torch.norm(relpos, dim=1))
+        phi = torch.atan2(torch.sqrt(relpos[:, 0]**2 + relpos[:, 1]**2), relpos[:, 2])
+        # phi = torch.acos(relpos[:, 2] / torch.norm(relpos, dim=1))
         return theta, phi
 
     def creat_graph(self, structure: Structure = None):
