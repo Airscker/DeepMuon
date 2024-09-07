@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-09-05 18:38:28
 LastEditors: airscker
-LastEditTime: 2024-04-23 00:08:41
+LastEditTime: 2024-06-02 22:31:51
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -43,7 +43,7 @@ def energy_level_ev(z: int, n: Union[int, list, torch.Tensor] = 1):
         - z: int, the atomic number of the atom
         - n: int, the principal quantum number of the electron, default 1
     ### Returns:
-        - float/torch.Tensor, the energy level(in eV) of the electron in the hydrogen-like atoms
+        - float/torch.Tensor, the energy level(in eV) of the electron in the hydrogen-like atoms, shape: [z, n]
     """
     if not isinstance(n, torch.Tensor):
         n = torch.tensor(n)
@@ -52,6 +52,24 @@ def energy_level_ev(z: int, n: Union[int, list, torch.Tensor] = 1):
     n = n.repeat(len(z), 1)
     z = z.unsqueeze(-1)
     return (-ENERGY_LEVEL_UNIT_EV * z**2 / n**2).squeeze()
+
+
+def energy_gaps(energy_levels: torch.Tensor):
+    """
+    ## Get all possible energy gap values between the energy levels of the atoms.
+
+    ### Args:
+        - energy_levels: torch.Tensor, the energy levels of the atoms, [atom_num, energy_level].
+    ### Returns:
+        - torch.Tensor, the energy gap values between the energy levels of the atoms, [atom_num, energy_level, energy_level].
+            The value at [i,j,k] is the energy gap between the j-th and k-th energy levels of the i-th atom.
+    """
+    energy_levels_outer = torch.einsum(
+        "ij,ik->ijk", energy_levels, torch.ones_like(energy_levels)
+    )
+    delta_e = energy_levels_outer - energy_levels_outer.permute(0, 2, 1)
+    delta_e = torch.triu(delta_e, diagonal=1)
+    return delta_e
 
 
 def one_hot_decoding(data: Any):
@@ -154,6 +172,22 @@ class MPJCrystalGraphData(BaseCrystalGraphData):
         # phi = torch.acos(relpos[:, 2] / torch.norm(relpos, dim=1))
         return theta, phi
 
+    def molecule_tensor(self,structure: Structure):
+        atomic_number = torch.tensor([site.specie.Z for site in structure]).long()
+        coords = structure.cart_coords
+        coord_tensor = np.einsum("i,jk->ijk", np.ones(len(coords)), coords)
+        pos_tensor = coord_tensor - coord_tensor.transpose(1, 0, 2)
+        center_index, neighbor_index, image, distance = structure.get_neighbor_list(
+            r=self.atom_neigh_cutoff, sites=structure.sites, numerical_tol=1e-8
+        )
+        adjacent_matrix = np.zeros((len(structure.sites), len(structure.sites)))
+        for i in range(len(center_index)):
+            adjacent_matrix[center_index[i], neighbor_index[i]] += 1
+            adjacent_matrix[neighbor_index[i], center_index[i]] += 1
+        adjacent_matrix = torch.from_numpy(adjacent_matrix).unsqueeze(-1).float()
+        pos_tensor = torch.from_numpy(pos_tensor).float()
+        return torch.concatenate([pos_tensor, adjacent_matrix], dim=-1), atomic_number
+
     def creat_graph(self, structure: Structure = None):
         n_atoms = len(structure)
         atomic_number = torch.from_numpy(np.array([
@@ -185,6 +219,7 @@ class MPJCrystalGraphData(BaseCrystalGraphData):
         graph.edata['phi'] = phi
         self.graph = graph
         return graph
+
 
 def atom_featurizer(atom):
     features=[]

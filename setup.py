@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2022-09-21 18:43:31
 LastEditors: airscker
-LastEditTime: 2023-10-07 15:59:47
+LastEditTime: 2024-06-18 16:32:16
 Description: NULL
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -69,7 +69,8 @@ setup(
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/discussions/install-requires-vs-requirements/
-    install_requires=['click',
+    install_requires=['pymatgen==2023.9.10',
+                      'click',
                       'prettytable',
                       'opencv-python',
                       'tqdm',
@@ -92,7 +93,6 @@ setup(
                       'parso',
                       'rdkit',
                       'seaborn',
-                      'pymatgen'
                       ],
     # Similar to `install_requires` above, these must be valid existing
     # projects.

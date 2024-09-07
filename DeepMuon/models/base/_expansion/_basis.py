@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-10-26 23:01:51
 LastEditors: airscker
-LastEditTime: 2024-04-20 22:58:46
+LastEditTime: 2024-05-27 17:10:00
 Description: NULL
 
 Copyright (C) 2023 by matgl(https://github.com/materialsvirtuallab/matgl), All Rights Reserved.
@@ -32,11 +32,12 @@ class FourierExpansion(nn.Module):
     def __init__(self, order: int = 5, learnable: bool = False) -> None:
         """Initialize the Fourier expansion.
 
-        Args:
-            order (int): the maximum order, refer to the N in eq 1 in CHGNet paper
-                Default = 5
-            learnable (bool): whether to set the frequencies as learnable parameters
-                Default = False
+        ### Args:
+            - order (int): the maximum order, refer to the N in eq 1 in CHGNet paper, Default = 5
+            - learnable (bool): whether to set the frequencies as learnable parameters, Default = False
+        
+        ### Returns:
+            fourier expansion basis coefficients with shape (batch_size, feature_dim, 1 + 2 * order)
         """
         super().__init__()
         self.order = order
@@ -52,13 +53,19 @@ class FourierExpansion(nn.Module):
             )
 
     def forward(self, x: Tensor) -> Tensor:
-        """Apply Fourier expansion to a feature Tensor."""
-        result = x.new_zeros(x.shape[0], 1 + 2 * self.order)
-        result[:, 0] = 1 / torch.sqrt(torch.tensor([2]))
-        tmp = torch.outer(x, self.frequencies)
-        result[:, 1 : self.order + 1] = torch.sin(tmp)
-        result[:, self.order + 1 :] = torch.cos(tmp)
+        """
+        Apply Fourier expansion to a feature Tensor.
+        x.shape: (batch_size, feature_dim)
+        return: (batch_size, feature_dim, 1 + 2 * order)
+        """
+        result = x.new_zeros(x.shape[0], x.shape[1], 1 + 2 * self.order)
+        result[:, :, 0] = 1 / torch.sqrt(torch.tensor([2]))
+        # tmp = torch.outer(x, self.frequencies)
+        tmp = torch.einsum("bi,j->bij", x, self.frequencies)
+        result[:, :, 1 : self.order + 1] = torch.sin(tmp)
+        result[:, :, self.order + 1 :] = torch.cos(tmp)
         return result / np.sqrt(np.pi)
+
 
 class GaussianExpansion(nn.Module):
     """
