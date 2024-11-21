@@ -2,10 +2,10 @@
 Author: airscker
 Date: 2023-09-05 18:38:28
 LastEditors: airscker
-LastEditTime: 2024-06-02 22:31:51
+LastEditTime: 2024-10-26 13:36:29
 Description: NULL
 
-Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
+Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
 '''
 
 import dgl

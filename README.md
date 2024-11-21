@@ -39,15 +39,17 @@ pip install -v -e ./ --user
 > **Contributors:** Yufeng Wang, Yu Zhang, Shendong Su
 > **Institutions:**
 >
-> > University of Science of Technology of China
-> > TsingHua University
-> > Stony Brook University
-> > University of Florida
+>> University of Science of Technology of China
+>> TsingHua University
+>> Stony Brook University
+>> University of Florida
+>>
 >
 > If you want to publish thesis using DeepMuon, please add bibliography:
+>
 > ```latex
 > @misc{deepmuon,
->   author       = {Yufeng Wang},
+>   author       = {Yufeng Wang, Yu Zhang, Shendong Su},
 >   title        = {DeepMuon: Interdisciplinary deep-learning platform},
 >   year         = {2022},
 >   publisher    = {GitHub},
@@ -55,5 +57,4 @@ pip install -v -e ./ --user
 >   howpublished = {\url{https://airscker.github.io/DeepMuon}},
 > }
 > ```
->
-> Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved.
+> Copyright (C) 2024 by Airscker(Yufeng), All Rights Reserved.

@@ -2,7 +2,7 @@
 Author: airscker
 Date: 2023-06-08 15:08:59
 LastEditors: airscker
-LastEditTime: 2023-11-04 14:34:44
+LastEditTime: 2024-11-04 16:30:27
 Description: Comes from DGLlife open source package.
 
 Copyright (C) 2023 by Airscker(Yufeng), All Rights Reserved. 
@@ -116,7 +116,6 @@ def one_hot_encoding(x, allowable_set:list, encode_unknown:bool=False):
     one_hot_code = [False] * encode_len
     one_hot_code[index] = True
     return one_hot_code
-
 
 #################################################################
 # Atom featurization
